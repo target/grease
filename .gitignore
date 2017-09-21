@@ -1,0 +1,8 @@
+*.pyc
+tgt_grease_core.egg-info/
+.eggs/
+build/
+dist/
+# VS Code Editor Stuffs
+.vscode/
+.idea/

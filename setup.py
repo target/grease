@@ -3,7 +3,7 @@ import os
 
 
 setup(
-    name='tgt_grease_core',
+    name='tgt_grease',
     version='1.1.0',
     description='GRE Application Service Engine',
     long_description="Automation Engine for operations",

@@ -1,8 +1,27 @@
 language: python
+
 python:
   - "2.7" #what we built it for
   - "nightly" #whatever 3.x is hemorrhaging-edge
+
 install:
   - python setup.py install
+  
 script:
   - python setup.py test
+
+matrix:
+  allow_failures:
+    - python: nightly
+
+before_script:
+  - pip install psycopg2 pymongo requests sqlalchemy
+
+
+deploy:
+  on: 
+    branch: master
+  provider: pypi
+  user: $PYPI_USER
+  password: 
+    secure: $PYPI_PASSWORD

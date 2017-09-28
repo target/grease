@@ -19,8 +19,6 @@ before_script:
 
 
 deploy:
-  on: 
-    branch: master
   provider: pypi
   user: $PYPI_USER
   password: 

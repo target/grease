@@ -1,7 +1,7 @@
 language: python
 
 python:
-  - "2.7" #what we built it for
+  - "2.7" #what we built it for originally
   - "nightly" #whatever 3.x is hemorrhaging-edge
 
 install:
@@ -19,6 +19,8 @@ before_script:
 
 
 deploy:
+  on:
+    branch: master
   provider: pypi
   user: $PYPI_USER
   password: 

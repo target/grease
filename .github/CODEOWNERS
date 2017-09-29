@@ -1,0 +1,20 @@
+# GREASE Code Ownership File
+
+# BDFL Should See All
+* @lemoney
+
+# Python Code Should be Reviewed by James
+*.py @lemoney
+
+# ensure integrations knows something changed with build
+.travis.yml @gamagori @lemoney
+Dockerfile @gamagori @lemoney
+MANIFEST.in @gamagori @lemoney
+setup.py @gamagori @lemoney
+
+
+# Project Templates Folder
+/.github/ @lemoney
+
+# bin Directory for entrypoints
+/bin/ @lemoney

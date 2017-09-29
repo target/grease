@@ -78,7 +78,7 @@ class SourceDeDuplify(object):
                     + str(composite_score)
                 )
                 # now lets observe to see if we have a 'unique' source
-                if composite_score < os.getenv('GREASE_DEDUP_SCORE', 85):
+                if composite_score < float(os.getenv('GREASE_DEDUP_SCORE', 85)):
                     # look at that its time to add it to the final list
                     final.append(source_obj)
             else:

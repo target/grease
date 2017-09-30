@@ -4,7 +4,7 @@ from tgt_grease_core_util.GreaseUtility import Grease
 from tgt_grease_core_util.Database import Connection
 from tgt_grease_core_util.ImportTools import Importer
 import datetime
-import Daemon
+from . import Daemon
 import os
 import commands
 from collections import deque

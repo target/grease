@@ -76,7 +76,7 @@ class UnixDaemon(GreaseDaemonCommon):
             if pid > 0:
                 # Exit Parent Now
                 sys.exit(0)
-        except OSError, e:
+        except OSError as e:
             self._router._grease.message().exception("Fork Failure [1]: {0} ({1})".format(e.errno, e.strerror))
             self._router.bad_exit("Fork Failure: {0} ({1})".format(e.errno, e.strerror), 2)
         # Decouple from the parent process env data
@@ -89,7 +89,7 @@ class UnixDaemon(GreaseDaemonCommon):
             if pid > 0:
                 # Exit Parent Now
                 sys.exit(0)
-        except OSError, e:
+        except OSError as e:
             self._router._grease.message().exception("Fork Failure [2]: {0} ({1})".format(e.errno, e.strerror))
             self._router.bad_exit("Fork Failure: {0} ({1})".format(e.errno, e.strerror), 2)
         # Finally lets write our pid file
@@ -123,7 +123,7 @@ class UnixDaemon(GreaseDaemonCommon):
             while 1:
                 os.kill(pid, SIGTERM)
                 time.sleep(0.1)
-        except OSError, err:
+        except OSError as err:
             err = str(err)
             if err.find("No such process") > 0:
                 if os.path.exists(self._pidfile):

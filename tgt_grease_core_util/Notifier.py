@@ -37,6 +37,6 @@ class Notifier:
                 return True
             else:
                 return False
-        except HTTPError, e:
+        except HTTPError as e:
             return False
 

@@ -1,6 +1,6 @@
 import datetime
 from abc import ABCMeta, abstractmethod
-from Database import Connection
+from .Database import Connection
 import os
 
 

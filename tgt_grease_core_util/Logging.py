@@ -7,7 +7,7 @@ import logging
 from collections import deque
 from logging.config import fileConfig
 import random
-from Notifier import Notifier
+from .Notifier import Notifier
 
 
 class Logger:

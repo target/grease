@@ -6,7 +6,6 @@ from tgt_grease_core_util.ImportTools import Importer
 import datetime
 from . import Daemon
 import os
-import commands
 from collections import deque
 import sys
 
@@ -153,20 +152,6 @@ class Router(GreaseRouter.Router):
         else:
             self.bad_exit("Command not given to daemon! Expected: [start,stop,restart]", 1)
 
-    def _self_update_check(self):
-        # type: () -> None
-        # simple check if a daemon reload is requested
-        if os.name == 'nt':
-            req_file = "C:\\grease\\daemon_reload.run"
-        else:
-            req_file = "/tmp/grease/daemon_reload.run"
-        if os.path.isfile(req_file):
-            # first lets unset the file so we don't inf loop ourselves
-            os.remove(req_file)
-            # Now we are going to kill ourself so... yeah
-            self._get_ioc().message().warning("SELF UPDATE DETECTED REBOOTING DAEMON")
-            self._get_ioc().message().debug(str(commands.getstatusoutput('grease-daemon stop && grease-daemon start')))
-
     def job_processor(self, PyWinObj=None):
         # This is where the magic happens
         # Basic rc assignment before the loop
@@ -186,8 +171,6 @@ class Router(GreaseRouter.Router):
                     # check time
                     self._have_we_moved_forward_in_time()
                     continue
-            # first check to see if auto-update kicked
-            self._self_update_check()
             # Now lets do stuff
             # Engage the Warp Nacelle
             # Get the run schedule

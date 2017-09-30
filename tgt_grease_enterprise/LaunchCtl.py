@@ -1,6 +1,6 @@
 from tgt_grease_daemon.BaseCommand import GreaseDaemonCommand
 from tgt_grease_core_util.Database import Connection
-from Article14Section31 import Section31
+from .Article14Section31 import Section31
 from pprint import pprint
 import os
 import uuid

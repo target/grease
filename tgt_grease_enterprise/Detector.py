@@ -5,8 +5,8 @@ from tgt_grease_daemon.BaseCommand import GreaseDaemonCommand
 from tgt_grease_core_util.Database import Connection
 from tgt_grease_core_util.ImportTools import Importer
 
-import Detectors
-from Detectors import DetectorConfiguration
+from . import Detectors
+from .Detectors import DetectorConfiguration
 
 
 class Detector(GreaseDaemonCommand):

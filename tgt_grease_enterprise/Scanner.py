@@ -1,11 +1,11 @@
 import json
 import os
 from tgt_grease_daemon.BaseCommand import GreaseDaemonCommand
-from Detectors import DetectorConfiguration
+from .Detectors import DetectorConfiguration
 from tgt_grease_core_util import Database
 from tgt_grease_core_util.ImportTools import Importer
 from tgt_grease_enterprise import BaseSource
-from DeDuplification import SourceDeDuplify
+from .DeDuplification import SourceDeDuplify
 
 
 class ScanOnConfig(GreaseDaemonCommand):

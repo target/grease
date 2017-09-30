@@ -21,10 +21,10 @@ class Importer(object):
                 instance = req()
                 return instance
             except AttributeError as a:
-                self._log.error("Failed to create instance of class::[" + a.message + "]")
+                self._log.error("Failed to create instance of class::[" + str(a) + "]")
                 return None
         except ImportError as i:
-            self._log.error("Failed to Import Module::[" + i.message + "] [" +
+            self._log.error("Failed to Import Module::[" + str(i) + "] [" +
                             str(inspect.getouterframes(inspect.currentframe())[1])
                         + "]")
             return None

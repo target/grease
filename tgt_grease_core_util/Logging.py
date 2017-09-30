@@ -1,33 +1,27 @@
-from os import name as op_name
-from os import path
-from os import getenv
-from os import mkdir
+import os
 import time
 import logging
 from collections import deque
 from logging.config import fileConfig
 import random
 from .Notifier import Notifier
+from .Configuration import Configuration
 
 
 class Logger:
+
+    _config = Configuration()
 
     def __init__(self):
         self.start_time = time.time()
         self._messages = deque(())
         self._notifier = Notifier()
         # Setup Log Configuration
-        if type(getenv('GREASE_LOG_FILE')) == str and path.isfile(getenv('GREASE_LOG_FILE')):
-            fileConfig(getenv('GREASE_LOG_FILE'))
+        if type(self._config.get('GREASE_LOG_FILE')) == str and os.path.isfile(self._config.get('GREASE_LOG_FILE')):
+            fileConfig(self._config.get('GREASE_LOG_FILE'))
             self._logger = logging.getLogger('GREASE-' + str(random.random()))
         else:
-            if op_name == 'nt':
-                logDir = "C:\\grease"
-            else:
-                logDir = "/tmp/grease"
-            if not path.isdir(logDir):
-                mkdir(logDir)
-            logFilename = path.join(logDir, "grease.log") 
+            logFilename = self._config.grease_dir + self._config.fs_Separator + "grease.log"
             self._logger = logging.getLogger('GREASE-' + str(random.random()))
             self._logger.setLevel(logging.DEBUG)
             self._handler = logging.FileHandler(logFilename)
@@ -56,7 +50,7 @@ class Logger:
     def debug(self, message, verbose=False):
         # type: (str, bool) -> bool
         if verbose:
-            if not getenv('GREASE_VERBOSE_LOGGING'):
+            if not self._config.get('GREASE_VERBOSE_LOGGING'):
                 return True
             else:
                 message = "VERBOSE::" + str(message).encode('utf-8')

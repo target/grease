@@ -13,6 +13,7 @@ class Configuration(object):
     else:
         grease_dir = "/etc/grease"
     fs_Separator = os.sep
+    op_name = os.name
     grease_log = grease_dir + os.sep + "grease.log"
     identity_file = grease_dir + os.sep + "grease_identity.txt"
     identity = None

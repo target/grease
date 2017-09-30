@@ -1,4 +1,4 @@
-from BaseDetectorClass import BaseDetector
+from .BaseDetectorClass import BaseDetector
 
 
 # Basic Range Detector Config

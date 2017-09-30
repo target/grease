@@ -1,4 +1,4 @@
-from BaseDetectorClass import BaseDetector
+from .BaseDetectorClass import BaseDetector
 import re
 
 # Basic Regex Detector Config

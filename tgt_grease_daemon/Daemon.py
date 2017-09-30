@@ -143,7 +143,7 @@ class UnixDaemon(GreaseDaemonCommon):
         # if already in Daemon then ignore else start
         if pid:
             self._router._grease.message().info("Daemon already running")
-            print "Daemon Already In Service"
+            print("Daemon Already In Service")
             sys.exit(0)
         else:
             self.daemonize()

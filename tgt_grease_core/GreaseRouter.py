@@ -48,5 +48,5 @@ class Router(object):
         # type: (str, int) -> None
         """bad_exit is for when the router needs to bail out"""
         self._grease.message().error(message + '::' + str(list(self.args)))
-        print str(message)
+        print(str(message))
         sys.exit(int(status))

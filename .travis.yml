@@ -1,7 +1,5 @@
 language: python
 
-sudo: required
-
 python:
   - "2.7" #what we built it for originally
   - "nightly" #whatever 3.x is hemorrhaging-edge

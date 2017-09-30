@@ -11,7 +11,7 @@ class Configuration(object):
     if os.name == 'nt':
         grease_dir = "C:\\grease"
     else:
-        grease_dir = "/etc/grease"
+        grease_dir = "/var/tmp/grease"
     fs_Separator = os.sep
     op_name = os.name
     grease_log = grease_dir + os.sep + "grease.log"

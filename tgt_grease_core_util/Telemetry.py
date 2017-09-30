@@ -13,7 +13,7 @@ class Telemetry:
         self._is_daemon = is_daemon
         self._conn = Connection.create()
         if os.name == 'nt':
-            self._identity_file = "C:\grease\grease_identity.txt"
+            self._identity_file = "C:\\grease\\grease_identity.txt"
         else:
             self._identity_file = "/tmp/grease/grease_identity.txt"
         if os.path.isfile(self._identity_file):

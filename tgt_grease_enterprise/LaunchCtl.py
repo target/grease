@@ -13,7 +13,7 @@ class LaunchCtl(GreaseDaemonCommand):
         super(LaunchCtl, self).__init__()
         self.purpose = "Register machine with Job Control Database"
         if os.name == 'nt':
-            self._identity_file = "C:\grease\grease_identity.txt"
+            self._identity_file = "C:\\grease\\grease_identity.txt"
         else:
             self._identity_file = "/tmp/grease/grease_identity.txt"
         self._conn = Connection()

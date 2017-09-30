@@ -26,7 +26,7 @@ class Router(GreaseRouter.Router):
         self._total_normal_jobs = 0
         self._importer = Importer(self._get_ioc().message())
         if os.name == 'nt':
-            self._identity_file = "C:\grease\grease_identity.txt"
+            self._identity_file = "C:\\grease\\grease_identity.txt"
         else:
             self._identity_file = "/tmp/grease/grease_identity.txt"
         if os.path.isfile(self._identity_file):

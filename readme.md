@@ -3,6 +3,9 @@
 ###### Automation as a Service
 
 [![Build Status](https://travis-ci.org/target/grease.svg?branch=master)](https://travis-ci.org/target/grease)
+[![Current Version](https://badge.fury.io/py/tgt-grease.svg)](https://pypi.python.org/pypi/tgt-grease)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/target/grease/blob/master/LICENSE)
+
 
 ## GREASE
   * Guest

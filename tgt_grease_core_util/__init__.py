@@ -1,4 +1,4 @@
-from GreaseUtility import Grease
-from Database import Connection
-from ImportTools import Importer
-from Notifier import Notifier
+from .GreaseUtility import Grease
+from .Database import Connection, MongoConnection
+from .ImportTools import Importer
+from .Notifier import Notifier

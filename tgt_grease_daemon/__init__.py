@@ -1,2 +1,2 @@
-from GreaseRouter import Router
-from BaseCommand import GreaseDaemonCommand
+from .GreaseRouter import Router
+from .BaseCommand import GreaseDaemonCommand

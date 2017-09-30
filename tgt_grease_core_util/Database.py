@@ -2,6 +2,9 @@ import psycopg2
 import psycopg2.extras
 import os
 import pymongo
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from .Configuration import Configuration
 
 
 class Connection(object):
@@ -38,6 +41,33 @@ class Connection(object):
         else:
             self._cursor.execute(sql)
         return self._cursor.fetchall()
+
+
+class SQLAlchemyConnection(object):
+    """
+        Provide access to PostgreSQL database created via SQLAlchemy
+    """
+    _engine = None
+    _config = Configuration()
+    _session = None
+
+    def __init__(self):
+        self._engine = create_engine("{0}://{1}:{2}@{3}:{4}/{5}".format(
+            self._config.get("GREASE_DB_ENGINE", "postgresql"),
+            self._config.get("GREASE_DB_USER", "dev"),
+            self._config.get("GREASE_DB_PASSWORD", "dev"),
+            self._config.get("GREASE_DB_HOST", "localhost"),
+            self._config.get("GREASE_DB_PORT", "5432"),
+            self._config.get("GREASE_DB_DB", "")
+        ))
+        session = sessionmaker(bind=self._engine)
+        self._session = session()
+
+    def get_engine(self):
+        return self._engine
+
+    def get_session(self):
+        return self._session
 
 
 class MongoConnection(object):

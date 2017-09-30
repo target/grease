@@ -125,3 +125,14 @@ class ServerHealth(Base):
 
 def __main__():
     print("INSTALLING DATABASE")
+    from .Configuration import Configuration
+    from .Database import SQLAlchemyConnection
+    conf = Configuration()
+    sql = SQLAlchemyConnection()
+    print(
+        "INSTALLING DATABASE: [{0}] in location [{1}]".format(
+            conf.get('GREASE_DB_ENGINE'),
+            conf.get('GREASE_DB_HOST')
+        )
+    )
+    Base.metadata.create_all(sql.get_engine())

@@ -31,7 +31,8 @@ setup(
         'psycopg2',
         'requests',
         'pymongo',
-        'sqlalchemy'
+        'sqlalchemy',
+        'python-dotenv'
     ] + (
          ["pypiwin32"] if "nt" == os.name else []
         ),

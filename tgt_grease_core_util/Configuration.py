@@ -1,5 +1,5 @@
 import os
-import ConfigParser
+from dotenv import load_dotenv
 
 
 class Configuration(object):
@@ -12,6 +12,7 @@ class Configuration(object):
         grease_dir = "C:\\grease"
     else:
         grease_dir = "/etc/grease"
+    fs_Separator = os.sep
     grease_log = grease_dir + os.sep + "grease.log"
     identity_file = grease_dir + os.sep + "grease_identity.txt"
     identity = None
@@ -45,12 +46,10 @@ class Configuration(object):
 
     def _load_config(self):
         # type: () -> None
+        # load optional config file
+        if os.path.isfile(self.grease_dir + os.sep + "grease.conf"):
+            load_dotenv(self.grease_dir + os.sep + "grease.conf", override=True)
         # Load default Environment
         self._config = os.environ
         # Load Identity
         self.identity = self.node_identity()
-        # load optional config file
-        if os.path.isfile(self.grease_dir + os.sep + "grease.conf"):
-            parser = ConfigParser.ConfigParser()
-            parser.read(self.grease_dir + os.sep + "grease.conf")
-            self._config.update(parser)

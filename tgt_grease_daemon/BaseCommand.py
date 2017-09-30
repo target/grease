@@ -87,7 +87,7 @@ class GreaseDaemonThreadedCommand(GreaseDaemonCommand, threading.Thread):
     @abstractmethod
     def execute(self, context="{}"):
         """execute should be the primary logic for your execution"""
-        print "Hello"
+        self._ioc.message().debug("Hello World! I am Example Command", True)
         return True
 
     def run(self):

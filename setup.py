@@ -4,7 +4,7 @@ import os
 
 setup(
     name='tgt_grease',
-    version='1.1.0',
+    version='1.2.0',
     description='GRE Application Service Engine',
     long_description="Automation Engine for operations",
     classifiers=[
@@ -30,7 +30,8 @@ setup(
     install_requires=[
         'psycopg2',
         'requests',
-        'pymongo'
+        'pymongo',
+        'sqlalchemy'
     ] + (
          ["pypiwin32"] if "nt" == os.name else []
         ),

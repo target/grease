@@ -136,3 +136,53 @@ def __main__():
         )
     )
     Base.metadata.create_all(sql.get_engine())
+    print("STARTING BASE JOB IMPORTS")
+    Scanner = JobConfig(
+        command_module='enterprise',
+        command_name='engage_sensor_array',
+        is_threaded=False,
+        threads=1,
+        human_avg=1,
+        machine_avg=1,
+        tick=0
+    )
+    Detectors = JobConfig(
+        command_module='enterprise',
+        command_name='engage_lcars',
+        is_threaded=False,
+        threads=1,
+        human_avg=1,
+        machine_avg=1,
+        tick=0
+    )
+    Scheduler = JobConfig(
+        command_module='enterprise',
+        command_name='engage_warp',
+        is_threaded=False,
+        threads=1,
+        human_avg=1,
+        machine_avg=1,
+        tick=0
+    )
+    ClusterHealth = JobConfig(
+        command_module='enterprise',
+        command_name='system_heartbeat',
+        is_threaded=False,
+        threads=1,
+        human_avg=1,
+        machine_avg=1,
+        tick=0
+    )
+    print("ADDING SCANNER")
+    sql.get_session().add(Scanner)
+    sql.get_session().commit()
+    print("ADDING DETECTOR")
+    sql.get_session().add(Detectors)
+    sql.get_session().commit()
+    print("ADDING SCHEDULER")
+    sql.get_session().commit()
+    sql.get_session().add(Scheduler)
+    sql.get_session().commit()
+    print("ADDING CLUSTER MONITOR")
+    sql.get_session().add(ClusterHealth)
+    sql.get_session().commit()

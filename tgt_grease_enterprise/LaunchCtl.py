@@ -80,7 +80,7 @@ class LaunchCtl(GreaseDaemonCommand):
             # next lets register with the job control database
             sql = """
                 INSERT INTO
-                  job_servers
+                  grease.job_servers
                 (host_name, execution_environment, activation_time) 
                 VALUES 
                 (%s, %s, current_timestamp)

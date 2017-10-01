@@ -3,7 +3,7 @@ from tgt_grease_daemon import GreaseDaemonCommand
 from tgt_grease_core_util import Configuration
 from tgt_grease_core_util.ImportTools import Importer
 from tgt_grease_core_util import Logger
-from tgt_grease_core_util.RDBMSTypes import JobQueue, PersistentJobs
+from tgt_grease_core_util.RDBMSTypes import JobQueue, PersistentJobs, JobConfig
 from tgt_grease_core_util import SQLAlchemyConnection
 from datetime import datetime
 from . import Daemon
@@ -52,7 +52,7 @@ class DaemonRouter(GreaseRouter.Router):
         router.gateway()
 
     def gateway(self):
-        if len(self.args) <= 2:
+        if len(self.args) >= 1:
             if self._config.op_name == 'nt':
                 self.set_process(Daemon.WindowsService(sys.argv, self))
             else:
@@ -161,10 +161,57 @@ class DaemonRouter(GreaseRouter.Router):
         :return: list
         """
         # type: () -> list
-        return self._alchemyConnection\
+        # reset job queue metadata
+        self._job_metadata['normal'] = 0
+        self._job_metadata['persistent'] = 0
+        # create final result
+        final = []
+        # first find normal jobs
+        result = self._alchemyConnection\
             .get_session()\
-            .query(JobQueue)\
-            .filter(JobQueue.host_name == self._config.node_db_id())
+            .query(JobQueue, JobConfig)\
+            .filter(JobQueue.host_name == self._config.node_db_id())\
+            .filter(JobQueue.job_id == JobConfig.id)\
+            .all()
+        if not result:
+            # No Jobs Found
+            self._job_metadata['normal'] = 0
+        else:
+            # Walk the job list
+            for job in result:
+                self._job_metadata['normal'] += 1
+                final.append({
+                    'id': job.JobQueue.id,
+                    'module': job.JobConfig.command_module,
+                    'command': job.JobConfig.command_name,
+                    'request_time': datetime.utcnow(),
+                    'additional': job.JobQueue.additional,
+                    'tick': job.JobConfig.tick
+                })
+        # Now search for persistent jobs
+        result = self._alchemyConnection\
+            .get_session()\
+            .query(PersistentJobs, JobConfig)\
+            .filter(PersistentJobs.server_id == self._config.node_db_id())\
+            .filter(PersistentJobs.command == JobConfig.id)\
+            .filter(PersistentJobs.enabled == True)\
+            .all()
+        if not result:
+            # No Jobs Found
+            self._job_metadata['persistent'] = 0
+        else:
+            # Walk the job list
+            for job in result:
+                self._job_metadata['persistent'] += 1
+                final.append({
+                    'id': job.PersistentJobs.id,
+                    'module': job.JobConfig.command_module,
+                    'command': job.JobConfig.command_name,
+                    'request_time': datetime.utcnow(),
+                    'additional': job.PersistentJobs.additional,
+                    'tick': job.JobConfig.tick
+                })
+        return final
 
     # Class Property getter/setters/methods
 

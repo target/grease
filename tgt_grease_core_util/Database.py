@@ -4,7 +4,6 @@ import os
 import pymongo
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from .Configuration import Configuration
 
 
 class Connection(object):
@@ -48,10 +47,11 @@ class SQLAlchemyConnection(object):
         Provide access to PostgreSQL database created via SQLAlchemy
     """
     _engine = None
-    _config = Configuration()
+    _config = None
     _session = None
 
-    def __init__(self):
+    def __init__(self, config):
+        self._config = config
         self._engine = create_engine("{0}://{1}:{2}@{3}:{4}/{5}".format(
             self._config.get("GREASE_DB_ENGINE", "postgresql"),
             self._config.get("GREASE_DB_USER", "dev"),

@@ -128,7 +128,7 @@ def __main__():
     from .Configuration import Configuration
     from .Database import SQLAlchemyConnection
     conf = Configuration()
-    sql = SQLAlchemyConnection()
+    sql = SQLAlchemyConnection(conf)
     print(
         "INSTALLING DATABASE: [{0}] in location [{1}]".format(
             conf.get('GREASE_DB_ENGINE'),

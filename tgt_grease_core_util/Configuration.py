@@ -1,5 +1,7 @@
 import os
 from dotenv import load_dotenv
+from .RDBMSTypes import JobServers
+from .Database import SQLAlchemyConnection
 
 
 class Configuration(object):
@@ -40,6 +42,14 @@ class Configuration(object):
         else:
             identity = ""
         return identity
+
+    @staticmethod
+    def node_db_id():
+        # type: () -> int
+        identity = Configuration.node_identity()
+        conn = SQLAlchemyConnection()
+        result = conn.get_session().query(JobServers.id).filter(JobServers.host_name == identity).first()
+        return int(result)
 
     def get(self, key, default=None):
         # type: (str, str) -> object

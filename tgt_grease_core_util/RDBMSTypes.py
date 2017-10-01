@@ -43,8 +43,8 @@ class JobQueue(Base):
     request_time = Column(DateTime, nullable=False, default=datetime.utcnow)
     complete_time = Column(DateTime)
 
-    JobID = relationship("JobConfig", back_populates='job_config')
-    HostName = relationship("JobServer", back_populates='job_servers')
+    JobID = relationship(JobConfig, foreign_keys=[job_id])
+    HostName = relationship(JobServers, foreign_keys=[host_name])
 
     def __repr__(self):
         return str(self.id)
@@ -60,8 +60,8 @@ class JobTelemetry(Base):
     success = Column(Boolean, nullable=False, default=False)
     server_id = Column(Integer, ForeignKey('job_servers.id'))
 
-    CommandID = relationship("JobConfig", back_populates='job_config')
-    ServerID = relationship("JobServers", back_populates='job_servers')
+    CommandID = relationship(JobConfig, foreign_keys=[command])
+    ServerID = relationship(JobServers, foreign_keys=[server_id])
 
 
 class JobTelemetryDaemon(Base):
@@ -75,8 +75,8 @@ class JobTelemetryDaemon(Base):
     command_success = Column(Boolean, nullable=False, default=False)
     server_id = Column(Integer, ForeignKey('job_servers.id'))
 
-    CommandID = relationship("JobConfig", back_populates='job_config')
-    ServerID = relationship("JobServers", back_populates='job_servers')
+    CommandID = relationship(JobConfig, foreign_keys=[command])
+    ServerID = relationship(JobServers, foreign_keys=[server_id])
 
 
 class PersistentJobs(Base):
@@ -87,8 +87,8 @@ class PersistentJobs(Base):
     additional = Column(JSON, nullable=False)
     enabled = Column(Boolean, nullable=False, default=True)
 
-    CommandID = relationship("JobConfig", back_populates='job_config')
-    ServerID = relationship("JobServers", back_populates='job_servers')
+    CommandID = relationship(JobConfig, foreign_keys=[command])
+    ServerID = relationship(JobServers, foreign_keys=[server_id])
 
 
 class SourceData(Base):
@@ -106,9 +106,9 @@ class SourceData(Base):
     scheduling_end_time = Column(DateTime, default=datetime.utcnow)
     scheduling_complete = Column(Boolean, nullable=False, default=False)
 
-    SourceServer = relationship("JobServers", back_populates='job_servers')
-    DetectionServer = relationship("JobServers", back_populates='job_servers')
-    SchedulingServer = relationship("JobServers", back_populates='job_servers')
+    SourceServer = relationship(JobServers, foreign_keys=[source_server])
+    DetectionServer = relationship(JobServers, foreign_keys=[detection_server])
+    SchedulingServer = relationship(JobServers, foreign_keys=[scheduling_server])
 
 
 class ServerHealth(Base):
@@ -119,8 +119,8 @@ class ServerHealth(Base):
     check_time = Column(DateTime, nullable=False, default=datetime.utcnow)
     doctor = Column(Integer, ForeignKey('job_servers.id'), nullable=False)
 
-    ServerNode = relationship("JobServers", back_populates='job_servers')
-    DoctorNode = relationship("JobServers", back_populates='job_servers')
+    ServerNode = relationship(JobServers, foreign_keys=[server])
+    DoctorNode = relationship(JobServers, foreign_keys=[doctor])
 
 
 def __main__():

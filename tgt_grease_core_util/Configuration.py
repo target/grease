@@ -47,9 +47,9 @@ class Configuration(object):
     def node_db_id():
         # type: () -> int
         identity = Configuration.node_identity()
-        conn = SQLAlchemyConnection()
-        result = conn.get_session().query(JobServers.id).filter(JobServers.host_name == identity).first()
-        return int(result)
+        conn = SQLAlchemyConnection(Configuration())
+        result = conn.get_session().query(JobServers).filter(JobServers.host_name == identity).first()
+        return int(result.id)
 
     def get(self, key, default=None):
         # type: (str, str) -> object

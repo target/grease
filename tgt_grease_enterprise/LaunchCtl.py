@@ -8,7 +8,7 @@ import sys
 from psycopg2 import IntegrityError
 from tgt_grease_core_util import Configuration
 from tgt_grease_core_util import SQLAlchemyConnection
-from tgt_grease_core_util.RDBMSTypes import JobServers, ServerHealth, PersistentJobs, JobConfig
+from tgt_grease_core_util.RDBMSTypes import JobServers, ServerHealth, PersistentJobs, JobConfig, JobQueue
 from datetime import datetime
 from sqlalchemy import update
 
@@ -175,24 +175,21 @@ class LaunchCtl(GreaseDaemonCommand):
 
     def _action_list_job_schedule(self):
         # type: () -> bool
-        sql = """
-            SELECT
-              jq.id,
-              jc.command_module,
-              jc.command_name,
-              jq.additional,
-              jq.sn_ticket_number,
-              jq.run_priority
-            FROM
-              grease.job_queue jq
-            INNER JOIN grease.job_config jc ON (jc.id = jq.job_id)
-            INNER JOIN grease.job_servers js ON (js.host_name = jq.host_name)
-            WHERE
-              jq.completed is false AND 
-              jq.in_progress is false AND
-              js.host_name = %s
-        """
-        pprint(self._conn.query(sql, (file(self._identity_file, 'r').read().rstrip(),)))
+        result = self._sql.get_session().query(JobQueue)\
+            .filter(JobQueue.completed == False)\
+            .filter(JobQueue.in_progress == False)\
+            .filter(JobQueue.host_name == self._config.node_db_id())\
+            .all()
+        if not result:
+            pprint("No jobs scheduled on this node")
+            return True
+        for job in result:
+            pprint("Jobs in Queue:")
+            pprint("\t Module: [{0}] Command: [{1}] Additional: [{2}]".format(
+                job.JobConfig.command_module,
+                job.JobConfig.command_name,
+                job.JobQueue.additional
+            ))
         return True
 
     def _action_assign_task(self):

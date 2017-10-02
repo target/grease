@@ -1,25 +1,21 @@
 import datetime
 from abc import ABCMeta, abstractmethod
-from .Database import Connection
+from .Database import Connection, SQLAlchemyConnection
+from .RDBMSTypes import JobTelemetry, JobTelemetryDaemon
+from .Configuration import Configuration
 import os
 
 
 class Telemetry:
     __metaclass__ = ABCMeta
 
+    _config = Configuration()
+    _sql = SQLAlchemyConnection(_config)
+
     def __init__(self, command_obj, is_daemon=False):
         # type: (tgt_grease_core.GreaseCommand, bool) -> None
         self._command = command_obj
         self._is_daemon = is_daemon
-        self._conn = Connection.create()
-        if os.name == 'nt':
-            self._identity_file = "C:\\grease\\grease_identity.txt"
-        else:
-            self._identity_file = "/tmp/grease/grease_identity.txt"
-        if os.path.isfile(self._identity_file):
-            self._grease_identity = str(open(self._identity_file, 'r').read()).rstrip()
-        else:
-            self._grease_identity = ''
 
     @abstractmethod
     def store_result(self, success_state):
@@ -34,38 +30,16 @@ class Database(Telemetry):
 
     def store_result(self, success_state):
         # type: () -> None
-        if self._is_daemon:
-            sql = """
-            INSERT INTO
-               grease.job_telemetry
-            (command, success, effected, start_time, is_daemon, server_id)
-            VALUES
-            (%s, %s, %s, %s, %s, %s)
-        """
-            params = (
-                str(type(self._command).__name__),
-                str(success_state),
-                str(self._command.get_effected()),
-                str(datetime.datetime.fromtimestamp(self._command.get_start_time()).strftime('%Y-%m-%d %H:%M:%S')),
-                'true',
-                str(self._grease_identity)
-            )
-        else:
-            sql = """
-                    INSERT INTO
-                       grease.job_telemetry
-                    (command, success, effected, start_time, server_id)
-                    VALUES
-                    (%s, %s, %s, %s, %s)
-                """
-            params = (
-                str(type(self._command).__name__),
-                str(success_state),
-                str(self._command.get_effected()),
-                str(datetime.datetime.fromtimestamp(self._command.get_start_time()).strftime('%Y-%m-%d %H:%M:%S')),
-                self._grease_identity
-            )
-        self._conn.execute(sql, params)
+        telemetry = JobTelemetry(
+            command=self._command.get_exe_state().get('command_id', 1),
+            success=str(success_state),
+            affected=str(self._command.get_effected()),
+            start_time=str(datetime.datetime.fromtimestamp(self._command.get_start_time()).strftime('%Y-%m-%d %H:%M:%S')),
+            entry_time=datetime.datetime.utcnow(),
+            server_id=self._config.node_db_id()
+        )
+        self._sql.get_session().add(telemetry)
+        self._sql.get_session().commit()
 
 
 class DatabaseDaemon(Telemetry):
@@ -74,28 +48,14 @@ class DatabaseDaemon(Telemetry):
         super(DatabaseDaemon, self).__init__(Command_Obj, Command_Obj.get_exe_state()['isDaemon'])
 
     def store_result(self, success_state=None):
-        sql = """
-            INSERT INTO
-              grease.job_telemetry_daemon
-            (command_id, class_name, execution_success, command_success, effected, start_time, server_id)
-            VALUES
-            (
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                %s,
-                %s
-            )
-        """
-        params = (
-            self._command.get_exe_state()['command_id'],
-            str(type(self._command).__name__),
-            self._command.get_exe_state()['execution'],
-            self._command.get_exe_state()['result'],
-            self._command.get_effected(),
-            str(datetime.datetime.fromtimestamp(self._command.get_start_time()).strftime('%Y-%m-%d %H:%M:%S')),
-            self._grease_identity,
+        telemetry = JobTelemetryDaemon(
+            command=self._command.get_exe_state()['command_id'],
+            affected=self._command.get_effected(),
+            start_time=str(datetime.datetime.fromtimestamp(self._command.get_start_time()).strftime('%Y-%m-%d %H:%M:%S')),
+            execution_success=self._command.get_exe_state()['execution'],
+            command_success=self._command.get_exe_state()['result'],
+            entry_time=datetime.datetime.utcnow(),
+            server_id=self._config.node_db_id()
         )
-        self._conn.execute(sql, params)
+        self._sql.get_session().add(telemetry)
+        self._sql.get_session().commit()

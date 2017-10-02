@@ -32,6 +32,7 @@ class Detector(GreaseDaemonCommand):
             .all()
         if not result:
             self._ioc.message().debug("No sources scheduled for detection on this node")
+            return True
         else:
             # Now lets loop through
             self._ioc.message().debug("TOTAL SOURCE DOCUMENTS RETURNED: [{0}]".format(len(result)), True)

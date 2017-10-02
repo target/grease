@@ -28,7 +28,8 @@ class Detector(GreaseDaemonCommand):
             .filter(SourceData.detection_start_time == None)\
             .filter(SourceData.detection_end_time == None)\
             .filter(SourceData.detection_complete == False)\
-            .limit(15)
+            .limit(15)\
+            .all()
         if not result:
             self._ioc.message().debug("No sources scheduled for detection on this node")
         else:

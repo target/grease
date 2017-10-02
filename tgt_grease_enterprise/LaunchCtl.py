@@ -8,8 +8,9 @@ import sys
 from psycopg2 import IntegrityError
 from tgt_grease_core_util import Configuration
 from tgt_grease_core_util import SQLAlchemyConnection
-from tgt_grease_core_util.RDBMSTypes import JobServers
+from tgt_grease_core_util.RDBMSTypes import JobServers, ServerHealth
 from datetime import datetime
+from sqlalchemy import update
 
 
 class LaunchCtl(GreaseDaemonCommand):
@@ -123,46 +124,32 @@ class LaunchCtl(GreaseDaemonCommand):
         if len(sys.argv) >= 5:
             server = str(sys.argv[4])
         else:
-            if os.path.isfile(self._identity_file):
-                server = file(self._identity_file, 'r').read().rstrip()
+            if os.path.isfile(self._config.identity_file):
+                server = self._config.identity
             else:
                 print("Server has no registration record locally")
                 return True
         # get the server ID
-        sql = """
-            SELECT
-              id
-            FROM
-              grease.job_servers
-            WHERE
-              host_name = %s
-        """
-        result = self._conn.query(sql, (server,))
-        if len(result) > 0:
-            server_id = int(result[0][0])
+        result = self._sql.get_session().query(JobServers)\
+            .filter(JobServers.host_name == server)\
+            .first()
+        if result:
+            server_id = result.id
         else:
             print("Job Server Not In Registry")
             return True
         # clear the doctor from the server health table
-        sql = """
-            UPDATE
-              grease.server_health
-            SET
-              doctor = ''
-            WHERE
-              server_id = %s
-        """
-        self._conn.execute(sql, (server_id,))
+        stmt = update(ServerHealth)\
+            .where(ServerHealth.server == server_id)\
+            .values(doctor=None)
+        self._sql.get_session().execute(stmt)
+        self._sql.get_session().commit()
         # next reactivate it
-        sql = """
-            UPDATE
-              grease.job_servers
-            SET
-              active = TRUE
-            WHERE 
-              id = %s
-        """
-        self._conn.execute(sql, (server_id,))
+        stmt = update(JobServers)\
+            .where(JobServers.id == server_id)\
+            .values(active=True, activation_time=datetime.utcnow())
+        self._sql.get_session().execute(stmt)
+        self._sql.get_session().commit()
         return True
 
     def _action_list_persistent_jobs(self):

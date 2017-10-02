@@ -120,7 +120,7 @@ class ServerHealth(Base):
     server = Column(Integer, ForeignKey('job_servers.id'))
     job_hash = Column(String, nullable=False)
     check_time = Column(DateTime, nullable=False, default=datetime.utcnow)
-    doctor = Column(Integer, ForeignKey('job_servers.id'), nullable=False)
+    doctor = Column(Integer, ForeignKey('job_servers.id'), nullable=True)
 
     ServerNode = relationship(JobServers, foreign_keys=[server])
     DoctorNode = relationship(JobServers, foreign_keys=[doctor])

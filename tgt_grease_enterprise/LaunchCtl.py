@@ -6,16 +6,20 @@ import os
 import uuid
 import sys
 from psycopg2 import IntegrityError
+from tgt_grease_core_util import Configuration
+from tgt_grease_core_util import SQLAlchemyConnection
+from tgt_grease_core_util.RDBMSTypes import JobServers
+from datetime import datetime
 
 
 class LaunchCtl(GreaseDaemonCommand):
+
+    _config = Configuration()
+    _sql = SQLAlchemyConnection(_config)
+
     def __init__(self):
         super(LaunchCtl, self).__init__()
         self.purpose = "Register machine with Job Control Database"
-        if os.name == 'nt':
-            self._identity_file = "C:\\grease\\grease_identity.txt"
-        else:
-            self._identity_file = "/tmp/grease/grease_identity.txt"
         self._conn = Connection()
 
     def execute(self, context='{}'):
@@ -65,7 +69,7 @@ class LaunchCtl(GreaseDaemonCommand):
 
     def _action_register(self):
         # type: () -> bool
-        if os.path.isfile(self._identity_file):
+        if os.path.isfile(self._config.identity_file):
             self._ioc.message().warning("Machine Already Registered With Grease Job Control")
             return True
         else:
@@ -78,15 +82,15 @@ class LaunchCtl(GreaseDaemonCommand):
             else:
                 exe_env = 'general'
             # next lets register with the job control database
-            sql = """
-                INSERT INTO
-                  grease.job_servers
-                (host_name, execution_environment, activation_time) 
-                VALUES 
-                (%s, %s, current_timestamp)
-            """
-            self._conn.execute(sql, (str(uid), exe_env,))
-            file(self._identity_file, 'w').write(str(uid))
+            server = JobServers(
+                host_name=str(uid),
+                execution_environment=exe_env,
+                active=True,
+                activation_time=datetime.utcnow()
+            )
+            self._sql.get_session().add(server)
+            self._sql.get_session().commit()
+            file(self._config.identity_file, 'w').write(str(uid))
             return True
 
     def _action_cull_server(self):

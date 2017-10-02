@@ -246,17 +246,11 @@ class LaunchCtl(GreaseDaemonCommand):
 
     def _action_enable_detection(self):
         # type: () -> bool
-        if os.path.isfile(self._identity_file):
-            server = file(self._identity_file, 'r').read().rstrip()
-            sql = """
-                UPDATE
-                  grease.job_servers
-                SET
-                  detector = TRUE 
-                WHERE
-                  host_name = %s
-            """
-            self._conn.execute(sql, (server,))
+        if os.path.isfile(self._config.identity_file):
+            server = self._config.identity
+            stmt = update(JobServers).where(JobServers.host_name == server).values(detector=True)
+            self._sql.get_session().execute(stmt)
+            self._sql.get_session().commit()
             print("DETECTION ENABLED")
             return True
         else:
@@ -265,17 +259,11 @@ class LaunchCtl(GreaseDaemonCommand):
 
     def _action_enable_scheduling(self):
         # type: () -> bool
-        if os.path.isfile(self._identity_file):
-            server = file(self._identity_file, 'r').read().rstrip()
-            sql = """
-                UPDATE
-                  grease.job_servers
-                SET
-                  scheduler = TRUE 
-                WHERE
-                  host_name = %s
-            """
-            self._conn.execute(sql, (server,))
+        if os.path.isfile(self._config.identity_file):
+            server = self._config.identity
+            stmt = update(JobServers).where(JobServers.host_name == server).values(scheduler=True)
+            self._sql.get_session().execute(stmt)
+            self._sql.get_session().commit()
             print("SCHEDULING ENABLED")
             return True
         else:

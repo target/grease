@@ -222,7 +222,6 @@ class LaunchCtl(GreaseDaemonCommand):
             print("TASK ASSIGNED")
             return True
 
-
     def _action_remove_task(self):
         # type: () -> bool
         if os.path.isfile(self._identity_file):

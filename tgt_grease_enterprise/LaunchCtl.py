@@ -9,7 +9,7 @@ from tgt_grease_core_util import Configuration
 from tgt_grease_core_util import SQLAlchemyConnection
 from tgt_grease_core_util.RDBMSTypes import JobServers, ServerHealth, PersistentJobs, JobConfig, JobQueue
 from datetime import datetime
-from sqlalchemy import update
+from sqlalchemy import update, and_
 
 
 class LaunchCtl(GreaseDaemonCommand):
@@ -224,75 +224,25 @@ class LaunchCtl(GreaseDaemonCommand):
 
     def _action_remove_task(self):
         # type: () -> bool
-        if os.path.isfile(self._identity_file):
-            server = file(self._identity_file, 'r').read().rstrip()
+        if os.path.isfile(self._config.identity_file):
+            server = self._config.node_db_id()
         else:
             print("Server has no registration record locally")
             return True
         if len(sys.argv) >= 5:
             new_task = str(sys.argv[4])
-            sql = """
-                SELECT
-                  jc.id
-                FROM 
-                  grease.job_config jc
-                WHERE
-                  jc.command_name = %s
-            """
-            result = self._conn.query(sql, (new_task,))
-            if len(result) > 0:
-                sql = """
-                    UPDATE
-                      grease.persistant_jobs
-                    SET
-                      enabled = FALSE 
-                    WHERE
-                      host_name = %s
-                      AND job_id = %s
-                """
-                self._conn.execute(sql, (server, result[0][0],))
-                print("TASK UNASSIGNED")
+            result = self._sql.get_session().query(JobConfig).filter(JobConfig.command_name == new_task).first()
+            if not result:
+                print("Failed to find job in configuration tables")
                 return True
             else:
-                print("ERR: TASK NOT FOUND IN DATABASE")
-                sql = """
-                    SELECT
-                      jc.command_name
-                    FROM 
-                      grease.job_config jc
-                    INNER JOIN grease.persistant_jobs pj ON (pj.job_id = jc.id)
-                    WHERE
-                      pj.host_name = %s 
-                      AND pj.enabled is True
-                    ORDER BY 
-                      jc.command_module,
-                      jc.command_name
-                """
-                result = self._conn.query(sql, (server,))
-                print("ERR: AVAILABLE COMMANDS:")
-                for row in result:
-                    print(" - " + row[0])
-                return False
-        else:
-            print("ERR: NO TASK PROVIDED TO BE ASSIGNED TO THIS SERVER")
-            sql = """
-                SELECT
-                  jc.command_name
-                FROM 
-                  grease.job_config jc
-                INNER JOIN grease.persistant_jobs pj ON (pj.job_id = jc.id)
-                WHERE
-                  pj.host_name = %s 
-                  AND pj.enabled is True
-                ORDER BY 
-                  jc.command_module,
-                  jc.command_name
-            """
-            result = self._conn.query(sql, (server,))
-            print("ERR: AVAILABLE COMMANDS:")
-            for row in result:
-                    print(" - " + row[0])
-            return False
+                stmt = update(PersistentJobs)\
+                    .where(and_(PersistentJobs.server_id == server, PersistentJobs.command == result.id))\
+                    .values(enabled=False)
+                self._sql.get_session().execute(stmt)
+                self._sql.get_session().commit()
+                print("TASK UNASSIGNED")
+                return True
 
     def _action_enable_detection(self):
         # type: () -> bool

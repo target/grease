@@ -196,63 +196,31 @@ class LaunchCtl(GreaseDaemonCommand):
         # type: () -> bool
         if len(sys.argv) >= 5:
             new_task = str(sys.argv[4])
-            if os.path.isfile(self._identity_file):
-                server = file(self._identity_file, 'r').read().rstrip()
-            else:
-                print("Server has no registration record locally")
-                return True
-            sql = """
-                SELECT
-                  jc.id
-                FROM 
-                  grease.job_config jc
-                WHERE
-                  jc.command_name = %s
-            """
-            result = self._conn.query(sql, (new_task,))
-            if len(result) > 0:
-                sql = """
-                    INSERT INTO
-                      grease.persistant_jobs
-                    (host_name, job_id)
-                    VALUES 
-                    (%s, %s)
-                """
-                self._conn.execute(sql, (server, result[0][0],))
-                print("TASK ASSIGNED")
-                return True
-            else:
-                print("ERR: TASK NOT FOUND IN DATABASE")
-                sql = """
-                    SELECT
-                      jc.command_name
-                    FROM 
-                      grease.job_config jc
-                    ORDER BY 
-                      jc.command_module,
-                      jc.command_name
-                """
-                result = self._conn.query(sql)
-                print("ERR: AVAILABLE COMMANDS:")
-                for row in result:
-                    print(" - " + row[0])
-                return False
         else:
-            print("ERR: NO TASK PROVIDED TO BE ASSIGNED TO THIS SERVER")
-            sql = """
-                SELECT
-                  jc.command_name
-                FROM 
-                  grease.job_config jc
-                ORDER BY 
-                  jc.command_module,
-                  jc.command_name
-            """
-            result = self._conn.query(sql)
-            print("ERR: AVAILABLE COMMANDS:")
-            for row in result:
-                    print(" - " + row[0])
-            return False
+            print("Please provide a command to schedule to node")
+            return True
+        result = self._sql.get_session().query(JobConfig)\
+            .filter(JobConfig.command_name == new_task)\
+            .first()
+        if not result:
+            pprint("Command not found! Available Commands:")
+            result = self._sql.get_session().query(JobConfig).all()
+            if not result:
+                pprint("NO JOBS CONFIGURED IN DB")
+            else:
+                for job in result:
+                    pprint("\t{0}".format(job.command_name))
+            return True
+        else:
+            pJob = PersistentJobs(
+                server_id=self._config.node_db_id(),
+                command=result.id
+            )
+            self._sql.get_session().add(pJob)
+            self._sql.get_session().commit()
+            print("TASK ASSIGNED")
+            return True
+
 
     def _action_remove_task(self):
         # type: () -> bool

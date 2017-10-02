@@ -99,23 +99,17 @@ class LaunchCtl(GreaseDaemonCommand):
         if len(sys.argv) >= 5:
             server = str(sys.argv[4])
         else:
-            if os.path.isfile(self._identity_file):
-                server = file(self._identity_file, 'r').read().rstrip()
+            if os.path.isfile(self._config.identity_file):
+                server = self._config.identity
             else:
                 print("Server has no registration record locally")
                 return True
         # get the server ID
-        sql = """
-            SELECT
-              id
-            FROM
-              grease.job_servers
-            WHERE
-              host_name = %s
-        """
-        result = self._conn.query(sql, (server,))
-        if len(result) > 0:
-            server_id = int(result[0][0])
+        result = self._sql.get_session().query(JobServers)\
+            .filter(JobServers.host_name == server)\
+            .first()
+        if result:
+            server_id = result.id
             instance = Section31()
             instance._declare_doctor(server_id)
             instance._cull_server(server_id)

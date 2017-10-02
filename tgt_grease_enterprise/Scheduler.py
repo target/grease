@@ -1,6 +1,8 @@
 from tgt_grease_daemon.BaseCommand import GreaseDaemonCommand
 from tgt_grease_enterprise.Detectors import DetectorConfiguration
 from tgt_grease_core_util import Database
+from tgt_grease_core_util import SQLAlchemyConnection, Configuration
+from tgt_grease_core_util.RDBMSTypes import JobServers, SourceData, JobConfig
 import json
 import hashlib
 
@@ -10,29 +12,29 @@ class Scheduler(GreaseDaemonCommand):
         super(Scheduler, self).__init__()
         self._scanner_config = DetectorConfiguration.ConfigurationLoader()
         self._conn = Database.Connection()
+        self._config = Configuration()
+        self._sql = SQLAlchemyConnection(self._config)
 
     def execute(self, context='{}'):
         # Lets go get the jobs needing to be scheduled by this server
-        sql = """
-            SELECT
-              sq.id,
-              sq.source_data
-            FROM
-              grease.scheduling_queue sq
-            INNER JOIN grease.job_servers js ON (js.id = sq.job_server)
-            WHERE
-              js.host_name = %s AND
-              sq.completed = false AND
-              sq.in_progress = false
-            LIMIT 15
-        """
-        schedules = self._conn.query(sql, (self._grease_identity,))
-        for schedule in schedules:
-            # lets own this
-            self._take_ownership(schedule[0])
-            self._schedule_via_sources(schedule[1])
-            # lets finish out
-            self._complete(schedule[0])
+        result = self._sql.get_session().query(SourceData, JobServers)\
+            .filter(SourceData.scheduling_server == JobServers.id)\
+            .filter(JobServers.id == self._config.node_db_id())\
+            .filter(SourceData.detection_start_time == None)\
+            .filter(SourceData.detection_end_time == None)\
+            .filter(SourceData.detection_complete == False)\
+            .limit(15)\
+            .all()
+        if not result:
+            self._ioc.message().debug("No Sources to schedule")
+            return True
+        else:
+            for schedule in result:
+                # lets own this
+                self._take_ownership(schedule.SourceData.id)
+                self._schedule_via_sources(schedule.SourceData.source_data)
+                # lets finish out
+                self._complete(schedule.SourceData.id)
         return True
 
     def _schedule_via_sources(self, sources):

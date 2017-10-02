@@ -1,11 +1,12 @@
 from tgt_grease_core import GreaseRouter
 from tgt_grease_daemon import GreaseDaemonCommand
 from tgt_grease_core_util import Configuration
-from tgt_grease_core_util.ImportTools import Importer
+from tgt_grease_core_util import Importer
 from tgt_grease_core_util import Logger
 from tgt_grease_core_util.RDBMSTypes import JobQueue, PersistentJobs, JobConfig
 from tgt_grease_core_util import SQLAlchemyConnection
 from datetime import datetime
+from tgt_grease_core_util import Grease
 from . import Daemon
 import os
 import sys
@@ -33,6 +34,7 @@ class DaemonRouter(GreaseRouter.Router):
     _importer = Importer(_log)
     _job_metadata = {'normal': 0, 'persistent': 0}
     _alchemyConnection = SQLAlchemyConnection(_config)
+    _ioc = Grease()
 
     def __init__(self):
         GreaseRouter.Router.__init__(self)
@@ -100,6 +102,11 @@ class DaemonRouter(GreaseRouter.Router):
             # Final Clean Up
             self.inc_runs()
             self.inc_throttle_tick()
+            self.have_we_moved_forward_in_time()
+            # After all this check for new windows services
+            if os.name == 'nt':
+                # Block .5ms to listen for exit sig
+                rc = win32event.WaitForSingleObject(self.get_process().hWaitStop, 50)
 
     def process_queue(self):
         # type: () -> bool
@@ -152,7 +159,98 @@ class DaemonRouter(GreaseRouter.Router):
                         self.add_job_to_completed_queue(0)
             # now lets loop through the job schedule
             for job in job_queue:
-                self._log.debug(str(job))
+                # start class up
+                command = self._importer.load(job['module'], job['command'])
+                # ensure we got back the correct type
+                if not command:
+                    self._log.error(
+                        "Failed To Load Command [{0}] of [{1}]"
+                        .format(
+                            job['command'],
+                            job['module']
+                        )
+                    )
+                    del command
+                    continue
+                if not isinstance(command, GreaseDaemonCommand):
+                    self._log.error("Instance created was not of type GreaseDaemonCommand")
+                    del command
+                    continue
+                if not job['persistent']:
+                    # This is an on-demand job
+                    # we just need to execute it
+                    self.mark_job_in_progress(job['id'])
+                    command.attempt_execution(job['id'], job['additional'])
+                else:
+                    # This is a persistent job
+                    if self.has_job_run(job['id']):
+                        # Job Already Executed
+                        continue
+                    else:
+                        if job['tick'] % self.get_current_run_second() == 0:
+                            command.attempt_execution(job['id'], job['additional'])
+                            self.add_job_to_completed_queue(job['id'])
+                        else:
+                            # continue because we are not in the tick required
+                            continue
+                # Report Telemetry
+                self._ioc.run_daemon_telemetry(command)
+                if command.get_exe_state()['result']:
+                    # job success
+                    if job['persistent']:
+                        self._log.debug("Persistent Job Successful [{0}]".format(job['id']))
+                    else:
+                        self._log.debug("On-Demand Job Successful [{0}]".format(job['id']))
+                        self.mark_job_complete(job['id'])
+                else:
+                    # job failed
+                    if job['persistent']:
+                        self._log.debug("Persistent Job Failed [{0}]".format(job['id']))
+                    else:
+                        self._log.debug("On-Demand Job Failed [{0}]".format(job['id']))
+                        self.mark_job_failure(job['id'], job['failures'])
+                command.__del__()
+                del command
+        return True
+
+    def mark_job_in_progress(self, job_id):
+        """
+        sets job as in progress
+        :param job_id: int
+        :return: bool
+        """
+        stmt = JobQueue\
+            .update()\
+            .where(JobQueue.id == job_id)\
+            .values(in_progress=True, completed=False)
+        self._alchemyConnection.get_session().execute(stmt)
+        return True
+
+    def mark_job_complete(self, job_id):
+        """
+        Complete a successful job
+        :param job_id: int
+        :return: bool
+        """
+        stmt = JobQueue\
+            .update()\
+            .where(JobQueue.id == job_id)\
+            .values(in_progress=False, completed=True, complete_time=datetime.now())
+        self._alchemyConnection.get_session().execute(stmt)
+        return True
+
+    def mark_job_failure(self, job_id, current_failures):
+        """
+        Fail a job
+        :param job_id: int
+        :param current_failures: int
+        :return: bool
+        """
+        stmt = JobQueue\
+            .update()\
+            .where(JobQueue.id == job_id)\
+            .values(in_progress=False, completed=False, complete_time=None, failures=current_failures + 1)
+        self._alchemyConnection.get_session().execute(stmt)
         return True
 
     def get_assigned_jobs(self):
@@ -172,6 +270,7 @@ class DaemonRouter(GreaseRouter.Router):
             .query(JobQueue, JobConfig)\
             .filter(JobQueue.host_name == self._config.node_db_id())\
             .filter(JobQueue.job_id == JobConfig.id)\
+            .filter(JobQueue.failures < 6)\
             .all()
         if not result:
             # No Jobs Found
@@ -186,7 +285,9 @@ class DaemonRouter(GreaseRouter.Router):
                     'command': job.JobConfig.command_name,
                     'request_time': datetime.utcnow(),
                     'additional': job.JobQueue.additional,
-                    'tick': job.JobConfig.tick
+                    'tick': job.JobConfig.tick,
+                    'persistent': False,
+                    'failures': job.JobQueue.failures
                 })
         # Now search for persistent jobs
         result = self._alchemyConnection\
@@ -209,7 +310,9 @@ class DaemonRouter(GreaseRouter.Router):
                     'command': job.JobConfig.command_name,
                     'request_time': datetime.utcnow(),
                     'additional': job.PersistentJobs.additional,
-                    'tick': job.JobConfig.tick
+                    'tick': job.JobConfig.tick,
+                    'persistent': True,
+                    'failures': 0
                 })
         return final
 

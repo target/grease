@@ -42,6 +42,7 @@ class JobQueue(Base):
     job_id = Column(Integer, ForeignKey('job_config.id'))
     request_time = Column(DateTime, nullable=False, default=datetime.utcnow)
     complete_time = Column(DateTime)
+    failures = Column(Integer, nullable=False, default=0)
 
     JobID = relationship(JobConfig, foreign_keys=[job_id])
     HostName = relationship(JobServers, foreign_keys=[host_name])

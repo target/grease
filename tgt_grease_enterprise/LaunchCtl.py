@@ -8,7 +8,7 @@ import sys
 from psycopg2 import IntegrityError
 from tgt_grease_core_util import Configuration
 from tgt_grease_core_util import SQLAlchemyConnection
-from tgt_grease_core_util.RDBMSTypes import JobServers, ServerHealth
+from tgt_grease_core_util.RDBMSTypes import JobServers, ServerHealth, PersistentJobs, JobConfig
 from datetime import datetime
 from sqlalchemy import update
 
@@ -154,21 +154,23 @@ class LaunchCtl(GreaseDaemonCommand):
 
     def _action_list_persistent_jobs(self):
         # type: () -> bool
-        sql = """
-            SELECT
-              jc.command_module,
-              jc.command_name,
-              jc.tick,
-              pj.additional 
-            FROM
-              grease.persistant_jobs pj
-            INNER JOIN grease.job_config jc ON (jc.id = pj.job_id)
-            INNER JOIN grease.job_servers js ON (js.host_name = pj.host_name)
-            WHERE
-              pj.enabled is true AND 
-              js.host_name = %s
-        """
-        pprint(self._conn.query(sql, (file(self._identity_file, 'r').read().rstrip(),)))
+        result = self._sql.get_session().query(PersistentJobs, JobConfig)\
+            .filter(PersistentJobs.command == JobConfig.id)\
+            .filter(PersistentJobs.enabled == True)\
+            .filter(PersistentJobs.server_id == self._config.node_db_id())\
+            .all()
+        if not result:
+            pprint("No Scheduled Jobs on this node")
+        else:
+            for job in result:
+                pprint(
+                    "\tPackage: [{0}] Job: [{1}] Tick: [{2}] Additional: [{3}]".format(
+                        job.JobConfig.command_module,
+                        job.JobConfig.command_name,
+                        job.JobConfig.tick,
+                        job.PersistentJob.additional
+                    )
+                )
         return True
 
     def _action_list_job_schedule(self):

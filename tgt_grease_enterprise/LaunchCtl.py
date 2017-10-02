@@ -272,17 +272,11 @@ class LaunchCtl(GreaseDaemonCommand):
 
     def _action_disable_detection(self):
         # type: () -> bool
-        if os.path.isfile(self._identity_file):
-            server = file(self._identity_file, 'r').read().rstrip()
-            sql = """
-                UPDATE
-                  grease.job_servers
-                SET
-                  detector = FALSE 
-                WHERE
-                  host_name = %s
-            """
-            self._conn.execute(sql, (server,))
+        if os.path.isfile(self._config.identity_file):
+            server = self._config.identity
+            stmt = update(JobServers).where(JobServers.host_name == server).values(detector=False)
+            self._sql.get_session().execute(stmt)
+            self._sql.get_session().commit()
             print("DETECTION DISABLED")
             return True
         else:
@@ -291,17 +285,11 @@ class LaunchCtl(GreaseDaemonCommand):
 
     def _action_disable_scheduling(self):
         # type: () -> bool
-        if os.path.isfile(self._identity_file):
-            server = file(self._identity_file, 'r').read().rstrip()
-            sql = """
-                UPDATE
-                  grease.job_servers
-                SET
-                  scheduler = FALSE
-                WHERE
-                  host_name = %s
-            """
-            self._conn.execute(sql, (server,))
+        if os.path.isfile(self._config.identity_file):
+            server = self._config.identity
+            stmt = update(JobServers).where(JobServers.host_name == server).values(scheduler=False)
+            self._sql.get_session().execute(stmt)
+            self._sql.get_session().commit()
             print("SCHEDULING DISABLED")
             return True
         else:
@@ -313,26 +301,21 @@ class LaunchCtl(GreaseDaemonCommand):
         if len(sys.argv) >= 6:
             new_task_module = str(sys.argv[4])
             new_task_class = str(sys.argv[5])
-            # get max key
-            sql = """
-                select max(id) from grease.job_config
-            """
-            max_id = self._conn.query(sql)
-            if len(max_id) > 0:
-                max_id = int(max_id[0][0]) + 1
-            else:
-                max_id = 1
-            try:
-                sql = """
-                    INSERT INTO
-                      grease.job_config
-                    (id, command_module, command_name) 
-                    VALUES 
-                    (%s, %s, %s)
-                """
-                self._conn.execute(sql, (max_id, new_task_module, new_task_class,))
-            except IntegrityError:
-                print("COMMAND ALREADY ENTERED UNDER THAT NAME")
+            # ensure a job doesn't exist
+            result = self._sql.get_session().query(JobConfig)\
+                .filter(JobConfig.command_module == new_task_module)\
+                .filter(JobConfig.command_name == new_task_class)\
+                .all()
+            if result:
+                print("Job already exists")
+                return True
+            NewJob = JobConfig(
+                command_module=new_task_module,
+                command_name=new_task_class
+            )
+            self._sql.get_session().add(NewJob)
+            self._sql.get_session().commit()
+            print("Job Created")
             return True
         else:
             print("ERR: INVALID SUBCOMMAND::MUST PASS MODULE AND CLASS NAME")

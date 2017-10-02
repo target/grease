@@ -35,6 +35,7 @@ class JobQueue(Base):
     __tablename__ = "job_queue"
     id = Column(Integer, primary_key=True, nullable=False)
     host_name = Column(Integer, ForeignKey('job_servers.id'))
+    ticket = Column(String)
     additional = Column(JSON, nullable=False)
     run_priority = Column(Integer, nullable=False, default=10)
     in_progress = Column(Boolean, nullable=False, default=False)

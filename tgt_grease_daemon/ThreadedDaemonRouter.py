@@ -5,6 +5,7 @@ from tgt_grease_core_util import Importer
 from tgt_grease_core_util import Logger
 from tgt_grease_core_util.RDBMSTypes import JobQueue, PersistentJobs, JobConfig
 from tgt_grease_core_util import SQLAlchemyConnection
+from sqlalchemy import update
 from datetime import datetime
 from tgt_grease_core_util import Grease
 from . import Daemon
@@ -219,11 +220,9 @@ class DaemonRouter(GreaseRouter.Router):
         :param job_id: int
         :return: bool
         """
-        stmt = JobQueue\
-            .update()\
-            .where(JobQueue.id == job_id)\
-            .values(in_progress=True, completed=False)
+        stmt = update(JobQueue).where(JobQueue.id == job_id).values(in_progress=True, completed=False)
         self._alchemyConnection.get_session().execute(stmt)
+        self._alchemyConnection.get_session().commit()
         return True
 
     def mark_job_complete(self, job_id):
@@ -232,11 +231,9 @@ class DaemonRouter(GreaseRouter.Router):
         :param job_id: int
         :return: bool
         """
-        stmt = JobQueue\
-            .update()\
-            .where(JobQueue.id == job_id)\
-            .values(in_progress=False, completed=True, complete_time=datetime.now())
+        stmt = update(JobQueue).where(JobQueue.id == job_id).values(in_progress=False, completed=True, complete_time=datetime.now())
         self._alchemyConnection.get_session().execute(stmt)
+        self._alchemyConnection.get_session().commit()
         return True
 
     def mark_job_failure(self, job_id, current_failures):
@@ -246,11 +243,11 @@ class DaemonRouter(GreaseRouter.Router):
         :param current_failures: int
         :return: bool
         """
-        stmt = JobQueue\
-            .update()\
+        stmt = update(JobQueue)\
             .where(JobQueue.id == job_id)\
             .values(in_progress=False, completed=False, complete_time=None, failures=current_failures + 1)
         self._alchemyConnection.get_session().execute(stmt)
+        self._alchemyConnection.get_session().commit()
         return True
 
     def get_assigned_jobs(self):

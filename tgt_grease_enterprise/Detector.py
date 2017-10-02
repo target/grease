@@ -1,100 +1,83 @@
 import json
 from collections import defaultdict
-
+from tgt_grease_core_util.RDBMSTypes import JobServers, SourceData
 from tgt_grease_daemon.BaseCommand import GreaseDaemonCommand
 from tgt_grease_core_util.Database import Connection
 from tgt_grease_core_util.ImportTools import Importer
-
+from tgt_grease_core_util import SQLAlchemyConnection, Configuration
 from . import Detectors
 from .Detectors import DetectorConfiguration
+from sqlalchemy import update
+from datetime import datetime
 
 
 class Detector(GreaseDaemonCommand):
     def __init__(self):
         super(Detector, self).__init__()
+        self._config = Configuration()
+        self._sql = SQLAlchemyConnection(self._config)
         self._conn = Connection()
         self._excelsior_config = DetectorConfiguration.ConfigurationLoader()
         self._importer = Importer(self._ioc.message())
 
     def execute(self, context='{}'):
         # first lets see if we have some stuff to parse
-        sql = """
-            SELECT
-              sf.id,
-              sf.source_document,
-              sf.scanner
-            FROM
-              grease.source_file sf
-            INNER JOIN grease.job_servers js ON (js.id = sf.job_server)
-            WHERE
-              js.host_name = %s AND
-              sf.completed = FALSE AND
-              sf.in_progress = FALSE
-            LIMIT 15
-        """
-        result = self._conn.query(sql, (self._grease_identity,))
-        # Now lets loop through
-        self._ioc.message().debug("TOTAL SOURCE DOCUMENTS RETURNED: [{0}]".format(str(len(result))), True)
-        for source in result:
-            # first claiming them as ours then parsing them
-            self._take_ownership(source[0])
-            # now lets parse the sources
-            self._ioc.message().debug("PROCESSING SOURCE ID: [{0}]".format(str(source[0])), True)
-            parsed_source = self._parse_source(source[1], self._excelsior_config.get_scanner_config(source[2]))
-            self._complete(source[0])
-            # now lets assign this parsed source out
-            if self._schedule_scheduling(parsed_source, source[2]):
-                self._ioc.message().info("Successfully Scheduled Parsed Source ID: [" + str(source[0]) + "]")
-                continue
-            else:
-                self._reverse(source[0])
-                self._ioc.message().error("Failed To Schedule Parsed Source ID: [" + str(source[0]) + "]")
-                continue
+        result = self._sql.get_session().query(SourceData, JobServers)\
+            .filter(JobServers.id == SourceData.detection_server)\
+            .filter(SourceData.detection_start_time == None)\
+            .filter(SourceData.detection_end_time == None)\
+            .filter(SourceData.detection_complete == False)\
+            .limit(15)
+        if not result:
+            self._ioc.message().debug("No sources scheduled for detection on this node")
+        else:
+            # Now lets loop through
+            self._ioc.message().debug("TOTAL SOURCE DOCUMENTS RETURNED: [{0}]".format(len(result)), True)
+            for source in result:
+                # first claiming them as ours then parsing them
+                self._take_ownership(source.SourceData.id)
+                # now lets parse the sources
+                self._ioc.message().debug("PROCESSING SOURCE ID: [{0}]".format(source.SourceData.id), True)
+                parsed_source = self._parse_source(
+                    source.SourceData.source_data,
+                    self._excelsior_config.get_scanner_config(source.SourceData.scanner)
+                )
+                self._complete(source.SourceData.id)
+                # now lets assign this parsed source out
+                if self._schedule_scheduling(source.SourceData.id, parsed_source):
+                    self._ioc.message().info("Successfully Scheduled Parsed Source ID: [" + str(source.SourceData.id) + "]")
+                    continue
+                else:
+                    self._reverse(source.SourceData.id)
+                    self._ioc.message().error("Failed To Schedule Parsed Source ID: [" + str(source.SourceData.id) + "]")
+                    continue
         return True
 
     def _take_ownership(self, source_file_id):
         # type: (int) -> None
-        sql = """
-            UPDATE
-              grease.source_file
-            SET
-              in_progress = true,
-              pick_up_time = current_timestamp
-            WHERE
-              id = %s
-        """
+        stmt = update(SourceData)\
+            .where(SourceData.id == source_file_id)\
+            .values(detection_start_time=datetime.utcnow())
+        self._sql.get_session().execute(stmt)
+        self._sql.get_session().commit()
         self._ioc.message().debug("TAKING OWNERSHIP OF SOURCE ID: [{0}]".format(source_file_id), True)
-        self._conn.execute(sql, (source_file_id,))
 
     def _complete(self, source_file_id):
         # type: (int) -> None
-        sql = """
-            UPDATE
-              grease.source_file
-            SET
-              completed = TRUE,
-              in_progress = false,
-              completed_time = current_timestamp
-            WHERE
-              id = %s
-        """
+        stmt = update(SourceData)\
+            .where(SourceData.id == source_file_id)\
+            .values(detection_complete=True, detection_end_time=datetime.utcnow())
+        self._sql.get_session().execute(stmt)
+        self._sql.get_session().commit()
         self._ioc.message().debug("COMPLETING SOURCE ID: [{0}]".format(source_file_id), True)
-        self._conn.execute(sql, (source_file_id,))
 
     def _reverse(self, source_file_id):
-        sql = """
-            UPDATE
-              grease.source_file
-            SET
-              in_progress = FALSE,
-              completed = FALSE,
-              pick_up_time = null,
-              completed_time = null
-            WHERE
-              id = %s
-        """
+        stmt = update(SourceData)\
+            .where(SourceData.id == source_file_id)\
+            .values(detection_start_time=None, detection_end_time=None, detection_complete=None)
+        self._sql.get_session().execute(stmt)
+        self._sql.get_session().commit()
         self._ioc.message().debug("SOURCE FILE FAILED SCHEDULING REVERSING FILE: [{0}]".format(source_file_id), True)
-        self._conn.execute(sql, (source_file_id,))
 
     def _parse_source(self, sources, rule_set):
         # type: (dict, list) -> dict
@@ -204,55 +187,33 @@ class Detector(GreaseDaemonCommand):
         # return final for usage elsewhere
         return final_source_data
 
-    def _schedule_scheduling(self, sources, scanner):
+    def _schedule_scheduling(self, source_id, updated_source):
         # type: (dict, str)  -> bool
         # first lets get applicable servers to run detectors
         # lets only get the least assigned server so we can round robin
-        sql = """
-            SELECT
-              js.id,
-              js.jobs_assigned
-            FROM
-              grease.job_servers js
-            WHERE
-              js.scheduler = TRUE AND 
-              js.active is true
-            ORDER BY 
-              js.jobs_assigned
-            LIMIT 1
-        """
-        server = self._conn.query(sql)
-        if len(server) <= 0:
-            self._ioc.message().error("Failed to get server to schedule Scheduling!::Dropping Scan")
-            return False
+        result = self._sql.get_session()\
+            .query(JobServers)\
+            .filter(JobServers.scheduler == True)\
+            .filter(JobServers.active == True)\
+            .order_by(JobServers.jobs_assigned)\
+            .first()
+        if not result:
+            self._ioc.message().error("Failed to find active scheduling server!::Dropping Scan")
         else:
-            server = server[0]
-        # Now lets insert the sources for the determined server to work
-        sql = """
-            INSERT INTO
-              grease.scheduling_queue
-            (source_data, job_server, scanner) 
-            VALUES 
-            (
-              %s,
-              %s,
-              %s
+            server = result.id
+            # Now lets update the sources for the determined server to work
+            stmt = update(SourceData)\
+                .where(SourceData.id == source_id)\
+                .values(scheduling_server=server, source_data=updated_source)
+            self._sql.get_session().execute(stmt)
+            self._sql.get_session().commit()
+            # finally lets ensure we account for the fact our server is going to do
+            # that job and increment the assignment counter
+            stmt = update(JobServers).where(JobServers.id == server).values(jobs_assigned=result.jobs_assigned + 1)
+            self._sql.get_session().execute(stmt)
+            self._sql.get_session().commit()
+            self._ioc.message().debug(
+                "DETECTION FOR SOURCE COMPLETE::SCHEDULED TO SERVER [{0}]".format(server),
+                True
             )
-        """
-        self._conn.execute(sql, (json.dumps(sources), server[0], scanner,))
-        # finally lets ensure we account for the fact our server is going to do
-        # that job and increment the assignment counter
-        sql = """
-            UPDATE
-              grease.job_servers
-            SET
-              jobs_assigned = %s
-            WHERE
-              id = %s
-        """
-        self._conn.execute(sql, (int(server[1]) + 1, server[0],))
-        self._ioc.message().debug(
-            "DETECTION FOR SOURCE COMPLETE::SCHEDULED TO SERVER [{0}]".format(str(server[0])),
-            True
-        )
-        return True
+            return True

@@ -2,16 +2,21 @@ import json
 import os
 from tgt_grease_daemon.BaseCommand import GreaseDaemonCommand
 from .Detectors import DetectorConfiguration
-from tgt_grease_core_util import Database
+from tgt_grease_core_util import Database, SQLAlchemyConnection, Configuration
 from tgt_grease_core_util.ImportTools import Importer
+from tgt_grease_core_util.RDBMSTypes import JobServers, SourceData
 from tgt_grease_enterprise import BaseSource
 from .DeDuplification import SourceDeDuplify
+from datetime import datetime
+from sqlalchemy import update
 
 
 class ScanOnConfig(GreaseDaemonCommand):
     def __init__(self):
         super(ScanOnConfig, self).__init__()
+        self._config = Configuration()
         self._conn = Database.Connection()
+        self._sql = SQLAlchemyConnection(self._config)
         self._scanner_config = DetectorConfiguration.ConfigurationLoader()
         self._context = '{}'
         self._source_data = {}
@@ -92,51 +97,34 @@ class ScanOnConfig(GreaseDaemonCommand):
         # type: (dict, str)  -> bool
         # first lets get applicable servers to run detectors
         # lets only get the least assigned server so we can round robin
-        sql = """
-            SELECT
-              js.id,
-              js.jobs_assigned
-            FROM
-              grease.job_servers js
-            WHERE
-              js.detector = TRUE AND 
-              js.active is true
-            ORDER BY 
-              js.jobs_assigned
-            LIMIT 1
-        """
-        server = self._conn.query(sql)
-        if len(server) <= 0:
-            self._ioc.message().error("Failed to get server to schedule sources for!::Dropping Scan")
+        result = self._sql.get_session()\
+            .query(JobServers)\
+            .filter(JobServers.detector == True)\
+            .filter(JobServers.active == True)\
+            .order_by(JobServers.jobs_assigned)\
+            .first()
+        if not result:
+            self._ioc.message().error("Failed to find detection server! dropping scan!")
             return False
         else:
-            server = server[0]
+            server = result.id
         # Now lets insert the sources for the determined server to work
-        sql = """
-            INSERT INTO
-              grease.source_file
-            (source_document, job_server, scanner) 
-            VALUES 
-            (
-              %s,
-              %s,
-              %s
-            )
-        """
-        self._conn.execute(sql, (json.dumps(sources), server[0], scanner,))
+        source = SourceData(
+            source_data=sources,
+            source_server=self._config.node_db_id(),
+            detection_server=server,
+            scanner=scanner,
+            created_time=datetime.utcnow()
+        )
+        self._sql.get_session().add(source)
+        self._sql.get_session().commit()
         # finally lets ensure we account for the fact our server is going to do
         # that job and increment the assignment counter
-        sql = """
-            UPDATE
-              grease.job_servers
-            SET
-              jobs_assigned = %s
-            WHERE
-              id = %s
-        """
+        stmt = update(JobServers).where(JobServers.id == server).values(jobs_assigned=result.jobs_assigned + 1)
+        self._sql.get_session().execute(stmt)
+        self._sql.get_session().commit()
         self._ioc.message().debug(
-            "SOURCE SCHEDULED FOR DETECTION [{0}] TO SERVER [{1}]".format(str(scanner), str(server[0])),
+            "SOURCE SCHEDULED FOR DETECTION [{0}] TO SERVER [{1}]".format(str(scanner), str(server)),
             True
         )
-        self._conn.execute(sql, (int(server[1]) + 1, server[0],))
         return True

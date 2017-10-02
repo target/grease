@@ -71,6 +71,7 @@ class LaunchCtl(GreaseDaemonCommand):
         # type: () -> bool
         if os.path.isfile(self._config.identity_file):
             self._ioc.message().warning("Machine Already Registered With Grease Job Control")
+            print("Machine Already Registered With Grease Job Control")
             return True
         else:
             # we need to register

@@ -24,6 +24,7 @@ class Detector(GreaseDaemonCommand):
         # first lets see if we have some stuff to parse
         result = self._sql.get_session().query(SourceData, JobServers)\
             .filter(JobServers.id == SourceData.detection_server)\
+            .filter(JobServers.id == self._config.node_db_id())\
             .filter(SourceData.detection_start_time == None)\
             .filter(SourceData.detection_end_time == None)\
             .filter(SourceData.detection_complete == False)\

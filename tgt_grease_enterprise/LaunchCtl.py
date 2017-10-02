@@ -1,7 +1,6 @@
 from tgt_grease_daemon.BaseCommand import GreaseDaemonCommand
 from tgt_grease_core_util.Database import Connection
 from .Article14Section31 import Section31
-from pprint import pprint
 import os
 import uuid
 import sys
@@ -160,10 +159,10 @@ class LaunchCtl(GreaseDaemonCommand):
             .filter(PersistentJobs.server_id == self._config.node_db_id())\
             .all()
         if not result:
-            pprint("No Scheduled Jobs on this node")
+            print("No Scheduled Jobs on this node")
         else:
             for job in result:
-                pprint(
+                print(
                     "\tPackage: [{0}] Job: [{1}] Tick: [{2}] Additional: [{3}]".format(
                         job.JobConfig.command_module,
                         job.JobConfig.command_name,
@@ -181,11 +180,11 @@ class LaunchCtl(GreaseDaemonCommand):
             .filter(JobQueue.host_name == self._config.node_db_id())\
             .all()
         if not result:
-            pprint("No jobs scheduled on this node")
+            print("No jobs scheduled on this node")
             return True
         for job in result:
-            pprint("Jobs in Queue:")
-            pprint("\t Module: [{0}] Command: [{1}] Additional: [{2}]".format(
+            print("Jobs in Queue:")
+            print("\t Module: [{0}] Command: [{1}] Additional: [{2}]".format(
                 job.JobConfig.command_module,
                 job.JobConfig.command_name,
                 job.JobQueue.additional
@@ -203,18 +202,20 @@ class LaunchCtl(GreaseDaemonCommand):
             .filter(JobConfig.command_name == new_task)\
             .first()
         if not result:
-            pprint("Command not found! Available Commands:")
+            print("Command not found! Available Commands:")
             result = self._sql.get_session().query(JobConfig).all()
             if not result:
-                pprint("NO JOBS CONFIGURED IN DB")
+                print("NO JOBS CONFIGURED IN DB")
             else:
                 for job in result:
-                    pprint("\t{0}".format(job.command_name))
+                    print("{0}".format(job.command_name))
             return True
         else:
             pJob = PersistentJobs(
                 server_id=self._config.node_db_id(),
-                command=result.id
+                command=result.id,
+                additional={},
+                enabled=True
             )
             self._sql.get_session().add(pJob)
             self._sql.get_session().commit()

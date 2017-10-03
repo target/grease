@@ -47,7 +47,10 @@ class GreaseDaemonCommand(GreaseCommand):
             self.set_exe_state('result', bool(self.execute(context)))
             self.set_exe_state('execution', True)
         except:
-            self._ioc.message().error("Command Execution Failed! Exception Raised: [{0}]".format(str(sys.exc_info())))
+            self._ioc.message().error(
+                "Command Execution Failed! Exception Raised: [{0}]".format(str(sys.exc_info())),
+                hipchat=True
+            )
             return
         return
 

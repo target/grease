@@ -7,12 +7,13 @@ import random
 from .Notifier import Notifier
 from .Configuration import Configuration
 # POSTGRES
-from psycopg2 import OperationalError
+from sqlalchemy.exc import OperationalError
 
 
 class Logger:
 
     _config = Configuration()
+    _unregisteredMode = False
 
     def __init__(self):
         self.start_time = time.time()
@@ -51,10 +52,15 @@ class Logger:
 
     def dress_message(self, message, level, hipchat, verbose, message_color='gray'):
         # type: (str, str, bool, bool, str) -> str
-        try:
-            message = "[{0}]::".format(self._config.node_db_id()) + message
-        except OperationalError:
-            message = "[{0}]::".format("NULL") + message
+        if self._unregisteredMode:
+            message = "[{0}]::".format(self._config.identity) + message
+        else:
+            try:
+                message = "[{0}]::".format(self._config.node_db_id()) + message
+            except OperationalError:
+                self._unregisteredMode = True
+                self.critical("CANNOT CONNECT TO DATABASE")
+                message = "[{0}]::".format(self._config.identity) + message
         if verbose:
             message = "VERBOSE::" + str(message).encode('utf-8')
         message = str(message).encode('utf-8')
@@ -74,7 +80,6 @@ class Logger:
     def info(self, message, verbose=False, hipchat=False):
         # type: (str, bool, bool) -> bool
         message = self.dress_message(message, "INFO", hipchat, verbose, 'purple')
-        message = "[{0}]::".format(self._config.node_db_id()) + message
         if verbose:
             if not self._config.get('GREASE_VERBOSE_LOGGING'):
                 return True

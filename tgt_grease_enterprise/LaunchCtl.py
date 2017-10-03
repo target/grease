@@ -1,15 +1,14 @@
 from tgt_grease_daemon.BaseCommand import GreaseDaemonCommand
-from tgt_grease_core_util.Database import Connection
 from .Article14Section31 import Section31
 import os
 import uuid
 import sys
-from psycopg2 import IntegrityError
 from tgt_grease_core_util import Configuration
 from tgt_grease_core_util import SQLAlchemyConnection
 from tgt_grease_core_util.RDBMSTypes import JobServers, ServerHealth, PersistentJobs, JobConfig, JobQueue
 from datetime import datetime
 from sqlalchemy import update, and_
+from tgt_grease_core_util import RDBMSTypes
 
 
 class LaunchCtl(GreaseDaemonCommand):
@@ -20,7 +19,6 @@ class LaunchCtl(GreaseDaemonCommand):
     def __init__(self):
         super(LaunchCtl, self).__init__()
         self.purpose = "Register machine with Job Control Database"
-        self._conn = Connection()
 
     def execute(self, context='{}'):
         if len(sys.argv) >= 4:
@@ -51,6 +49,8 @@ class LaunchCtl(GreaseDaemonCommand):
             return bool(self._action_disable_scheduling())
         elif action == 'create-job':
             return bool(self._action_create_job())
+        elif action == 'load-db':
+            return bool(self._action_load_db())
         else:
             print("ERR: Invalid Command Expected: ")
             print("\tregister")
@@ -65,6 +65,7 @@ class LaunchCtl(GreaseDaemonCommand):
             print("\tdisable-detection")
             print("\tdisable-scheduling")
             print("\tcreate-job")
+            print("\tload-db")
             return True
 
     def _action_register(self):
@@ -320,3 +321,8 @@ class LaunchCtl(GreaseDaemonCommand):
         else:
             print("ERR: INVALID SUBCOMMAND::MUST PASS MODULE AND CLASS NAME")
             return False
+
+    def _action_load_db(self):
+        print("LOADING DB")
+        RDBMSTypes.__main__()
+        return True

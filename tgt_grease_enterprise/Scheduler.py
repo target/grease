@@ -211,7 +211,7 @@ class Scheduler(GreaseDaemonCommand):
         self._sql.get_session().add(JobToQueue)
         self._sql.get_session().commit()
         # that job and increment the assignment counter
-        stmt = update(JobServers).where(JobServers.id == server_info).values(jobs_assigned=result.jobs_assigned + 1)
+        stmt = update(JobServers).where(JobServers.id == server_info).values(jobs_assigned=int(JobServers.jobs_assigned) + 1)
         self._sql.get_session().execute(stmt)
         self._sql.get_session().commit()
         self._ioc.message().debug(

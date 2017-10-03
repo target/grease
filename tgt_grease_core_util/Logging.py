@@ -55,6 +55,8 @@ class Logger:
             else:
                 message = "VERBOSE::" + str(message).encode('utf-8')
         message = str(message).encode('utf-8')
+        if hipchat:
+            self._notifier.send_hipchat_message(message)
         self._messages.append(('DEBUG', time.time(), message))
         return self._logger.debug(message)
 
@@ -66,6 +68,8 @@ class Logger:
             else:
                 message = "VERBOSE::" + str(message).encode('utf-8')
         message = str(message).encode('utf-8')
+        if hipchat:
+            self._notifier.send_hipchat_message(message)
         self._messages.append(('INFO', time.time(), message))
         return self._logger.info(message)
 
@@ -77,6 +81,8 @@ class Logger:
             else:
                 message = "VERBOSE::" + str(message).encode('utf-8')
         message = str(message).encode('utf-8')
+        if hipchat:
+            self._notifier.send_hipchat_message(message)
         self._messages.append(('WARNING', time.time(), message))
         return self._logger.warning(message)
 
@@ -88,6 +94,8 @@ class Logger:
             else:
                 message = "VERBOSE::" + str(message).encode('utf-8')
         message = str(message).encode('utf-8')
+        if hipchat:
+            self._notifier.send_hipchat_message(message)
         self._messages.append(('ERROR', time.time(), message))
         return self._logger.error(message)
 

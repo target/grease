@@ -47,8 +47,8 @@ class Logger:
         self._messages = deque(())
         return messages
 
-    def debug(self, message, verbose=False):
-        # type: (str, bool) -> bool
+    def debug(self, message, verbose=False, hipchat=False):
+        # type: (str, bool, bool) -> bool
         if verbose:
             if not self._config.get('GREASE_VERBOSE_LOGGING'):
                 return True
@@ -58,20 +58,35 @@ class Logger:
         self._messages.append(('DEBUG', time.time(), message))
         return self._logger.debug(message)
 
-    def info(self, message):
-        # type: (str) -> bool
+    def info(self, message, verbose=False, hipchat=False):
+        # type: (str, bool, bool) -> bool
+        if verbose:
+            if not self._config.get('GREASE_VERBOSE_LOGGING'):
+                return True
+            else:
+                message = "VERBOSE::" + str(message).encode('utf-8')
         message = str(message).encode('utf-8')
         self._messages.append(('INFO', time.time(), message))
         return self._logger.info(message)
 
-    def warning(self, message):
-        # type: (str) -> bool
+    def warning(self, message, verbose=False, hipchat=False):
+        # type: (str, bool, bool) -> bool
+        if verbose:
+            if not self._config.get('GREASE_VERBOSE_LOGGING'):
+                return True
+            else:
+                message = "VERBOSE::" + str(message).encode('utf-8')
         message = str(message).encode('utf-8')
         self._messages.append(('WARNING', time.time(), message))
         return self._logger.warning(message)
 
-    def error(self, message):
-        # type: (str) -> bool
+    def error(self, message, verbose=False, hipchat=False):
+        # type: (str, bool, bool) -> bool
+        if verbose:
+            if not self._config.get('GREASE_VERBOSE_LOGGING'):
+                return True
+            else:
+                message = "VERBOSE::" + str(message).encode('utf-8')
         message = str(message).encode('utf-8')
         self._messages.append(('ERROR', time.time(), message))
         return self._logger.error(message)

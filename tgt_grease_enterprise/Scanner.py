@@ -85,11 +85,11 @@ class ScanOnConfig(GreaseDaemonCommand):
                 if self._schedule_detection(source, scanner):
                     self._ioc.message().info("Detector job scheduled from scanner: [" + str(scanner) + "]")
                 else:
-                    self._ioc.message().error("Failed to schedule source detection for [" + str(scanner) + "]")
+                    self._ioc.message().error("Failed to schedule source detection for [" + str(scanner) + "]", hipchat=True)
                 del parser
             else:
                 # else something went haywire pls feel free to fix your config
-                self._ioc.message().error("Invalid Scanner In Configurations: [" + str(scanner) + "]")
+                self._ioc.message().error("Invalid Scanner In Configurations: [" + str(scanner) + "]", hipchat=True)
 
     def _schedule_detection(self, sources, scanner):
         # type: (dict, str)  -> bool
@@ -102,7 +102,7 @@ class ScanOnConfig(GreaseDaemonCommand):
             .order_by(JobServers.jobs_assigned)\
             .first()
         if not result:
-            self._ioc.message().error("Failed to find detection server! dropping scan!")
+            self._ioc.message().error("Failed to find detection server! dropping scan!", hipchat=True)
             return False
         else:
             server = result.id

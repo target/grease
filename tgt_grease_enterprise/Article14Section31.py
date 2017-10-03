@@ -239,13 +239,14 @@ class Section31(GreaseDaemonCommand):
         else:
             # there are no other execution servers for that environment
             self._ioc.message().error(
-                "No other valid execution environment for jobs assigned to server [{0}]".format(server_id)
+                "No other valid execution environment for jobs assigned to server [{0}]".format(server_id),
+                hipchat=True
             )
             return False
 
     def _cull_server(self, server_id):
         # type: (int) -> None
-        self._ioc.message().warning("DEACTIVATING SERVER [{0}]".format(server_id))
+        self._ioc.message().warning("DEACTIVATING SERVER [{0}]".format(server_id), hipchat=True)
         # first lets deactivate the job server
         self._deactivate_server(server_id)
         # next we need to check for any jobs scheduled to that instance and reassign them
@@ -350,11 +351,11 @@ class Section31(GreaseDaemonCommand):
             # oh crap we have no job detector servers left alive
             # Me IRL Right now:
             # https://68.media.tumblr.com/e59c51080e14cee56ce93416cf8055c8/tumblr_mzncp3nYXh1syplf0o1_250.gif
-            # TODO: Alert via side channel
             self._ioc.message().error(
                 "NO AVAILABLE DETECTOR SERVER CANNOT REASSIGN JOBS [{0}] FROM SERVER [{1}]".format(
                     source_file_ids, origin_server
-                )
+                ),
+                hipchat=True
             )
             # bail because we have no one to reassign to
             return
@@ -380,11 +381,11 @@ class Section31(GreaseDaemonCommand):
         else:
             # oh crap we have no job scheduler servers left alive
             # Me IRL Right now: https://media.giphy.com/media/HUkOv6BNWc1HO/giphy.gif
-            # TODO: Alert via side channel
             self._ioc.message().error(
                 "NO AVAILABLE SCHEDULER SERVER CANNOT REASSIGN JOBS [{0}] FROM SERVER [{1}]".format(
                     schedule_ids, origin_server
-                )
+                ),
+                hipchat=True
             )
             # bail because we have no one to reassign to
             return

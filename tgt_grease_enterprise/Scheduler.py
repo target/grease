@@ -29,7 +29,7 @@ class Scheduler(GreaseDaemonCommand):
             .limit(15)\
             .all()
         if not result:
-            self._ioc.message().debug("No Sources to schedule")
+            self._ioc.message().debug("No Sources to schedule", True)
             return True
         else:
             for schedule in result:
@@ -138,7 +138,7 @@ class Scheduler(GreaseDaemonCommand):
                                 continue
                             else:
                                 # we failed to assign the ticket
-                                self._ioc.message().debug(
+                                self._ioc.message().warning(
                                     "JOB EXECUTION SCHEDULING FAILED [{0}] FOR RULE [{1}]".format(
                                         str(index),
                                         str(rule_name)
@@ -188,7 +188,7 @@ class Scheduler(GreaseDaemonCommand):
             .order_by(JobServers.jobs_assigned)\
             .first()
         if not result:
-            self._ioc.message().error("No Execution Environments Found For Job: [" + job + "]")
+            self._ioc.message().error("No Execution Environments Found For Job: [" + job + "]", hipchat=True)
             return False
         server_info = result.id
         result = self._sql.get_session().query(JobConfig)\
@@ -197,7 +197,7 @@ class Scheduler(GreaseDaemonCommand):
             .first()
         if not result:
             self._ioc.message().error(
-                "No Jobs Configured For Requested Job: [" + job + "] for package: [" + package + "]"
+                "No Jobs Configured For Requested Job: [" + job + "] for package: [" + package + "]", hipchat=True
             )
             return False
         job_id = result.id

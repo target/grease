@@ -109,7 +109,10 @@ class SourceDeDuplify(object):
         # create the auto del index if it doesnt already exist
         self._collection.create_index([('expiry', 1), ('expireAfterSeconds', 1)])
         self._collection.create_index([('max_expiry', 1), ('expireAfterSeconds', 1)])
-        self._logger.debug("DEDUPLICATION COMPLETE::REMAINING OBJECTS [" + str(len(final) - 1) + "]")
+        remaining = len(final) - 1
+        if remaining < 0:
+            remaining = 0
+        self._logger.debug("DEDUPLICATION COMPLETE::REMAINING OBJECTS [" + str(remaining) + "]")
         return final
 
     def get_field_score(self, source_name, document, field_set):

@@ -56,7 +56,7 @@ class Logger:
                 message = "VERBOSE::" + str(message).encode('utf-8')
         message = str(message).encode('utf-8')
         if hipchat:
-            self._notifier.send_hipchat_message(message)
+            self._notifier.send_hipchat_message("DEBUG::" + message, message_color='gray')
         self._messages.append(('DEBUG', time.time(), message))
         return self._logger.debug(message)
 
@@ -69,7 +69,7 @@ class Logger:
                 message = "VERBOSE::" + str(message).encode('utf-8')
         message = str(message).encode('utf-8')
         if hipchat:
-            self._notifier.send_hipchat_message(message)
+            self._notifier.send_hipchat_message("INFO::" + message, message_color='purple')
         self._messages.append(('INFO', time.time(), message))
         return self._logger.info(message)
 
@@ -82,7 +82,7 @@ class Logger:
                 message = "VERBOSE::" + str(message).encode('utf-8')
         message = str(message).encode('utf-8')
         if hipchat:
-            self._notifier.send_hipchat_message(message)
+            self._notifier.send_hipchat_message("WARNING::" + message, message_color='yellow')
         self._messages.append(('WARNING', time.time(), message))
         return self._logger.warning(message)
 
@@ -95,7 +95,7 @@ class Logger:
                 message = "VERBOSE::" + str(message).encode('utf-8')
         message = str(message).encode('utf-8')
         if hipchat:
-            self._notifier.send_hipchat_message(message)
+            self._notifier.send_hipchat_message("ERROR::" + message, message_color='red')
         self._messages.append(('ERROR', time.time(), message))
         return self._logger.error(message)
 
@@ -103,12 +103,12 @@ class Logger:
         # type: (str) -> bool
         message = str(message).encode('utf-8')
         self._messages.append(('CRITICAL', time.time(), message))
-        self._notifier.send_hipchat_message(message)
+        self._notifier.send_hipchat_message("CRITICAL::" + message, message_color='red')
         return self._logger.critical(message)
 
     def exception(self, message):
         # type: (str) -> bool
         message = str(message).encode('utf-8')
         self._messages.append(('EXCEPTION', time.time(), message))
-        self._notifier.send_hipchat_message(message)
+        self._notifier.send_hipchat_message("EXCEPTION::" + message, message_color='red')
         return self._logger.exception(message)

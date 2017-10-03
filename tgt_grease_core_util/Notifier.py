@@ -21,10 +21,11 @@ class Notifier:
         self._auth_token = token
         self._hipchat_room = room
 
-    def send_hipchat_message(self, message):
+    def send_hipchat_message(self, message, message_color='gray'):
         url = self._base_url + self._hipchat_room + '/notification?auth_token=' + self._auth_token 
         request_data = {
-            'message': message
+            'message': message,
+            'color': message_color
         }
 
         try:

@@ -76,7 +76,11 @@ class UnixDaemon(GreaseDaemonCommon):
                 # Exit Parent Now
                 sys.exit(0)
         except OSError as e:
-            self._router._log.exception("Fork Failure [1]: {0} ({1})".format(e.errno, e.strerror))
+            self._router._log.critical("Fork Failure [1]: {0} ({1}) Host: [{2}]".format(
+                e.errno,
+                e.strerror,
+                self._config.node_identity()
+            ))
             self._router.bad_exit("Fork Failure: {0} ({1})".format(e.errno, e.strerror), 2)
         # Decouple from the parent process env data
         os.chdir("/")
@@ -89,7 +93,11 @@ class UnixDaemon(GreaseDaemonCommon):
                 # Exit Parent Now
                 sys.exit(0)
         except OSError as e:
-            self._router._log.exception("Fork Failure [2]: {0} ({1})".format(e.errno, e.strerror))
+            self._router._log.critical("Fork Failure [1]: {0} ({1}) Host: [{2}]".format(
+                e.errno,
+                e.strerror,
+                self._config.node_identity()
+            ))
             self._router.bad_exit("Fork Failure: {0} ({1})".format(e.errno, e.strerror), 2)
         # Finally lets write our pid file
         # Register Our Daemon

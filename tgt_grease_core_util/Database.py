@@ -42,10 +42,6 @@ class Connection(object):
         return self._cursor.fetchall()
 
 
-SAEngine = None
-SAsession = None
-
-
 class SQLAlchemyConnection(object):
     """
         Provide access to PostgreSQL database created via SQLAlchemy
@@ -55,10 +51,9 @@ class SQLAlchemyConnection(object):
     _session = None
 
     def __init__(self, config):
-        global SAEngine
         self._config = config
-        if SAEngine is None:
-            SAEngine = create_engine("{0}://{1}:{2}@{3}:{4}/{5}".format(
+        if self._engine is None:
+            self._engine = create_engine("{0}://{1}:{2}@{3}:{4}/{5}".format(
                 self._config.get("GREASE_DB_ENGINE", "postgresql"),
                 self._config.get("GREASE_DB_USER", "dev"),
                 self._config.get("GREASE_DB_PASSWORD", "dev"),
@@ -67,18 +62,14 @@ class SQLAlchemyConnection(object):
                 self._config.get("GREASE_DB_DB", "")
             ))
 
-    @staticmethod
-    def get_engine():
-        global SAEngine
-        return SAEngine
+    def get_engine(self):
+        return self._engine
 
-    @staticmethod
-    def get_session():
-        global SAsession
-        if not SAsession:
-            session = sessionmaker(bind=SQLAlchemyConnection.get_engine())
-            SAsession = session()
-        return SAsession
+    def get_session(self):
+        if not self._session:
+            session = sessionmaker(bind=self.get_engine())
+            self._session = session()
+        return self._session
 
 
 class MongoConnection(object):

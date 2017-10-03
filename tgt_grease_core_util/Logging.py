@@ -6,6 +6,8 @@ from logging.config import fileConfig
 import random
 from .Notifier import Notifier
 from .Configuration import Configuration
+# POSTGRES
+from psycopg2 import OperationalError
 
 
 class Logger:
@@ -47,74 +49,64 @@ class Logger:
         self._messages = deque(())
         return messages
 
+    def dress_message(self, message, level, hipchat, verbose, message_color='gray'):
+        # type: (str, str, bool, bool, str) -> str
+        try:
+            message = "[{0}]::".format(self._config.node_db_id()) + message
+        except OperationalError:
+            message = "[{0}]::".format("NULL") + message
+        if verbose:
+            message = "VERBOSE::" + str(message).encode('utf-8')
+        message = str(message).encode('utf-8')
+        if hipchat:
+            self._notifier.send_hipchat_message("{0}::".format(level) + message, message_color)
+        return message
+
     def debug(self, message, verbose=False, hipchat=False):
         # type: (str, bool, bool) -> bool
-        message = "[{0}]::".format(self._config.node_db_id()) + message
+        message = self.dress_message(message, "DEBUG", hipchat, verbose, 'gray')
         if verbose:
             if not self._config.get('GREASE_VERBOSE_LOGGING'):
                 return True
-            else:
-                message = "VERBOSE::" + str(message).encode('utf-8')
-        message = str(message).encode('utf-8')
-        if hipchat:
-            self._notifier.send_hipchat_message("DEBUG::" + message, message_color='gray')
         self._messages.append(('DEBUG', time.time(), message))
         return self._logger.debug(message)
 
     def info(self, message, verbose=False, hipchat=False):
         # type: (str, bool, bool) -> bool
+        message = self.dress_message(message, "INFO", hipchat, verbose, 'purple')
         message = "[{0}]::".format(self._config.node_db_id()) + message
         if verbose:
             if not self._config.get('GREASE_VERBOSE_LOGGING'):
                 return True
-            else:
-                message = "VERBOSE::" + str(message).encode('utf-8')
-        message = str(message).encode('utf-8')
-        if hipchat:
-            self._notifier.send_hipchat_message("INFO::" + message, message_color='purple')
         self._messages.append(('INFO', time.time(), message))
         return self._logger.info(message)
 
     def warning(self, message, verbose=False, hipchat=False):
         # type: (str, bool, bool) -> bool
-        message = "[{0}]::".format(self._config.node_db_id()) + message
+        message = self.dress_message(message, "WARNING", hipchat, verbose, 'yellow')
         if verbose:
             if not self._config.get('GREASE_VERBOSE_LOGGING'):
                 return True
-            else:
-                message = "VERBOSE::" + str(message).encode('utf-8')
-        message = str(message).encode('utf-8')
-        if hipchat:
-            self._notifier.send_hipchat_message("WARNING::" + message, message_color='yellow')
         self._messages.append(('WARNING', time.time(), message))
         return self._logger.warning(message)
 
     def error(self, message, verbose=False, hipchat=False):
         # type: (str, bool, bool) -> bool
-        message = "[{0}]::".format(self._config.node_db_id()) + message
+        message = self.dress_message(message, "ERROR", hipchat, verbose, 'red')
         if verbose:
             if not self._config.get('GREASE_VERBOSE_LOGGING'):
                 return True
-            else:
-                message = "VERBOSE::" + str(message).encode('utf-8')
-        message = str(message).encode('utf-8')
-        if hipchat:
-            self._notifier.send_hipchat_message("ERROR::" + message, message_color='red')
         self._messages.append(('ERROR', time.time(), message))
         return self._logger.error(message)
 
     def critical(self, message):
         # type: (str) -> bool
-        message = "[{0}]::".format(self._config.node_db_id()) + message
-        message = str(message).encode('utf-8')
+        message = self.dress_message(message, "CRITICAL", True, False, 'red')
         self._messages.append(('CRITICAL', time.time(), message))
-        self._notifier.send_hipchat_message("CRITICAL::" + message, message_color='red')
         return self._logger.critical(message)
 
     def exception(self, message):
         # type: (str) -> bool
-        message = "[{0}]::".format(self._config.node_db_id()) + message
-        message = str(message).encode('utf-8')
+        message = self.dress_message(message, "EXCEPTION", True, False, 'red')
         self._messages.append(('EXCEPTION', time.time(), message))
-        self._notifier.send_hipchat_message("EXCEPTION::" + message, message_color='red')
         return self._logger.exception(message)

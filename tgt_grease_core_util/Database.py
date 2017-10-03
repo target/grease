@@ -1,45 +1,7 @@
-import psycopg2
-import psycopg2.extras
 import os
 import pymongo
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-
-
-class Connection(object):
-    @staticmethod
-    def create():
-        return Connection()
-
-    def __init__(self):
-        if os.getenv('GREASE_DSN') is not None:
-            self._connection = psycopg2.connect(dsn=os.getenv('GREASE_DSN'))
-        else:
-            raise EnvironmentError("Failed to find Grease database DSN")
-        self._cursor = self._connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
-
-    def _reload(self):
-        self._connection.close()
-        self._connection = psycopg2.connect(dsn=os.getenv('GREASE_DSN'))
-        self._cursor = self._connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
-
-    def execute(self, sql, parameters=None):
-        # type: (str, tuple) -> None
-        self._reload()
-        if parameters:
-            self._cursor.execute(sql, parameters)
-        else:
-            self._cursor.execute(sql)
-        self._connection.commit()
-
-    def query(self, sql, parameters=None):
-        # type: (str, tuple) -> dict
-        self._reload()
-        if parameters:
-            self._cursor.execute(sql, parameters)
-        else:
-            self._cursor.execute(sql)
-        return self._cursor.fetchall()
 
 
 class SQLAlchemyConnection(object):

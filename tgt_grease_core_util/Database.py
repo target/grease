@@ -86,7 +86,7 @@ class MongoConnection(object):
         if not os.getenv('GREASE_MONGO_USER') and not os.getenv('GREASE_MONGO_PASSWORD'):
             self._client = pymongo.MongoClient(
                 host=os.getenv('GREASE_MONGO_HOST', 'localhost'),
-                port=os.getenv('GREASE_MONGO_PORT', 27017)
+                port=int(os.getenv('GREASE_MONGO_PORT', 27017))
             )
         else:
             self._client = pymongo.MongoClient(

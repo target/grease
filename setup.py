@@ -4,7 +4,7 @@ import os
 
 setup(
     name='tgt_grease',
-    version='1.2.2',
+    version='1.2.3',
     description='GRE Application Service Engine',
     long_description="Automation Engine for operations",
     classifiers=[

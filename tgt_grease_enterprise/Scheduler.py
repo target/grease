@@ -22,9 +22,12 @@ class Scheduler(GreaseDaemonCommand):
         result = self._sql.get_session().query(SourceData, JobServers)\
             .filter(SourceData.scheduling_server == JobServers.id)\
             .filter(JobServers.id == self._config.node_db_id())\
-            .filter(SourceData.detection_start_time == None)\
-            .filter(SourceData.detection_end_time == None)\
-            .filter(SourceData.detection_complete == False)\
+            .filter(SourceData.detection_start_time != None)\
+            .filter(SourceData.detection_end_time != None)\
+            .filter(SourceData.detection_complete == True)\
+            .filter(SourceData.scheduling_start_time == None)\
+            .filter(SourceData.scheduling_end_time == None)\
+            .filter(SourceData.scheduling_complete == False)\
             .limit(15)\
             .all()
         if not result:

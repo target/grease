@@ -49,6 +49,7 @@ class Logger:
 
     def debug(self, message, verbose=False, hipchat=False):
         # type: (str, bool, bool) -> bool
+        message = "[{0}]::".format(self._config.node_db_id()) + message
         if verbose:
             if not self._config.get('GREASE_VERBOSE_LOGGING'):
                 return True
@@ -62,6 +63,7 @@ class Logger:
 
     def info(self, message, verbose=False, hipchat=False):
         # type: (str, bool, bool) -> bool
+        message = "[{0}]::".format(self._config.node_db_id()) + message
         if verbose:
             if not self._config.get('GREASE_VERBOSE_LOGGING'):
                 return True
@@ -75,6 +77,7 @@ class Logger:
 
     def warning(self, message, verbose=False, hipchat=False):
         # type: (str, bool, bool) -> bool
+        message = "[{0}]::".format(self._config.node_db_id()) + message
         if verbose:
             if not self._config.get('GREASE_VERBOSE_LOGGING'):
                 return True
@@ -88,6 +91,7 @@ class Logger:
 
     def error(self, message, verbose=False, hipchat=False):
         # type: (str, bool, bool) -> bool
+        message = "[{0}]::".format(self._config.node_db_id()) + message
         if verbose:
             if not self._config.get('GREASE_VERBOSE_LOGGING'):
                 return True
@@ -101,6 +105,7 @@ class Logger:
 
     def critical(self, message):
         # type: (str) -> bool
+        message = "[{0}]::".format(self._config.node_db_id()) + message
         message = str(message).encode('utf-8')
         self._messages.append(('CRITICAL', time.time(), message))
         self._notifier.send_hipchat_message("CRITICAL::" + message, message_color='red')
@@ -108,6 +113,7 @@ class Logger:
 
     def exception(self, message):
         # type: (str) -> bool
+        message = "[{0}]::".format(self._config.node_db_id()) + message
         message = str(message).encode('utf-8')
         self._messages.append(('EXCEPTION', time.time(), message))
         self._notifier.send_hipchat_message("EXCEPTION::" + message, message_color='red')

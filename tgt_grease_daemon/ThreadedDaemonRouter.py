@@ -335,14 +335,26 @@ class DaemonRouter(GreaseRouter.Router):
 
     def thread_execute(self, command, cid, additional, persistent, failures=0):
         # type: (GreaseDaemonCommand, int, dict, bool, int) -> None
-        # add command to pool
+        # first ensure the command ID isn't already running
+        process_running = False
+        for item in self._ContextMgr:
+            if item[2] == cid:
+                process_running = True
+                break
+        if process_running:
+            # if it is return out
+            return None
+        # start process
         proc = threading.Thread(
                 target=command.attempt_execution,
                 args=(cid, additional),
                 name="GREASE EXECUTION THREAD"
             )
+        # set for background
         proc.daemon = True
+        # start
         proc.start()
+        # add command to pool
         self._ContextMgr.append([
             command,
             proc,

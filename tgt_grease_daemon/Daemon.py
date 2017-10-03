@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-import tgt_grease_daemon.GreaseRouter
+from . import DaemonRouter
 import os
 import sys
 import atexit
@@ -13,7 +13,7 @@ class GreaseDaemonCommon(object):
     __metaclass__ = ABCMeta
 
     def __init__(self, router):
-        # type: (tgt_grease_daemon.DaemonRouter) -> None
+        # type: (DaemonRouter) -> None
         self._type = 'null'
         self._router = router
         self.args = deque(sys.argv)
@@ -45,7 +45,7 @@ class WindowsService(GreaseDaemonCommon):
 
     def __init__(self, args, router=None):
         # raise SystemError("Windows Daemons are not supported Yet")
-        if not isinstance(router, tgt_grease_daemon.GreaseRouter.Router):
+        if not isinstance(router, DaemonRouter):
             raise AttributeError("Router Instance Not Detected: " + str(type(router)))
         GreaseDaemonCommon.__init__(self, router)
         self.set_router(router)

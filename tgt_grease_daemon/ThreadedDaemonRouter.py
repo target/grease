@@ -100,6 +100,7 @@ class DaemonRouter(GreaseRouter.Router):
                 if int(self.get_throttle_tick()) > int(str(self._config.get('GREASE_THROTTLE'))):
                     # prevent more than 1000 loops per second by default
                     # check time
+                    self.log_message_once_a_second("Throttle reached", -11)
                     self.have_we_moved_forward_in_time()
                     continue
             # Job Processing
@@ -116,24 +117,32 @@ class DaemonRouter(GreaseRouter.Router):
                 # Block .5ms to listen for exit sig
                 rc = win32event.WaitForSingleObject(self.get_process().hWaitStop, 50)
 
+    def log_message_once_a_second(self, message, queue_id):
+        # type: (str, int) -> bool
+        # have we moved forward since the last second
+        if self.have_we_moved_forward_in_time():
+            # if we have we can log since the log does not have a record for this second
+            self._log.debug(message)
+            # We also ensure we record we already logged for zero jobs to process this second
+            self.add_job_to_completed_queue(queue_id)
+            return True
+        else:
+            # we have not moved forward in time
+            # have we logged for this second
+            if not self.has_job_run(queue_id):
+                # We have not logged for this second so lets do that now
+                self._log.debug(message)
+                # record that we logged for this second
+                self.add_job_to_completed_queue(queue_id)
+                return True
+            else:
+                return False
+
     def process_queue_standard(self):
         # type: () -> bool
         job_queue = self.get_assigned_jobs()
         if len(job_queue) is 0:
-            # have we moved forward since the last second
-            if self.have_we_moved_forward_in_time():
-                # if we have we can log since the log does not have a record for this second
-                self._log.debug("Total Jobs To Process: [0] Current Runs: [{0}]".format(self.get_runs()))
-                # We also ensure we record we already logged for zero jobs to process this second
-                self.add_job_to_completed_queue(-1)
-            else:
-                # we have not moved forward in time
-                # have we logged for this second
-                if not self.has_job_run(-1):
-                    # We have not logged for this second so lets do that now
-                    self._log.debug("Total Jobs To Process: [0] Current Runs: [{0}]".format(self.get_runs()))
-                    # record that we logged for this second
-                    self.add_job_to_completed_queue(-1)
+            self.log_message_once_a_second("Total Jobs To Process: [0] Current Runs: [{0}]".format(self.get_runs()), -1)
         else:
             # We have some jobs to process
             if self._job_metadata['normal'] > 0:
@@ -145,26 +154,12 @@ class DaemonRouter(GreaseRouter.Router):
                 )
             else:
                 # we only have persistent jobs to process
-                # have we moved forward since the last second
-                if self.have_we_moved_forward_in_time():
-                    # if we have we can log since the log does not have a record for this second
-                    self._log.debug("Total Jobs To Process: [{0}] Current Runs: [{1}]".format(
+                self.log_message_once_a_second("Total Jobs To Process: [{0}] Current Runs: [{1}]".format(
                         len(job_queue),
                         self.get_runs()
-                    ))
-                    # We also ensure we record we already logged for zero jobs to process this second
-                    self.add_job_to_completed_queue(0)
-                else:
-                    # we have not moved forward in time
-                    # have we logged for this second
-                    if not self.has_job_run(0):
-                        # We have not logged for this second so lets do that now
-                        self._log.debug("Total Jobs To Process: [{0}] Current Runs: [{1}]".format(
-                            len(job_queue),
-                            self.get_runs())
-                        )
-                        # record that we logged for this second
-                        self.add_job_to_completed_queue(0)
+                    ),
+                    0
+                )
             # now lets loop through the job schedule
             for job in job_queue:
                 # start class up
@@ -173,15 +168,16 @@ class DaemonRouter(GreaseRouter.Router):
                 if not command:
                     self._log.error(
                         "Failed To Load Command [{0}] of [{1}]"
-                            .format(
+                        .format(
                             job['command'],
                             job['module']
-                        )
+                        ),
+                        hipchat=True
                     )
                     del command
                     continue
                 if not isinstance(command, GreaseDaemonCommand):
-                    self._log.error("Instance created was not of type GreaseDaemonCommand")
+                    self._log.error("Instance created was not of type GreaseDaemonCommand", hipchat=True)
                     del command
                     continue
                 if not job['persistent']:
@@ -229,38 +225,14 @@ class DaemonRouter(GreaseRouter.Router):
         job_queue = self.get_assigned_jobs()
         if len(job_queue) is 0:
             # have we moved forward since the last second
-            if self.have_we_moved_forward_in_time():
-                # if we have we can log since the log does not have a record for this second
-                self._log.debug("Total Jobs To Process: [0] Current Runs: [{0}]".format(self.get_runs()))
-                # We also ensure we record we already logged for zero jobs to process this second
-                self.add_job_to_completed_queue(-1)
-            else:
-                # we have not moved forward in time
-                # have we logged for this second
-                if not self.has_job_run(-1):
-                    # We have not logged for this second so lets do that now
-                    self._log.debug("Total Jobs To Process: [0] Current Runs: [{0}]".format(self.get_runs()))
-                    # record that we logged for this second
-                    self.add_job_to_completed_queue(-1)
+            self.log_message_once_a_second("Total Jobs To Process: [0] Current Runs: [{0}]".format(self.get_runs()), -1)
         else:
             if len(self._ContextMgr) >= 15:
-                if self.have_we_moved_forward_in_time():
-                    # if we have we can log since the log does not have a record for this second
-                    self._log.debug("Thread Maximum Reached::Current Runs: [{0}]".format(
-                        self.get_runs()
-                    ))
-                    # We also ensure we record we already logged for zero jobs to process this second
-                    self.add_job_to_completed_queue(-10)
-                else:
-                    # we have not moved forward in time
-                    # have we logged for this second
-                    if not self.has_job_run(-10):
-                        # We have not logged for this second so lets do that now
-                        self._log.debug("Thread Maximum Reached::Current Runs: [{0}]".format(
+                self.log_message_once_a_second("Thread Maximum Reached::Current Runs: [{0}]".format(
                             self.get_runs()
-                        ))
-                        # record that we logged for this second
-                        self.add_job_to_completed_queue(-10)
+                        ),
+                    -10
+                )
                 return True
             # We have some jobs to process
             if self._job_metadata['normal'] > 0:
@@ -272,26 +244,12 @@ class DaemonRouter(GreaseRouter.Router):
                 )
             else:
                 # we only have persistent jobs to process
-                # have we moved forward since the last second
-                if self.have_we_moved_forward_in_time():
-                    # if we have we can log since the log does not have a record for this second
-                    self._log.debug("Total Jobs To Process: [{0}] Current Runs: [{1}]".format(
-                        len(job_queue),
-                        self.get_runs()
-                    ))
-                    # We also ensure we record we already logged for zero jobs to process this second
-                    self.add_job_to_completed_queue(0)
-                else:
-                    # we have not moved forward in time
-                    # have we logged for this second
-                    if not self.has_job_run(0):
-                        # We have not logged for this second so lets do that now
-                        self._log.debug("Total Jobs To Process: [{0}] Current Runs: [{1}]".format(
+                self.log_message_once_a_second("Total Jobs To Process: [{0}] Current Runs: [{1}]".format(
                             len(job_queue),
-                            self.get_runs())
-                        )
-                        # record that we logged for this second
-                        self.add_job_to_completed_queue(0)
+                            self.get_runs()
+                    ),
+                    0
+                )
             # now lets loop through the job schedule
             for job in job_queue:
                 # start class up
@@ -303,12 +261,13 @@ class DaemonRouter(GreaseRouter.Router):
                         .format(
                             job['command'],
                             job['module']
-                        )
+                        ),
+                        hipchat=True
                     )
                     del command
                     continue
                 if not isinstance(command, GreaseDaemonCommand):
-                    self._log.error("Instance created was not of type GreaseDaemonCommand")
+                    self._log.error("Instance created was not of type GreaseDaemonCommand", hipchat=True)
                     del command
                     continue
                 if not job['persistent']:
@@ -380,6 +339,7 @@ class DaemonRouter(GreaseRouter.Router):
             if command[1].isAlive():
                 final.append(command)
             else:
+                self._log.info("Job completed [{0}]".format(command[2]), True)
                 self.record_telemetry(command[0], command[2], command[4], command[3])
         self._ContextMgr = final
         return
@@ -544,6 +504,7 @@ class DaemonRouter(GreaseRouter.Router):
         """
         # type: int -> bool
         if int(job_ib) not in self._job_completed_queue:
+            self._log.debug("Job Executed This Second [{0}]".format(job_ib), True)
             self._job_completed_queue.append(int(job_ib))
             return True
         else:
@@ -567,6 +528,7 @@ class DaemonRouter(GreaseRouter.Router):
         :return: bool
         """
         # type: () -> bool
+        self._log.debug("Completed Per-Second Queue Cleared", True)
         self._job_completed_queue = []
 
     # throttle tick
@@ -650,6 +612,7 @@ class DaemonRouter(GreaseRouter.Router):
         if self.get_current_run_second() == self.get_current_real_second():
             return False
         else:
+            self._log.debug("Time has moved forward! Restoring Context", True)
             self.set_current_run_second(self.get_current_real_second())
             self.reset_completed_job_queue()
             self.reset_throttle_tick()

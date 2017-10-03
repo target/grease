@@ -188,6 +188,7 @@ class DaemonRouter(GreaseRouter.Router):
                     # This is an on-demand job
                     # we just need to execute it
                     self.mark_job_in_progress(job['id'])
+                    self._log.debug("Preparing to execute on-demand job [{0}]".format(job['id']), True)
                     command.attempt_execution(job['id'], job['additional'])
                 else:
                     # This is a persistent job
@@ -196,6 +197,7 @@ class DaemonRouter(GreaseRouter.Router):
                         continue
                     else:
                         if job['tick'] is self.get_current_run_second():
+                            self._log.debug("Preparing to execute persistent job [{0}]".format(job['id']), True)
                             command.attempt_execution(job['id'], job['additional'])
                             self.add_job_to_completed_queue(job['id'])
                         else:
@@ -313,6 +315,7 @@ class DaemonRouter(GreaseRouter.Router):
                     # This is an on-demand job
                     # we just need to execute it
                     self.mark_job_in_progress(job['id'])
+                    self._log.debug("Passing on-demand job [{0}] to thread manager".format(job['id']), True)
                     self.thread_execute(command, job['id'], job['additional'], False, job['failures'])
                 else:
                     # This is a persistent job
@@ -323,6 +326,7 @@ class DaemonRouter(GreaseRouter.Router):
                         continue
                     else:
                         if job['tick'] is self.get_current_run_second():
+                            self._log.debug("Passing persistent job [{0}] to thread manager".format(job['id']), True)
                             self.thread_execute(command, job['id'], job['additional'], True)
                             self.add_job_to_completed_queue(job['id'])
                         else:
@@ -343,6 +347,7 @@ class DaemonRouter(GreaseRouter.Router):
                 break
         if process_running:
             # if it is return out
+            self._log.debug("Bailing on job [{0}], already executing".format(cid), True)
             return None
         # start process
         proc = threading.Thread(
@@ -352,6 +357,10 @@ class DaemonRouter(GreaseRouter.Router):
             )
         # set for background
         proc.daemon = True
+        if persistent:
+            self._log.debug("Beginning persistent execution of job [{0}] on thread".format(cid), True)
+        else:
+            self._log.debug("Beginning on-demand execution of job [{0}] on thread".format(cid), True)
         # start
         proc.start()
         # add command to pool

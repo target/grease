@@ -53,20 +53,20 @@ class Logger:
     def dress_message(self, message, level, hipchat, verbose, message_color='gray'):
         # type: (str, str, bool, bool, str) -> str
         if self._unregisteredMode:
-            message = "[{0}]::".format(str(self._config.identity)) + str(message)
+            message = "[{0}]::".format(str(self._config.identity)) + message
         else:
             try:
-                message = "[{0}]::".format(self._config.node_db_id()) + str(message)
+                message = "[{0}]::".format(self._config.node_db_id()) + message
             except OperationalError:
                 self._unregisteredMode = True
                 self.critical("CANNOT CONNECT TO DATABASE")
-                message = "[{0}]::".format(str(self._config.identity)) + str(message)
+                message = "[{0}]::".format(str(self._config.identity)) + message
         if verbose:
-            message = "VERBOSE::" + str(message).encode('utf-8')
-        message = str(message).encode('utf-8')
+            message = "VERBOSE::" + message
+        message = "{0}::".format(level) + message
         if hipchat:
-            self._notifier.send_hipchat_message("{0}::".format(str(level)) + str(message), message_color)
-        return str(message)
+            self._notifier.send_hipchat_message(message, message_color)
+        return message
 
     def debug(self, message, verbose=False, hipchat=False):
         # type: (str, bool, bool) -> bool

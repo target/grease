@@ -69,7 +69,7 @@ class JobTelemetry(Base):
 class JobTelemetryDaemon(Base):
     __tablename__ = "job_telemetry_daemon"
     id = Column(Integer, primary_key=True, nullable=False)
-    command = Column(Integer, ForeignKey('job_config.id'))
+    command = Column(Integer, nullable=False)
     affected = Column(Integer, nullable=False, default=0)
     start_time = Column(DateTime, nullable=False, default=datetime.utcnow)
     entry_time = Column(DateTime, nullable=False, default=datetime.utcnow)
@@ -77,7 +77,6 @@ class JobTelemetryDaemon(Base):
     command_success = Column(Boolean, nullable=False, default=False)
     server_id = Column(Integer, ForeignKey('job_servers.id'))
 
-    CommandID = relationship(JobConfig, foreign_keys=[command])
     ServerID = relationship(JobServers, foreign_keys=[server_id])
 
 

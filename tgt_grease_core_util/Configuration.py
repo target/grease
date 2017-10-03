@@ -19,6 +19,7 @@ class Configuration(object):
     grease_log = grease_dir + os.sep + "grease.log"
     identity_file = grease_dir + os.sep + "grease_identity.txt"
     identity = None
+    _node_db_id = None
 
     def __init__(self):
         # Ensure the GREASE Dir
@@ -43,13 +44,14 @@ class Configuration(object):
             identity = ""
         return identity
 
-    @staticmethod
-    def node_db_id():
+    def node_db_id(self):
         # type: () -> int
-        identity = Configuration.node_identity()
-        conn = SQLAlchemyConnection(Configuration())
-        result = conn.get_session().query(JobServers).filter(JobServers.host_name == identity).first()
-        return int(result.id)
+        if not self._node_db_id:
+            identity = Configuration.node_identity()
+            conn = SQLAlchemyConnection(Configuration())
+            result = conn.get_session().query(JobServers).filter(JobServers.host_name == identity).first()
+            self._node_db_id = result.id
+        return self._node_db_id
 
     def get(self, key, default=None):
         # type: (str, str) -> object

@@ -185,6 +185,8 @@ class SourceDeDuplify(object):
                     score_list.append(0)
 
         # finally return our aggregate field score
+        if len(score_list) is 0:
+            return 0
         return sum(score_list) / float(len(score_list))
 
     @staticmethod

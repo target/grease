@@ -3,7 +3,7 @@ from tgt_grease_enterprise.Detectors import DetectorConfiguration
 from tgt_grease_core_util import Database
 from tgt_grease_core_util import SQLAlchemyConnection, Configuration
 from tgt_grease_core_util.RDBMSTypes import JobServers, SourceData, JobConfig, JobQueue
-from sqlalchemy import and_, update
+from sqlalchemy import and_, update, or_
 from datetime import datetime
 import json
 import hashlib
@@ -175,7 +175,7 @@ class Scheduler(GreaseDaemonCommand):
         if len(ticket) > 0:
             result = self._sql.get_session().query(JobQueue)\
                 .filter(JobQueue.ticket == ticket)\
-                .filter(and_(JobQueue.in_progress == False, JobQueue.completed == False)) | (JobQueue.in_progress == True)\
+                .filter(or_(and_(JobQueue.in_progress == False, JobQueue.completed == False), JobQueue.in_progress == True))\
                 .all()
             if result:
                 self._ioc.message().warning(

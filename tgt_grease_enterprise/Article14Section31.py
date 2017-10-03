@@ -2,7 +2,7 @@ from tgt_grease_daemon.BaseCommand import GreaseDaemonCommand
 from tgt_grease_core_util.Database import Connection, SQLAlchemyConnection
 from tgt_grease_core_util import Configuration
 from tgt_grease_core_util.RDBMSTypes import JobServers, JobQueue,SourceData, ServerHealth
-from sqlalchemy import update, and_
+from sqlalchemy import update, and_, or_
 import datetime
 import time
 
@@ -255,7 +255,7 @@ class Section31(GreaseDaemonCommand):
         if server:
             # get the number of jobs being reassigned
             result = self._sql.get_session().query(JobQueue) \
-                .filter(and_(JobQueue.in_progress == False, JobQueue.completed == False)) | (JobQueue.in_progress == True) \
+                .filter(or_(and_(JobQueue.in_progress == False, JobQueue.completed == False), JobQueue.in_progress == True)) \
                 .filter(JobQueue.host_name == server_id)\
                 .all()
             if result:

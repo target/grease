@@ -3,7 +3,7 @@ import os
 from urllib3.exceptions import HTTPError
 
 
-class Notifier:
+class Notifier(object):
 
     def __init__(self):
         #Make sure we have the appropriate keys

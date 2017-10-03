@@ -5,7 +5,7 @@ from tgt_grease_core_util import Importer
 from tgt_grease_core_util import Logger
 from tgt_grease_core_util.RDBMSTypes import JobQueue, PersistentJobs, JobConfig
 from tgt_grease_core_util import SQLAlchemyConnection
-from sqlalchemy import update
+from sqlalchemy import update, and_, or_
 from datetime import datetime
 from tgt_grease_core_util import Grease
 from . import Daemon
@@ -235,14 +235,7 @@ class DaemonRouter(GreaseRouter.Router):
                 )
                 return True
             # We have some jobs to process
-            if self._job_metadata['normal'] > 0:
-                # if we have any normal jobs lets log
-                self._log.debug("Total Jobs To Process: [{0}] Current Runs: [{1}]".format(
-                    self._job_metadata['normal'],
-                    self.get_runs()
-                    )
-                )
-            else:
+            if self._job_metadata['normal'] is 0:
                 # we only have persistent jobs to process
                 self.log_message_once_a_second("Total Jobs To Process: [{0}] Current Runs: [{1}]".format(
                             len(job_queue),
@@ -419,7 +412,8 @@ class DaemonRouter(GreaseRouter.Router):
             .get_session()\
             .query(JobQueue, JobConfig)\
             .filter(JobQueue.host_name == self._config.node_db_id())\
-            .filter(JobQueue.job_id == JobConfig.id)\
+            .filter(JobQueue.job_id == JobConfig.id) \
+            .filter(or_(and_(JobQueue.in_progress == False, JobQueue.completed == False), JobQueue.in_progress == True)) \
             .filter(JobQueue.failures < 6)\
             .all()
         if not result:

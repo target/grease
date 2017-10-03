@@ -1,5 +1,5 @@
 from tgt_grease_daemon.BaseCommand import GreaseDaemonCommand
-from tgt_grease_core_util.Database import Connection, SQLAlchemyConnection
+from tgt_grease_core_util.Database import SQLAlchemyConnection
 from tgt_grease_core_util import Configuration
 from tgt_grease_core_util.RDBMSTypes import JobServers, JobQueue,SourceData, ServerHealth
 from sqlalchemy import update, and_, or_
@@ -10,7 +10,6 @@ import time
 class Section31(GreaseDaemonCommand):
     def __init__(self):
         super(Section31, self).__init__()
-        self._conn = Connection()
         self._config = Configuration()
         self._sql = SQLAlchemyConnection(self._config)
 
@@ -134,7 +133,7 @@ class Section31(GreaseDaemonCommand):
               js.active IS TRUE
             ORDER BY js.id
         """
-        return list(self._conn.query(sql))
+        return list(self._sql.get_engine().execute(sql).fetchall())
 
     def _declare_doctor(self, server_id):
         # type: (int) -> None

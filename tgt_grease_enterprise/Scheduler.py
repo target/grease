@@ -1,6 +1,5 @@
 from tgt_grease_daemon.BaseCommand import GreaseDaemonCommand
 from tgt_grease_enterprise.Detectors import DetectorConfiguration
-from tgt_grease_core_util import Database
 from tgt_grease_core_util import SQLAlchemyConnection, Configuration
 from tgt_grease_core_util.RDBMSTypes import JobServers, SourceData, JobConfig, JobQueue
 from sqlalchemy import and_, update, or_
@@ -13,7 +12,6 @@ class Scheduler(GreaseDaemonCommand):
     def __init__(self):
         super(Scheduler, self).__init__()
         self._scanner_config = DetectorConfiguration.ConfigurationLoader()
-        self._conn = Database.Connection()
         self._config = Configuration()
         self._sql = SQLAlchemyConnection(self._config)
 

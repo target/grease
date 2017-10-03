@@ -1,5 +1,4 @@
 from abc import ABCMeta, abstractmethod
-from . import DaemonRouter
 import os
 import sys
 import atexit
@@ -45,8 +44,6 @@ class WindowsService(GreaseDaemonCommon):
 
     def __init__(self, args, router=None):
         # raise SystemError("Windows Daemons are not supported Yet")
-        if not isinstance(router, DaemonRouter):
-            raise AttributeError("Router Instance Not Detected: " + str(type(router)))
         GreaseDaemonCommon.__init__(self, router)
         self.set_router(router)
 

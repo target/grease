@@ -1,8 +1,7 @@
-import json
 import os
 from tgt_grease_daemon.BaseCommand import GreaseDaemonCommand
 from .Detectors import DetectorConfiguration
-from tgt_grease_core_util import Database, SQLAlchemyConnection, Configuration
+from tgt_grease_core_util import SQLAlchemyConnection, Configuration
 from tgt_grease_core_util.ImportTools import Importer
 from tgt_grease_core_util.RDBMSTypes import JobServers, SourceData
 from tgt_grease_enterprise import BaseSource
@@ -15,7 +14,6 @@ class ScanOnConfig(GreaseDaemonCommand):
     def __init__(self):
         super(ScanOnConfig, self).__init__()
         self._config = Configuration()
-        self._conn = Database.Connection()
         self._sql = SQLAlchemyConnection(self._config)
         self._scanner_config = DetectorConfiguration.ConfigurationLoader()
         self._context = '{}'

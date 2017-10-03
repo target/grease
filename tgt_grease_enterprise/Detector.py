@@ -1,8 +1,6 @@
-import json
 from collections import defaultdict
 from tgt_grease_core_util.RDBMSTypes import JobServers, SourceData
 from tgt_grease_daemon.BaseCommand import GreaseDaemonCommand
-from tgt_grease_core_util.Database import Connection
 from tgt_grease_core_util.ImportTools import Importer
 from tgt_grease_core_util import SQLAlchemyConnection, Configuration
 from . import Detectors
@@ -16,7 +14,6 @@ class Detector(GreaseDaemonCommand):
         super(Detector, self).__init__()
         self._config = Configuration()
         self._sql = SQLAlchemyConnection(self._config)
-        self._conn = Connection()
         self._excelsior_config = DetectorConfiguration.ConfigurationLoader()
         self._importer = Importer(self._ioc.message())
 

@@ -1,6 +1,6 @@
 import datetime
 from abc import ABCMeta, abstractmethod
-from .Database import Connection, SQLAlchemyConnection
+from .Database import SQLAlchemyConnection
 from .RDBMSTypes import JobTelemetry, JobTelemetryDaemon
 from .Configuration import Configuration
 import os

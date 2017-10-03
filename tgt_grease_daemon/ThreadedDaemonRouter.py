@@ -243,6 +243,8 @@ class DaemonRouter(GreaseRouter.Router):
                     ),
                     0
                 )
+            else:
+                self._log.debug("Total Jobs To Process: [0] Current Runs: [{0}]".format(self.get_runs()), -1)
             # now lets loop through the job schedule
             for job in job_queue:
                 # start class up

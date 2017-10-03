@@ -1,5 +1,8 @@
 from tgt_grease_daemon.BaseCommand import GreaseDaemonCommand
-from tgt_grease_core_util.Database import Connection
+from tgt_grease_core_util.Database import SQLAlchemyConnection
+from tgt_grease_core_util import Configuration
+from tgt_grease_core_util.RDBMSTypes import JobServers, JobQueue,SourceData, ServerHealth
+from sqlalchemy import update, and_, or_
 import datetime
 import time
 
@@ -7,7 +10,8 @@ import time
 class Section31(GreaseDaemonCommand):
     def __init__(self):
         super(Section31, self).__init__()
-        self._conn = Connection()
+        self._config = Configuration()
+        self._sql = SQLAlchemyConnection(self._config)
 
     def execute(self, context='{}'):
         # first lets get the entire farm
@@ -40,7 +44,7 @@ class Section31(GreaseDaemonCommand):
                   jq.host_name,
                   count(jq.id) AS total
                 FROM
-                  grease.job_queue jq
+                  job_queue jq
                 WHERE
                   (
                     (
@@ -53,55 +57,61 @@ class Section31(GreaseDaemonCommand):
               ),
                 completed_on_demand AS (
                   SELECT
-                    js.host_name,
+                    jt.server_id as host_name,
                     count(jt.id) AS total
                   FROM
-                    grease.job_servers js
-                    LEFT OUTER JOIN grease.job_telemetry jt ON (jt.server_id = js.host_name)
-                  GROUP BY js.host_name
+                    job_servers js
+                    LEFT OUTER JOIN job_telemetry jt ON (jt.server_id = js.id)
+                  GROUP BY jt.server_id
               ),
               completed_daemon AS (
                 SELECT
-                  js.host_name,
+                  js.id as host_name,
                   count(jtd.id) AS total
                 FROM
-                  grease.job_servers js
-                  LEFT OUTER JOIN grease.job_telemetry_daemon jtd ON (jtd.server_id = js.host_name)
-                GROUP BY js.host_name
+                  job_servers js
+                  LEFT OUTER JOIN job_telemetry_daemon jtd ON (jtd.server_id = js.id)
+                GROUP BY js.id
               ),
                 sources AS (
                   SELECT
-                    js.host_name,
+                    js.id as host_name,
                     count(sf.id) AS total
                   FROM
-                    grease.source_file sf
-                    INNER JOIN grease.job_servers js ON (js.id = sf.job_server)
+                    source_data sf
+                    INNER JOIN grease.job_servers js ON (js.id = sf.detection_server)
                   WHERE
                     (
                       (
-                        sf.in_progress = FALSE AND
-                        sf.completed = FALSE
+                        sf.detection_start_time IS NOT NULL AND
+                        sf.detection_end_time IS NOT NULL
                       ) OR
-                      sf.in_progress = TRUE
+                      (
+                        sf.detection_start_time IS NOT NULL AND
+                        sf.detection_end_time IS NULL
+                      )
                     )
-                  GROUP BY js.host_name
+                  GROUP BY js.id
               ),
                 schedules AS (
                   SELECT
-                    js.host_name,
+                    js.id as host_name,
                     count(sq.id) AS total
                   FROM
-                    grease.scheduling_queue sq
-                    INNER JOIN grease.job_servers js ON (js.id = sq.job_server)
+                    source_data sq
+                    INNER JOIN grease.job_servers js ON (js.id = sq.scheduling_server)
                   WHERE
                     (
                       (
-                        sq.in_progress = FALSE AND
-                        sq.completed = FALSE
+                        sq.scheduling_start_time IS NOT NULL AND
+                        sq.scheduling_end_time IS NOT NULL
                       ) OR
-                      sq.in_progress = TRUE
+                      (
+                        sq.scheduling_start_time IS NOT NULL AND
+                        sq.scheduling_end_time IS NULL
+                      )
                     )
-                  GROUP BY js.host_name
+                  GROUP BY js.id
               )
             SELECT
               js.id                    AS job_server_id,
@@ -113,82 +123,58 @@ class Section31(GreaseDaemonCommand):
               (coalesce(od.total, 0) || '-' || coalesce((cod.total + coda.total), 0) || '-' || coalesce(s.total, 0) || '-' ||
                coalesce(sch.total, 0)) AS str_hash
             FROM
-              grease.job_servers js
-              LEFT OUTER JOIN on_demand od ON (od.host_name = js.host_name)
-              LEFT OUTER JOIN completed_on_demand cod ON (cod.host_name = js.host_name)
-              LEFT OUTER JOIN completed_daemon coda ON (coda.host_name = js.host_name)
-              LEFT OUTER JOIN sources s ON (s.host_name = js.host_name)
-              LEFT OUTER JOIN schedules sch ON (sch.host_name = js.host_name)
+              job_servers js
+              LEFT OUTER JOIN on_demand od ON (od.host_name = js.id)
+              LEFT OUTER JOIN completed_on_demand cod ON (cod.host_name = js.id)
+              LEFT OUTER JOIN completed_daemon coda ON (coda.host_name = js.id)
+              LEFT OUTER JOIN sources s ON (s.host_name = js.id)
+              LEFT OUTER JOIN schedules sch ON (sch.host_name = js.id)
             WHERE
               js.active IS TRUE
             ORDER BY js.id
         """
-        return list(self._conn.query(sql))
+        return list(self._sql.get_engine().execute(sql).fetchall())
 
     def _declare_doctor(self, server_id):
         # type: (int) -> None
         # first lets check to ensure someone hasn't already claimed this beast
-        sql = """
-            SELECT
-              coalesce(doctor, '')
-            FROM
-              grease.server_health
-            WHERE
-              server_id = %s
-        """
-        result = self._conn.query(sql, (server_id,))
-        if len(result) > 0 and result[0][0] is not '':
+        result = self._sql.get_session().query(ServerHealth)\
+            .filter(ServerHealth.server == server_id)\
+            .first()
+        if result and result.doctor != '':
             self._ioc.message().error("SERVER DOCTOR ALREADY DECLARED FOR [{0}]".format(server_id))
             return
-        sql = """
-            UPDATE
-              grease.server_health
-            SET
-              doctor = %s
-            WHERE
-              server_id = %s
-        """
-        self._conn.execute(sql, (self._grease_identity, server_id,))
+        stmt = update(ServerHealth).where(ServerHealth.server == server_id).values(docter=self._config.node_db_id())
+        self._sql.get_session().execute(stmt)
+        self._sql.get_session().commit()
 
     def _am_i_the_doctor(self, server_id):
         # type: (int) -> bool
-        sql = """
-            SELECT
-              *
-            FROM
-              grease.server_health
-            WHERE
-              doctor = %s AND
-              server_id = %s
-        """
-        result = self._conn.query(sql, (self._grease_identity, server_id,))
-        if len(result) > 0:
+        result = self._sql.get_session().query(ServerHealth)\
+            .filter(ServerHealth.doctor == self._config.node_db_id())\
+            .filter(ServerHealth.server == server_id)\
+            .first()
+        if result:
             return True
         else:
             return False
 
     def _server_alive(self, server):
         # type: (list) -> bool
-        sql = """
-            SELECT
-              sh.job_hash,
-              sh.check_time
-            FROM
-              grease.server_health sh
-            WHERE
-              sh.server_id = %s
-        """
-        res = self._conn.query(sql, (server[0],))
-        if len(res) is 0:
+        result = self._sql.get_session().query(ServerHealth)\
+            .filter(ServerHealth.server == server[0])\
+            .first()
+        if not result:
             # if this is a server not checked into health before
-            self._register_in_health(server)
-            res = self._conn.query(sql, (server[0],))[0]
-        res = res[0]
+            self._register_in_health(server[0])
+            result = self._sql.get_session().query(ServerHealth)\
+                .filter(ServerHealth.server == server[0])\
+                .first()
         # now return to regular logic
-        if res[1] < (datetime.datetime.now(res[1].tzinfo) - datetime.timedelta(hours=12)):
+        if result.check_time < (datetime.datetime.now(result.check_time.tzinfo) - datetime.timedelta(hours=6)):
             # server status is old
             # lets check the hash though
-            if res[0] == server[6]:
+            if result.job_hash == server[6]:
                 # hash hasn't changed time for d-com
                 return False
             else:
@@ -197,82 +183,65 @@ class Section31(GreaseDaemonCommand):
                 return True
         else:
             # results aren't 12 hrs old yet
-            if res[0] == server[6]:
+            if result.job_hash == server[6]:
                 # log but do nothing so we know bad things will happen if we continue
-                self._ioc.message().warning(
-                    "Server hash has not changed since last poll ID:[{0}] hash:[{1}]".format(
-                        server[0],
-                        server[6]
+                if result.check_time < (datetime.datetime.now(result.check_time.tzinfo) - datetime.timedelta(minutes=10)):
+                    self._ioc.message().warning(
+                        "Server hash has not changed since last poll ID:[{0}] hash:[{1}]".format(
+                            server[0],
+                            server[6]
+                        )
                     )
-                )
             else:
                 # if it changed lets update so we see the current hash
                 self._update_hash(server[0], server[6])
             return True
 
     def _register_in_health(self, server):
-        sql_ins = """
-            INSERT INTO
-              grease.server_health
-            (server_id, job_hash, check_time)
-            VALUES
-            (%s, %s, current_timestamp)
-        """
-        self._conn.execute(sql_ins, (server[0], server[6],))
+        newServer = ServerHealth(
+            server=server[0],
+            job_hash=server[6],
+            check_time=datetime.datetime.utcnow()
+        )
+        self._sql.get_session().add(newServer)
+        self._sql.get_session().commit()
 
     def _update_hash(self, server_id, hash_str):
         # type: (str, str) -> None
-        sql = """
-            UPDATE
-              grease.server_health
-            SET
-              job_hash = %s,
-              check_time = current_timestamp
-            WHERE
-              server_id = %s
-        """
-        self._conn.execute(sql, (hash_str, server_id,))
+        stmt = update(ServerHealth)\
+            .where(ServerHealth.server == server_id)\
+            .values(job_hash=hash_str, check_time=datetime.datetime.utcnow())
+        self._sql.get_session().execute(stmt)
+        self._sql.get_session().commit()
 
     def _deactivate_server(self, server_id):
         # type: (int) -> None
-        sql = """
-                    UPDATE
-                      grease.job_servers
-                    SET
-                      active = FALSE
-                    WHERE
-                      id = %s
-                """
-        self._conn.execute(sql, (server_id,))
+        stmt = update(JobServers)\
+            .where(JobServers.id == server_id)\
+            .values(active=False)
+        self._sql.get_session().execute(stmt)
+        self._sql.get_session().commit()
 
     def _get_new_execution_server(self, server_id):
-        # type: (int) -> list
+        # type: (int) -> JobServers
         # first get current env
-        sql = "SELECT execution_environment FROM grease.job_servers WHERE id = %s"
-        exec_env = self._conn.query(sql, (server_id,))[0][0]
-        sql = """
-                    SELECT
-                      js.id,
-                      js.host_name
-                    FROM
-                      grease.job_servers js
-                    WHERE
-                      js.execution_environment = %s AND
-                      js.active IS TRUE
-                    ORDER BY
-                      js.jobs_assigned
-                    LIMIT 1
-                """
-        result = self._conn.query(sql, (exec_env,))
-        if len(result) > 0:
+        old_server = self._sql.get_session().query(JobServers)\
+            .filter(JobServers.id == server_id)\
+            .first()
+        new_server = self._sql.get_session().query(JobServers)\
+            .filter(JobServers.execution_environment == old_server.execution_environment)\
+            .filter(JobServers.active == True)\
+            .order_by(JobServers.jobs_assigned)\
+            .first()
+        if new_server:
             # we have a server to reassign to
-            return result[0]
+            return new_server
         else:
             # there are no other execution servers for that environment
             self._ioc.message().error(
                 "No other valid execution environment for jobs assigned to server [{0}]".format(server_id)
             )
-            return []
+            return False
 
     def _cull_server(self, server_id):
         # type: (int) -> None
@@ -282,53 +251,36 @@ class Section31(GreaseDaemonCommand):
         # next we need to check for any jobs scheduled to that instance and reassign them
         # first lets see if there is another available server
         server = self._get_new_execution_server(server_id)
-        if len(server) > 0:
+        if server:
             # get the number of jobs being reassigned
-            sql = """
-                SELECT
-                  array(
-                    SELECT
-                      jq.id
-                    FROM
-                      grease.job_queue jq
-                    INNER JOIN grease.job_servers js ON (js.host_name = jq.host_name)
-                    WHERE
-                      js.id = %s AND
-                      (
-                        (
-                          jq.in_progress = FALSE AND
-                          jq.completed = FALSE
-                        ) OR
-                        jq.in_progress = TRUE
-                      )
-                  )
-            """
-            result = self._conn.query(sql, (server_id,))
-            if len(result) > 0:
+            result = self._sql.get_session().query(JobQueue) \
+                .filter(or_(and_(JobQueue.in_progress == False, JobQueue.completed == False), JobQueue.in_progress == True)) \
+                .filter(JobQueue.host_name == server_id)\
+                .all()
+            if result:
+                jobs = []
+                for job in result:
+                    jobs.append(job.id)
                 # we have jobs to move
                 # step one get the list of jobs to reassign
-                job_id_group = tuple(result[0][0])
-                self._reassign_on_demand_jobs(server_id, server, job_id_group)
+                job_id_group = tuple(jobs)
+                self._reassign_on_demand_jobs(server_id, server.id, job_id_group)
             else:
                 self._ioc.message().info("No jobs to reassign for server [{0}] being decommissioned".format(server_id))
         else:
             # no other valid server could be found for on-demand work
             self._ioc.message().error("Failed reassigning jobs for server [{0}]".format(server_id))
         # next lets move over any source detection work
-        sql = """
-            SELECT
-              array (
-                SELECT
-                  sf.id
-                FROM
-                  grease.source_file sf
-                WHERE
-                  sf.job_server = %s AND
-                  in_progress IS FALSE AND
-                  completed IS FALSE
-              )
-        """
-        source_file_jobs = tuple(self._conn.query(sql, (server_id,))[0][0])
+        result = self._sql.get_session().query(SourceData)\
+            .filter(SourceData.detection_server == server_id)\
+            .filter(SourceData.detection_start_time == None)\
+            .filter(SourceData.detection_end_time == None)\
+            .filter(SourceData.detection_complete == False)\
+            .all()
+        jobs = []
+        for job in result:
+            jobs.append(job.id)
+        source_file_jobs = tuple(jobs)
         if len(source_file_jobs):
             # we have sources to reassign parsing for
             self._reassign_sources(source_file_jobs, server_id)
@@ -336,20 +288,19 @@ class Section31(GreaseDaemonCommand):
             # no source documents to reassign
             self._ioc.message().info("No source parsing to reassign for server [{0}]".format(server_id))
         # finally lets worry about schedules to be reassigned
-        sql = """
-            SELECT
-              array (
-                SELECT
-                  sq.id
-                FROM
-                  grease.scheduling_queue sq
-                WHERE
-                  sq.job_server = %s AND
-                  in_progress IS FALSE AND
-                  completed IS FALSE
-              )
-        """
-        schedules = tuple(self._conn.query(sql, (server_id,))[0][0])
+        result = self._sql.get_session().query(SourceData) \
+            .filter(SourceData.scheduling_server == server_id) \
+            .filter(SourceData.detection_start_time != None)\
+            .filter(SourceData.detection_end_time != None)\
+            .filter(SourceData.detection_complete == True)\
+            .filter(SourceData.scheduling_start_time == None)\
+            .filter(SourceData.scheduling_end_time == None)\
+            .filter(SourceData.scheduling_complete == False)\
+            .all()
+        jobs = []
+        for job in result:
+            jobs.append(job.id)
+        schedules = tuple(jobs)
         if len(schedules):
             # we have sources to reassign parsing for
             self._reassign_schedules(schedules, server_id)
@@ -358,58 +309,43 @@ class Section31(GreaseDaemonCommand):
             self._ioc.message().info("No schedules to reassign for server [{0}]".format(server_id))
 
     def _reassign_on_demand_jobs(self, server_id, new_server, job_list):
-        # type: (int, list, tuple) -> None
+        # type: (int, int, tuple) -> None
         # now lets do the update
         if not job_list:
             job_list = (-1,)
-        sql = """
-            UPDATE
-              grease.job_queue
-            SET
-              host_name = %s
-            WHERE
-              id IN %s
-        """
-        self._conn.execute(sql, (new_server[1], job_list,))
+        stmt = update(JobQueue)\
+            .where(JobQueue.id.in_(job_list))\
+            .values(host_name=new_server)
+        self._sql.get_session().execute(stmt)
+        self._sql.get_session().commit()
         # now lets update the totals on the job servers in question
-        self._update_job_assignment_totals(server_id, new_server[0], len(job_list))
+        self._update_job_assignment_totals(server_id, new_server, len(job_list))
         self._ioc.message().info(
             "JOB ID SET [{0}] MOVED FROM SERVER [{1}] TO SERVER [{2}]".format(
                 job_list,
                 server_id,
-                new_server[0]
+                new_server
             )
         )
 
     def _reassign_sources(self, source_file_ids, origin_server):
         # type: (tuple, int) -> None
         # first lets find our applicable detector server
-        sql = """
-            SELECT
-              js.id
-            FROM
-              grease.job_servers js
-            WHERE
-              js.active is TRUE AND
-              js.detector is TRUE
-            ORDER BY
-              js.jobs_assigned
-        """
-        result = self._conn.query(sql)
-        if len(result) > 0:
-            new_server = result[0]
+        result = self._sql.get_session().query(JobServers)\
+            .filter(JobServers.active == True)\
+            .filter(JobServers.detector == True)\
+            .order_by(JobServers.jobs_assigned)\
+            .first()
+        if result:
+            new_server = result.id
             reassign_total = len(source_file_ids)
             # Actual reassignment of sources
-            sql = """
-                UPDATE
-                  grease.source_file
-                SET
-                  job_server = %s
-                WHERE
-                  id IN %s
-            """
-            self._conn.execute(sql, (new_server[0], source_file_ids))
-            self._update_job_assignment_totals(origin_server, new_server[0], reassign_total)
+            stmt = update(SourceData)\
+                .where(SourceData.id.in_(source_file_ids))\
+                .values(detection_server=new_server)
+            self._sql.get_session().execute(stmt)
+            self._sql.get_session().commit()
+            self._update_job_assignment_totals(origin_server, new_server, reassign_total)
         else:
             # oh crap we have no job detector servers left alive
             # Me IRL Right now:
@@ -425,33 +361,22 @@ class Section31(GreaseDaemonCommand):
 
     def _reassign_schedules(self, schedule_ids, origin_server):
         # type: (tuple, int) -> None
-        # first lets find our applicable detector server
-        sql = """
-            SELECT
-              js.id
-            FROM
-              grease.job_servers js
-            WHERE
-              js.active is TRUE AND
-              js.scheduler is TRUE
-            ORDER BY
-              js.jobs_assigned
-        """
-        result = self._conn.query(sql)
-        if len(result) > 0:
-            new_server = result[0]
+        # first lets find our applicable scheduling server
+        result = self._sql.get_session().query(JobServers)\
+            .filter(JobServers.active == True)\
+            .filter(JobServers.scheduler == True)\
+            .order_by(JobServers.jobs_assigned)\
+            .first()
+        if result:
+            new_server = result.id
             reassign_total = len(schedule_ids)
             # Actual reassignment of sources
-            sql = """
-                UPDATE
-                  grease.source_file
-                SET
-                  job_server = %s
-                WHERE
-                  id IN %s
-            """
-            self._conn.execute(sql, (new_server[0], schedule_ids))
-            self._update_job_assignment_totals(origin_server, new_server[0], reassign_total)
+            stmt = update(SourceData)\
+                .where(SourceData.id.in_(schedule_ids))\
+                .values(scheduling_server=new_server)
+            self._sql.get_session().execute(stmt)
+            self._sql.get_session().commit()
+            self._update_job_assignment_totals(origin_server, new_server, reassign_total)
         else:
             # oh crap we have no job scheduler servers left alive
             # Me IRL Right now: https://media.giphy.com/media/HUkOv6BNWc1HO/giphy.gif
@@ -467,22 +392,12 @@ class Section31(GreaseDaemonCommand):
     def _update_job_assignment_totals(self, old_server, new_server, job_count):
         # type: (int, int, int) -> None
         # first lets deduct from the bad server
-        sql = """
-            UPDATE
-              grease.job_servers
-            SET
-              jobs_assigned = (jobs_assigned - %s)
-            WHERE
-              id = %s
-        """
-        self._conn.execute(sql, (job_count, old_server,))
-        # now lets increase the good job server
-        sql = """
-            UPDATE
-              grease.job_servers
-            SET
-              jobs_assigned = (jobs_assigned + %s)
-            WHERE
-              id = %s
-        """
-        self._conn.execute(sql, (job_count, new_server,))
+        stmt1 = update(JobServers)\
+            .where(id=old_server)\
+            .values(jobs_assigned=JobServers.jobs_assigned - job_count)
+        stmt2 = update(JobServers)\
+            .where(id=new_server)\
+            .values(jobs_assigned=JobServers.jobs_assigned + job_count)
+        self._sql.get_session().execute(stmt1)
+        self._sql.get_session().execute(stmt2)
+        self._sql.get_session().commit()

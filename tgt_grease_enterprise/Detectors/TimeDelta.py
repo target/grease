@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from BaseDetectorClass import BaseDetector
+from .BaseDetectorClass import BaseDetector
 import operator
 
 

@@ -1,6 +1,6 @@
-from Scanner import ScanOnConfig
-from Detector import Detector
-from Scheduler import Scheduler
+from .Scanner import ScanOnConfig
+from .Detector import Detector
+from .Scheduler import Scheduler
 from tgt_grease_daemon.BaseCommand import GreaseDaemonCommand
 
 

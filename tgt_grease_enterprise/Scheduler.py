@@ -1,6 +1,9 @@
 from tgt_grease_daemon.BaseCommand import GreaseDaemonCommand
 from tgt_grease_enterprise.Detectors import DetectorConfiguration
-from tgt_grease_core_util import Database
+from tgt_grease_core_util import SQLAlchemyConnection, Configuration
+from tgt_grease_core_util.RDBMSTypes import JobServers, SourceData, JobConfig, JobQueue
+from sqlalchemy import and_, update, or_
+from datetime import datetime
 import json
 import hashlib
 
@@ -9,30 +12,32 @@ class Scheduler(GreaseDaemonCommand):
     def __init__(self):
         super(Scheduler, self).__init__()
         self._scanner_config = DetectorConfiguration.ConfigurationLoader()
-        self._conn = Database.Connection()
+        self._config = Configuration()
+        self._sql = SQLAlchemyConnection(self._config)
 
     def execute(self, context='{}'):
         # Lets go get the jobs needing to be scheduled by this server
-        sql = """
-            SELECT
-              sq.id,
-              sq.source_data
-            FROM
-              grease.scheduling_queue sq
-            INNER JOIN grease.job_servers js ON (js.id = sq.job_server)
-            WHERE
-              js.host_name = %s AND
-              sq.completed = false AND
-              sq.in_progress = false
-            LIMIT 15
-        """
-        schedules = self._conn.query(sql, (self._grease_identity,))
-        for schedule in schedules:
-            # lets own this
-            self._take_ownership(schedule[0])
-            self._schedule_via_sources(schedule[1])
-            # lets finish out
-            self._complete(schedule[0])
+        result = self._sql.get_session().query(SourceData, JobServers)\
+            .filter(SourceData.scheduling_server == JobServers.id)\
+            .filter(JobServers.id == self._config.node_db_id())\
+            .filter(SourceData.detection_start_time != None)\
+            .filter(SourceData.detection_end_time != None)\
+            .filter(SourceData.detection_complete == True)\
+            .filter(SourceData.scheduling_start_time == None)\
+            .filter(SourceData.scheduling_end_time == None)\
+            .filter(SourceData.scheduling_complete == False)\
+            .limit(15)\
+            .all()
+        if not result:
+            self._ioc.message().debug("No Sources to schedule")
+            return True
+        else:
+            for schedule in result:
+                # lets own this
+                self._take_ownership(schedule.SourceData.id)
+                self._schedule_via_sources(schedule.SourceData.source_data)
+                # lets finish out
+                self._complete(schedule.SourceData.id)
         return True
 
     def _schedule_via_sources(self, sources):
@@ -83,16 +88,6 @@ class Scheduler(GreaseDaemonCommand):
                             else:
                                 # they didn't provide one so default to general
                                 exe_env = 'general'
-                            # next lets setup the SN url
-                            if 'incident_url' in sources[index]:
-                                # incidents URL
-                                url = sources[index]['incident_url']
-                                # Service Event URL
-                            elif 'event_url' in sources[index]:
-                                url = sources[index]['event_url']
-                            else:
-                                # Leave blank if source doesn't include them
-                                url = ''
                             # next lets get the ID
                             if 'incident_number' in sources[index]:
                                 # Set the incident Number
@@ -113,19 +108,24 @@ class Scheduler(GreaseDaemonCommand):
                                         "Parameters were not dictionary for rule: [" + str(rule_name) + "]"
                                     )
                             # Now lets setup the ticket info
-                            additional['sn_ticket'] = i_num
+                            additional['ticket'] = i_num
                             self._ioc.message().debug(
                                 "PREPARING TO SCHEDULE JOB [{0}] FOR EXECUTION::"
-                                "EXE_ENV: [{1}] ADDITIONAL: [{2}] URL: [{3}] Incident_Number: [{4}]".format(
+                                "EXE_ENV: [{1}] ADDITIONAL: [{2}] ticket: [{3}]".format(
                                     str(rule_config['job']),
                                     str(exe_env),
                                     str(additional),
-                                    str(url),
                                     str(i_num)
                                 ),
                                 True
                             )
-                            if self._assign(rule_config['job'], exe_env, additional, url, i_num):
+                            if self._assign(
+                                    rule_config['job'],
+                                    exe_env,
+                                    str(self._config.get('SCHEDULE_PKG', 'localhost_generic')),
+                                    str(i_num),
+                                    additional
+                            ):
                                 # we successfully assigned the ticket
                                 self._ioc.message().debug(
                                     "JOB EXECUTION SCHEDULING SUCCESSFUL [{0}] FOR RULE [{1}]".format(
@@ -167,90 +167,53 @@ class Scheduler(GreaseDaemonCommand):
                     )
                     continue
 
-    def _assign(self, job, exec_env, additional={}, sn_link='', sn_ticket='', package=''):
-        # type: (str, str, dict, str, str, str) -> bool
+    def _assign(self, job, exec_env, package, ticket, additional=dict):
+        # type: (str, str, str, str, dict) -> bool
         # check to ensure this ticket isn't already on the schedule
-        if len(sn_ticket) > 0:
-            sql = """
-                SELECT
-                  *
-                FROM
-                  grease.job_queue jq
-                WHERE
-                  jq.sn_ticket_number = %s AND
-                  (
-                    (
-                      jq.in_progress = FALSE AND 
-                      jq.completed = FALSE
-                    ) OR 
-                    jq.in_progress = true
-                  )
-            """
-            assignment_check = self._conn.query(sql, (sn_ticket,))
-            if len(assignment_check) != 0:
+        if len(ticket) > 0:
+            result = self._sql.get_session().query(JobQueue)\
+                .filter(JobQueue.ticket == ticket)\
+                .filter(or_(and_(JobQueue.in_progress == False, JobQueue.completed == False), JobQueue.in_progress == True))\
+                .all()
+            if result:
                 self._ioc.message().warning(
-                    "Ticket Already in Job Queue for Execution Ticket: [" + str(sn_ticket) + "]"
+                    "Ticket Already in Job Queue for Execution Ticket: [" + str(ticket) + "]"
                 )
                 return False
-        sql = """
-            SELECT
-              js.id,
-              js.host_name,
-              js.jobs_assigned
-            FROM
-              grease.job_servers js
-            WHERE
-              js.execution_environment LIKE %s AND 
-              js.active is true
-            ORDER BY
-              js.jobs_assigned
-        """
-        server_info = self._conn.query(sql, (exec_env,))
-        if len(server_info) < 1:
+        # lets only get the least assigned server so we can round robin
+        result = self._sql.get_session()\
+            .query(JobServers)\
+            .filter(JobServers.execution_environment == exec_env)\
+            .filter(JobServers.active == True)\
+            .order_by(JobServers.jobs_assigned)\
+            .first()
+        if not result:
             self._ioc.message().error("No Execution Environments Found For Job: [" + job + "]")
             return False
-        server_info = server_info[0]
-        sql = """
-            SELECT
-              job_config.id
-            FROM
-              grease.job_config
-            WHERE
-              job_config.command_module = %s AND
-              job_config.command_name = %s
-            ORDER BY job_config.id DESC
-            LIMIT 1
-        """
-        job_id = self._conn.query(sql, (package, job,))
-        if len(job_id) < 1:
+        server_info = result.id
+        result = self._sql.get_session().query(JobConfig)\
+            .filter(JobConfig.command_module == package)\
+            .filter(JobConfig.command_name == job)\
+            .first()
+        if not result:
             self._ioc.message().error(
                 "No Jobs Configured For Requested Job: [" + job + "] for package: [" + package + "]"
             )
             return False
-        job_id = job_id[0][0]
-        sql = """
-            INSERT INTO
-              grease.job_queue
-            (host_name, job_id, sn_ticket_number, sn_link, additional)
-            VALUES
-            (
-              %s,
-              %s,
-              %s,
-              %s,
-              %s
-            )
-        """
-        self._conn.execute(sql, (server_info[1], job_id, sn_ticket, sn_link, json.dumps(additional),))
-        sql = """
-            UPDATE
-              grease.job_servers
-            SET
-              jobs_assigned = %s
-            WHERE
-              id = %s
-        """
-        self._conn.execute(sql, (int(server_info[2]) + 1, server_info[0],))
+        job_id = result.id
+        # Proceed to schedule
+        JobToQueue = JobQueue(
+            host_name=server_info,
+            job_id=job_id,
+            ticket=ticket,
+            additional=additional
+        )
+        self._sql.get_session().add(JobToQueue)
+        self._sql.get_session().commit()
+        # that job and increment the assignment counter
+        stmt = update(JobServers).where(JobServers.id == server_info).values(jobs_assigned=result.jobs_assigned + 1)
+        self._sql.get_session().execute(stmt)
+        self._sql.get_session().commit()
         self._ioc.message().debug(
             "JOB [{0}] SCHEDULED FOR SERVER [{1}]".format(
                 str(job_id),
@@ -262,39 +225,28 @@ class Scheduler(GreaseDaemonCommand):
 
     def _take_ownership(self, source_file_id):
         # type: (int) -> None
-        sql = """
-            UPDATE
-              grease.scheduling_queue
-            SET
-              in_progress = true,
-              pick_up_time = current_timestamp
-            WHERE
-              id = %s
-        """
+        stmt = update(SourceData)\
+            .where(SourceData.id == source_file_id)\
+            .values(scheduling_start_time=datetime.utcnow())
+        self._sql.get_session().execute(stmt)
+        self._sql.get_session().commit()
         self._ioc.message().debug(
             "TAKING OWNERSHIP OF SOURCE [{0}]".format(
                 str(source_file_id),
             ),
             True
         )
-        self._conn.execute(sql, (source_file_id,))
 
     def _complete(self, source_file_id):
         # type: (int) -> None
-        sql = """
-            UPDATE
-              grease.scheduling_queue
-            SET
-              completed = TRUE,
-              in_progress = false,
-              complete_time = current_timestamp
-            WHERE
-              id = %s
-        """
+        stmt = update(SourceData)\
+            .where(SourceData.id == source_file_id)\
+            .values(scheduling_complete=True, scheduling_end_time=datetime.utcnow())
+        self._sql.get_session().execute(stmt)
+        self._sql.get_session().commit()
         self._ioc.message().debug(
             "COMPLETING SOURCE [{0}]".format(
                 str(source_file_id),
             ),
             True
         )
-        self._conn.execute(sql, (source_file_id,))

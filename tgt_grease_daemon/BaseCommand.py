@@ -15,7 +15,7 @@ class GreaseDaemonCommand(GreaseCommand):
         self._machines_effected = 0
         self._start_time = time.time()
         if os.name == 'nt':
-            self._identity_file = "C:\grease\grease_identity.txt"
+            self._identity_file = "C:\\grease\\grease_identity.txt"
         else:
             self._identity_file = "/tmp/grease/grease_identity.txt"
         if os.path.isfile(self._identity_file):
@@ -87,7 +87,7 @@ class GreaseDaemonThreadedCommand(GreaseDaemonCommand, threading.Thread):
     @abstractmethod
     def execute(self, context="{}"):
         """execute should be the primary logic for your execution"""
-        print "Hello"
+        self._ioc.message().debug("Hello World! I am Example Command", True)
         return True
 
     def run(self):

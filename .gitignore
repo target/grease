@@ -6,3 +6,4 @@ dist/
 # VS Code Editor Stuffs
 .vscode/
 .idea/
+tgt_grease.egg-info/

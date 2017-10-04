@@ -31,7 +31,7 @@ class Logger:
             self._handler = logging.FileHandler(logFilename)
             self._handler.setLevel(logging.DEBUG)
             self._formatter = logging.Formatter(
-                "{\"timestamp\": \"%(asctime)s.%(msecs)03d\", \"Node\": \""
+                "{\"timestamp\": \"%(asctime)s.%(msecs)03d\", \"node\": \""
                 + str(self._node_id)
                 + "\", \"thread\": \"%(threadName)s\", \"level\" : \"%(levelname)s\", \"message\" : \"%(message)s\"}",
                 "%Y-%m-%d %H:%M:%S"

@@ -19,10 +19,13 @@ class Logger:
         self.start_time = time.time()
         self._messages = deque(())
         self._notifier = Notifier()
-        try:
-            self._node_id = self._config.node_db_id()
-        except OperationalError:
-            self._node_id = self._config.identity
+        if os.path.isfile(self._config.identity_file):
+            try:
+                self._node_id = self._config.node_db_id()
+            except OperationalError:
+                self._node_id = self._config.identity
+        else:
+            self._node_id = "UNREGISTERED"
         # Setup Log Configuration
         if type(self._config.get('GREASE_LOG_FILE')) == str and os.path.isfile(self._config.get('GREASE_LOG_FILE')):
             fileConfig(self._config.get('GREASE_LOG_FILE'))

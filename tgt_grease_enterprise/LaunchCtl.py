@@ -325,4 +325,6 @@ class LaunchCtl(GreaseDaemonCommand):
     def _action_load_db(self):
         print("LOADING DB")
         RDBMSTypes.__main__()
+        if not os.path.isfile(self._config.identity_file):
+            self._action_register()
         return True

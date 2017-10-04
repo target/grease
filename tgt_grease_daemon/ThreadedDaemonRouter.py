@@ -227,7 +227,7 @@ class DaemonRouter(GreaseRouter.Router):
             # have we moved forward since the last second
             self.log_message_once_a_second("Total Jobs To Process: [0] Current Runs: [{0}]".format(self.get_runs()), -1)
         else:
-            if len(self._ContextMgr) >= 15:
+            if len(self._ContextMgr) >= int(self._config.get('GREASE_THREAD_MAX', '15')):
                 self.log_message_once_a_second("Thread Maximum Reached::Current Runs: [{0}]".format(
                             self.get_runs()
                         ),

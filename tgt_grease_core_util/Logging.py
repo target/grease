@@ -13,13 +13,16 @@ from sqlalchemy.exc import OperationalError
 class Logger:
 
     _config = Configuration()
-    _node_id = _config.node_db_id()
     _unregisteredMode = False
 
     def __init__(self):
         self.start_time = time.time()
         self._messages = deque(())
         self._notifier = Notifier()
+        try:
+            self._node_id = self._config.node_db_id()
+        except OperationalError:
+            self._node_id = self._config.identity
         # Setup Log Configuration
         if type(self._config.get('GREASE_LOG_FILE')) == str and os.path.isfile(self._config.get('GREASE_LOG_FILE')):
             fileConfig(self._config.get('GREASE_LOG_FILE'))
@@ -58,15 +61,7 @@ class Logger:
 
     def dress_message(self, message, level, hipchat, verbose, message_color='gray'):
         # type: (str, str, bool, bool, str) -> str
-        if self._unregisteredMode:
-            message = "[{0}]::".format(str(self._config.identity)) + message
-        else:
-            try:
-                message = "[{0}]::".format(self._config.node_db_id()) + message
-            except OperationalError:
-                self._unregisteredMode = True
-                self.critical("CANNOT CONNECT TO DATABASE")
-                message = "[{0}]::".format(str(self._config.identity)) + message
+        message = "[{0}]::".format(str(self._node_id)) + message
         if verbose:
             message = "VERBOSE::" + message
         message = "{0}::".format(level) + message

@@ -16,7 +16,7 @@ class test_logging(TestCase):
     def test_log_get_messages(self):
         log = Logging.Logger()
         log.debug('random message')
-        self.assertEqual(2, len(log.get_messages()))
+        self.assertEqual(1, len(log.get_messages()))
         del log
 
     def test_empty_logger(self):
@@ -36,4 +36,4 @@ class test_logging(TestCase):
         original = sum(1 for line in open(self._config.grease_dir + self._config.fs_Separator + "grease.log"))
         log.debug("I'm a test message")
         final = sum(1 for line in open(self._config.grease_dir + self._config.fs_Separator + "grease.log"))
-        self.assertEqual(original + 2, final)
+        self.assertEqual(original + 1, final)

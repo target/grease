@@ -307,7 +307,7 @@ class DaemonRouter(GreaseRouter.Router):
         proc = threading.Thread(
                 target=command.attempt_execution,
                 args=(cid, additional),
-                name="GREASE EXECUTION THREAD"
+                name="GREASE EXECUTION THREAD::CID [{0}]".format(cid)
             )
         # set for background
         proc.daemon = True

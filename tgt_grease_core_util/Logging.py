@@ -13,6 +13,7 @@ from sqlalchemy.exc import OperationalError
 class Logger:
 
     _config = Configuration()
+    _node_id = _config.node_db_id()
     _unregisteredMode = False
 
     def __init__(self):
@@ -29,7 +30,12 @@ class Logger:
             self._logger.setLevel(logging.DEBUG)
             self._handler = logging.FileHandler(logFilename)
             self._handler.setLevel(logging.DEBUG)
-            self._formatter = logging.Formatter("{\"timestamp\": \"%(asctime)s.%(msecs)03d\", \"level\" : \"%(levelname)s\", \"message\" : \"%(message)s\"}", "%Y-%m-%d %H:%M:%S")
+            self._formatter = logging.Formatter(
+                "{\"timestamp\": \"%(asctime)s.%(msecs)03d\", \"Node\": \""
+                + str(self._node_id)
+                + "\", \"thread\": \"%(threadName)s\", \"level\" : \"%(levelname)s\", \"message\" : \"%(message)s\"}",
+                "%Y-%m-%d %H:%M:%S"
+            )
             self._handler.setFormatter(self._formatter)
             self._logger.addHandler(self._handler)
 

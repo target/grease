@@ -79,7 +79,7 @@ class Section31(GreaseDaemonCommand):
                     count(sf.id) AS total
                   FROM
                     source_data sf
-                    INNER JOIN grease.job_servers js ON (js.id = sf.detection_server)
+                    INNER JOIN job_servers js ON (js.id = sf.detection_server)
                   WHERE
                     (
                       (
@@ -99,7 +99,7 @@ class Section31(GreaseDaemonCommand):
                     count(sq.id) AS total
                   FROM
                     source_data sq
-                    INNER JOIN grease.job_servers js ON (js.id = sq.scheduling_server)
+                    INNER JOIN job_servers js ON (js.id = sq.scheduling_server)
                   WHERE
                     (
                       (

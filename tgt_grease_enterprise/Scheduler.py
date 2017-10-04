@@ -170,17 +170,27 @@ class Scheduler(GreaseDaemonCommand):
     def _assign(self, job, exec_env, package, ticket, additional=dict):
         # type: (str, str, str, str, dict) -> bool
         # check to ensure this ticket isn't already on the schedule
+        self._ioc.message().debug(
+            "Job Scheduling Starting::Job [{0}] Exec_Env [{1}] Package [{2}] Ticket [{3}] Additional [{4}]".format(
+                str(job),
+                str(exec_env),
+                str(package),
+                str(ticket),
+                str(additional)
+            ),
+            True
+        )
         if len(ticket) > 0:
+            self._ioc.message().debug("Validating ticket ID not already in Job Queue", True)
             result = self._sql.get_session().query(JobQueue)\
                 .filter(JobQueue.ticket == ticket)\
                 .filter(or_(and_(JobQueue.in_progress == False, JobQueue.completed == False), JobQueue.in_progress == True))\
                 .all()
             if result:
-                self._ioc.message().warning(
-                    "Ticket Already in Job Queue for Execution Ticket: [" + str(ticket) + "]"
-                )
+                self._ioc.message().warning("Ticket Already in Job Queue for Execution Ticket")
                 return False
         # lets only get the least assigned server so we can round robin
+        self._ioc.message().debug("Searching for Execution Server", True)
         result = self._sql.get_session()\
             .query(JobServers)\
             .filter(JobServers.execution_environment == exec_env)\
@@ -191,6 +201,12 @@ class Scheduler(GreaseDaemonCommand):
             self._ioc.message().error("No Execution Environments Found For Job: [" + job + "]", hipchat=True)
             return False
         server_info = result.id
+        server_job_count = int(result.jobs_assigned)
+        self._ioc.message().debug(
+            "Job Server Selected [{0}] current assignment total [{1}]".format(server_info, server_job_count),
+            True
+        )
+        self._ioc.message().debug("Searching for Job Configuration", True)
         result = self._sql.get_session().query(JobConfig)\
             .filter(JobConfig.command_module == package)\
             .filter(JobConfig.command_name == job)\
@@ -202,6 +218,7 @@ class Scheduler(GreaseDaemonCommand):
             return False
         job_id = result.id
         # Proceed to schedule
+        self._ioc.message().debug("Creating new job in queue for job [{0}] on node [{1}]".format(job_id, server_info), True)
         JobToQueue = JobQueue(
             host_name=server_info,
             job_id=job_id,
@@ -211,13 +228,13 @@ class Scheduler(GreaseDaemonCommand):
         self._sql.get_session().add(JobToQueue)
         self._sql.get_session().commit()
         # that job and increment the assignment counter
-        stmt = update(JobServers).where(JobServers.id == server_info).values(jobs_assigned=JobServers.jobs_assigned.autoincrement)
-        self._sql.get_session().execute(stmt)
+        self._ioc.message().debug("incrementing jobs assigned on server [{0}]".format(server_info), True)
+        self._sql.get_session().query(JobServers).filter_by(id=server_info).update({'jobs_assigned': server_job_count + 1})
         self._sql.get_session().commit()
         self._ioc.message().debug(
             "JOB [{0}] SCHEDULED FOR SERVER [{1}]".format(
                 str(job_id),
-                str(server_info[1])
+                str(server_info)
             ),
             True
         )

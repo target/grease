@@ -42,7 +42,7 @@ class SourceDeDuplify(object):
         final = []
         # now comes James' version of machine learning. I call it "Blue Collar Machine Learning"
         source_pointer = 0
-        source_max = len(source) - 1
+        source_max = len(source)
         for source_obj in source:
             if not isinstance(source_obj, dict):
                 self._logger.warning('DeDuplification Received NON-DICT Type: [' + str(type(source_obj)) + ']')

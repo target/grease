@@ -13,6 +13,10 @@ class Section31(GreaseDaemonCommand):
         self._config = Configuration()
         self._sql = SQLAlchemyConnection(self._config)
 
+    def __del__(self):
+        super(Section31, self).__del__()
+        self._sql.get_session().close()
+
     def execute(self, context='{}'):
         # first lets get the entire farm
         farm = self._get_farm_status()

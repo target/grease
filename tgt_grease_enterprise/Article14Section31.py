@@ -13,6 +13,10 @@ class Section31(GreaseDaemonCommand):
         self._config = Configuration()
         self._sql = SQLAlchemyConnection(self._config)
 
+    def __del__(self):
+        super(Section31, self).__del__()
+        self._sql.get_session().close()
+
     def execute(self, context='{}'):
         # first lets get the entire farm
         farm = self._get_farm_status()
@@ -79,7 +83,7 @@ class Section31(GreaseDaemonCommand):
                     count(sf.id) AS total
                   FROM
                     source_data sf
-                    INNER JOIN grease.job_servers js ON (js.id = sf.detection_server)
+                    INNER JOIN job_servers js ON (js.id = sf.detection_server)
                   WHERE
                     (
                       (
@@ -99,7 +103,7 @@ class Section31(GreaseDaemonCommand):
                     count(sq.id) AS total
                   FROM
                     source_data sq
-                    INNER JOIN grease.job_servers js ON (js.id = sq.scheduling_server)
+                    INNER JOIN job_servers js ON (js.id = sq.scheduling_server)
                   WHERE
                     (
                       (

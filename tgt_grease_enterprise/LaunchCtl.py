@@ -20,6 +20,10 @@ class LaunchCtl(GreaseDaemonCommand):
         super(LaunchCtl, self).__init__()
         self.purpose = "Register machine with Job Control Database"
 
+    def __del__(self):
+        super(LaunchCtl, self).__del__()
+        self._sql.get_session().close()
+
     def execute(self, context='{}'):
         if len(sys.argv) >= 4:
             action = str(sys.argv[3])

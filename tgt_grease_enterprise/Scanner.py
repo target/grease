@@ -21,6 +21,10 @@ class ScanOnConfig(GreaseDaemonCommand):
         self._importer = Importer(self._ioc.message())
         self._duplification_filter = SourceDeDuplify(self._ioc.message())
 
+    def __del__(self):
+        super(ScanOnConfig, self).__del__()
+        self._sql.get_session().close()
+
     def get_source_data(self):
         # type: () -> dict
         return self._source_data

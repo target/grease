@@ -6,16 +6,26 @@ from logging.config import fileConfig
 import random
 from .Notifier import Notifier
 from .Configuration import Configuration
+# POSTGRES
+from sqlalchemy.exc import OperationalError
 
 
 class Logger:
 
     _config = Configuration()
+    _unregisteredMode = False
 
     def __init__(self):
         self.start_time = time.time()
         self._messages = deque(())
         self._notifier = Notifier()
+        if os.path.isfile(self._config.identity_file):
+            try:
+                self._node_id = self._config.node_db_id()
+            except OperationalError:
+                self._node_id = self._config.identity
+        else:
+            self._node_id = "UNREGISTERED"
         # Setup Log Configuration
         if type(self._config.get('GREASE_LOG_FILE')) == str and os.path.isfile(self._config.get('GREASE_LOG_FILE')):
             fileConfig(self._config.get('GREASE_LOG_FILE'))
@@ -26,7 +36,12 @@ class Logger:
             self._logger.setLevel(logging.DEBUG)
             self._handler = logging.FileHandler(logFilename)
             self._handler.setLevel(logging.DEBUG)
-            self._formatter = logging.Formatter("{\"timestamp\": \"%(asctime)s.%(msecs)03d\", \"level\" : \"%(levelname)s\", \"message\" : \"%(message)s\"}", "%Y-%m-%d %H:%M:%S")
+            self._formatter = logging.Formatter(
+                "{\"timestamp\": \"%(asctime)s.%(msecs)03d\", \"node\": \""
+                + str(self._node_id)
+                + "\", \"thread\": \"%(threadName)s\", \"level\" : \"%(levelname)s\", \"message\" : \"%(message)s\"}",
+                "%Y-%m-%d %H:%M:%S"
+            )
             self._handler.setFormatter(self._formatter)
             self._logger.addHandler(self._handler)
 
@@ -47,45 +62,60 @@ class Logger:
         self._messages = deque(())
         return messages
 
-    def debug(self, message, verbose=False):
-        # type: (str, bool) -> bool
+    def dress_message(self, message, level, hipchat, verbose, message_color='gray'):
+        # type: (str, str, bool, bool, str) -> str
+        message = "[{0}]::".format(str(self._node_id)) + message
+        if verbose:
+            message = "VERBOSE::" + message
+        message = "{0}::".format(level) + message
+        if hipchat:
+            self._notifier.send_hipchat_message(message, message_color)
+        return message
+
+    def debug(self, message, verbose=False, hipchat=False):
+        # type: (str, bool, bool) -> bool
+        message = self.dress_message(message, "DEBUG", hipchat, verbose, 'gray')
         if verbose:
             if not self._config.get('GREASE_VERBOSE_LOGGING'):
                 return True
-            else:
-                message = "VERBOSE::" + str(message).encode('utf-8')
-        message = str(message).encode('utf-8')
         self._messages.append(('DEBUG', time.time(), message))
         return self._logger.debug(message)
 
-    def info(self, message):
-        # type: (str) -> bool
-        message = str(message).encode('utf-8')
+    def info(self, message, verbose=False, hipchat=False):
+        # type: (str, bool, bool) -> bool
+        message = self.dress_message(message, "INFO", hipchat, verbose, 'purple')
+        if verbose:
+            if not self._config.get('GREASE_VERBOSE_LOGGING'):
+                return True
         self._messages.append(('INFO', time.time(), message))
         return self._logger.info(message)
 
-    def warning(self, message):
-        # type: (str) -> bool
-        message = str(message).encode('utf-8')
+    def warning(self, message, verbose=False, hipchat=False):
+        # type: (str, bool, bool) -> bool
+        message = self.dress_message(message, "WARNING", hipchat, verbose, 'yellow')
+        if verbose:
+            if not self._config.get('GREASE_VERBOSE_LOGGING'):
+                return True
         self._messages.append(('WARNING', time.time(), message))
         return self._logger.warning(message)
 
-    def error(self, message):
-        # type: (str) -> bool
-        message = str(message).encode('utf-8')
+    def error(self, message, verbose=False, hipchat=False):
+        # type: (str, bool, bool) -> bool
+        message = self.dress_message(message, "ERROR", hipchat, verbose, 'red')
+        if verbose:
+            if not self._config.get('GREASE_VERBOSE_LOGGING'):
+                return True
         self._messages.append(('ERROR', time.time(), message))
         return self._logger.error(message)
 
     def critical(self, message):
         # type: (str) -> bool
-        message = str(message).encode('utf-8')
+        message = self.dress_message(message, "CRITICAL", True, False, 'red')
         self._messages.append(('CRITICAL', time.time(), message))
-        self._notifier.send_hipchat_message(message)
         return self._logger.critical(message)
 
     def exception(self, message):
         # type: (str) -> bool
-        message = str(message).encode('utf-8')
+        message = self.dress_message(message, "EXCEPTION", True, False, 'red')
         self._messages.append(('EXCEPTION', time.time(), message))
-        self._notifier.send_hipchat_message(message)
         return self._logger.exception(message)

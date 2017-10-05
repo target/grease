@@ -32,17 +32,17 @@ class SourceDeDuplify(object):
     def create_unique_source(self, source_name, field_set, source):
         # type: (str, list, list) -> list
         if not self._dedup:
-            self._logger.warning("Failed To connect to MongoDB de-duplication is off")
+            self._logger.error("Failed To connect to MongoDB de-duplication is off", hipchat=True)
             return source
         # we could connect lets process
         if not isinstance(source, list):
-            self._logger.warning('DeDuplification did not receive list returning empty')
+            self._logger.error('DeDuplification did not receive list returning empty', hipchat=True)
             return []
         self._logger.debug("STARTING DEDUPLICATION::TOTAL OBJECTS TO PROCESS [" + str(len(source)) + "]")
         final = []
         # now comes James' version of machine learning. I call it "Blue Collar Machine Learning"
         source_pointer = 0
-        source_max = len(source) - 1
+        source_max = len(source)
         for source_obj in source:
             if not isinstance(source_obj, dict):
                 self._logger.warning('DeDuplification Received NON-DICT Type: [' + str(type(source_obj)) + ']')
@@ -51,6 +51,7 @@ class SourceDeDuplify(object):
             # first thing try to find the object level hash
             hash_obj = self._collection.find_one({'hash': self.generate_hash(source_obj)})
             if not hash_obj:
+                self._logger.debug("Failed To Locate Type1 Match, Performing Type2 Search Match", True)
                 # Globally unique hash for request
                 # create a completely new document hash and all the field set hashes
                 self._collection.insert_one({
@@ -80,10 +81,12 @@ class SourceDeDuplify(object):
                 # now lets observe to see if we have a 'unique' source
                 if composite_score < float(os.getenv('GREASE_DEDUP_SCORE', 85)):
                     # look at that its time to add it to the final list
+                    self._logger.debug("Type2 ruled Unique adding to final result", True)
                     final.append(source_obj)
             else:
                 # we have a duplicate source document
                 # increase the counter and expiry and move on (DROP)
+                self._logger.debug("Type1 match found, dropping", True)
                 if 'max_expiry' in hash_obj:
                     update_statement = {
                         "$set": {
@@ -106,7 +109,10 @@ class SourceDeDuplify(object):
         # create the auto del index if it doesnt already exist
         self._collection.create_index([('expiry', 1), ('expireAfterSeconds', 1)])
         self._collection.create_index([('max_expiry', 1), ('expireAfterSeconds', 1)])
-        self._logger.debug("DEDUPLICATION COMPLETE::REMAINING OBJECTS [" + str(len(final)) + "]")
+        remaining = len(final) - 1
+        if remaining < 0:
+            remaining = 0
+        self._logger.debug("DEDUPLICATION COMPLETE::REMAINING OBJECTS [" + str(remaining) + "]")
         return final
 
     def get_field_score(self, source_name, document, field_set):
@@ -135,6 +141,7 @@ class SourceDeDuplify(object):
                 # lets only observe fields in our list
                 field_obj = self._collection.find_one({'hash': self.generate_hash(check_document)})
                 if not field_obj:
+                    self._logger.debug("Failed To Locate Type2 Match, Performing Type2 Search", True)
                     # globally unique field->value pair
                     # alright lets start the search for all fields of its name
                     field_probability_list = []
@@ -149,6 +156,7 @@ class SourceDeDuplify(object):
                             break
                         else:
                             field_probability_list.append(self.compare_strings(record['value'], check_document['value']))
+                    self._logger.debug("Failed To Location Type1 Match, Performing Type2 Search", True)
                     # lets record it in the 'brain' to remember it
                     check_document['hash'] = self.generate_hash(check_document)
                     check_document['score'] = 1
@@ -158,10 +166,14 @@ class SourceDeDuplify(object):
                     # now lets either choose the highest probable match we found or 0 being a completely globally
                     # unique value (No matches found in the above loop
                     if len(field_probability_list) > 0:
-                        score_list.append(max(field_probability_list))
+                        probability_average = float(sum(field_probability_list) / len(field_probability_list))
+                        self._logger.debug("Field Probability Average: source [{0}] field [{1}] is [{2}]"
+                                           .format(source_name, field, probability_average), True)
+                        score_list.append(probability_average)
                     else:
                         score_list.append(100)
                 else:
+                    self._logger.debug("Found Type2 Match! Dropping", True)
                     # exact match we can bug out
                     if 'max_expiry' in field_obj:
                         update_statement = {
@@ -185,6 +197,8 @@ class SourceDeDuplify(object):
                     score_list.append(0)
 
         # finally return our aggregate field score
+        if len(score_list) is 0:
+            return 0
         return sum(score_list) / float(len(score_list))
 
     @staticmethod

@@ -268,7 +268,6 @@ class DaemonRouter(GreaseRouter.Router):
                 if not job['persistent']:
                     # This is an on-demand job
                     # we just need to execute it
-                    self.mark_job_in_progress(job['id'])
                     self._log.debug("Passing on-demand job [{0}] to thread manager".format(job['id']), True)
                     self.thread_execute(command, job['id'], job['additional'], False, job['failures'])
                 else:
@@ -314,6 +313,7 @@ class DaemonRouter(GreaseRouter.Router):
         if persistent:
             self._log.debug("Beginning persistent execution of job [{0}] on thread".format(cid), True)
         else:
+            self.mark_job_in_progress(cid)
             self._log.debug("Beginning on-demand execution of job [{0}] on thread".format(cid), True)
         # start
         proc.start()

@@ -17,6 +17,10 @@ class Detector(GreaseDaemonCommand):
         self._excelsior_config = DetectorConfiguration.ConfigurationLoader()
         self._importer = Importer(self._ioc.message())
 
+    def __del__(self):
+        super(Detector, self).__del__()
+        self._sql.get_session().close()
+
     def execute(self, context='{}'):
         # first lets see if we have some stuff to parse
         result = self._sql.get_session().query(SourceData, JobServers)\

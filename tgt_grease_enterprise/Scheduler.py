@@ -15,6 +15,10 @@ class Scheduler(GreaseDaemonCommand):
         self._config = Configuration()
         self._sql = SQLAlchemyConnection(self._config)
 
+    def __del__(self):
+        super(Scheduler, self).__del__()
+        self._sql.get_session().close()
+
     def execute(self, context='{}'):
         # Lets go get the jobs needing to be scheduled by this server
         result = self._sql.get_session().query(SourceData, JobServers)\

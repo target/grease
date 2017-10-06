@@ -1,5 +1,6 @@
 import importlib
 from tgt_grease_core_util.Logging import Logger
+from .Configuration import Configuration
 
 
 class Importer(object):
@@ -7,6 +8,7 @@ class Importer(object):
         # type: (Logger) -> None
         self.purpose = "to load modules"
         self._log = logger
+        self._config = Configuration()
 
     def load(self, module_name, module_class, fully_qualified=False):
         import inspect
@@ -15,7 +17,7 @@ class Importer(object):
             if bool(fully_qualified):
                 loaded_module = importlib.import_module(str(module_name))
             else:
-                loaded_module = importlib.import_module('tgt_grease_' + str(module_name))
+                loaded_module = importlib.import_module(str(self._config.get('GREASE_PKG_LOADER', '')) + str(module_name))
             try:
                 req = getattr(loaded_module, module_class)
                 instance = req()

@@ -19,13 +19,17 @@ class Section31(GreaseDaemonCommand):
 
     def execute(self, context='{}'):
         # first lets get the entire farm
+        self._ioc.message().debug("Fetching Current Farm Status", True)
         farm = self._get_farm_status()
         # now lets check each server from the last known state
+        self._ioc.message().debug("Examining each server. Current servers: [{0}]".format(len(farm)), True)
         for server in farm:
             if self._server_alive(server):
                 # server seems to be alive keep going
+                self._ioc.message().debug("Server is Alive::Skipping", True)
                 continue
             else:
+                self._ioc.message().debug("Server is not alive! Attempting to claim", True)
                 # server is not alive, we need to migrate work from it
                 # first lets declare ourselves as the doctor
                 self._declare_doctor(server[0])
@@ -34,9 +38,11 @@ class Section31(GreaseDaemonCommand):
                 # okay lets ensure we are still the doctor
                 if self._am_i_the_doctor(server[0]):
                     # time to reassign
+                    self._ioc.message().debug("I am still the doctor, preparing to cull", True)
                     self._cull_server(server[0])
                 else:
                     # during our slumber someone else decided to work on this server let them have it
+                    self._ioc.message().debug("Doctor previously declared. Returning", True)
                     continue
         return True
 
@@ -165,16 +171,19 @@ class Section31(GreaseDaemonCommand):
 
     def _server_alive(self, server):
         # type: (list) -> bool
+        self._ioc.message().debug("data received to be processed [{0}]".format(str(server)), True)
         result = self._sql.get_session().query(ServerHealth)\
             .filter(ServerHealth.server == server[0])\
             .first()
         if not result:
+            self._ioc.message().debug("Server not in health::registering", True)
             # if this is a server not checked into health before
-            self._register_in_health(server[0])
+            self._register_in_health(server)
             result = self._sql.get_session().query(ServerHealth)\
                 .filter(ServerHealth.server == server[0])\
                 .first()
         # now return to regular logic
+        self._ioc.message().debug("Inspecting last check timestamp", True)
         if result.check_time < (datetime.datetime.now(result.check_time.tzinfo) - datetime.timedelta(hours=6)):
             # server status is old
             # lets check the hash though

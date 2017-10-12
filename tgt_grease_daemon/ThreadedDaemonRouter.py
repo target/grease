@@ -8,6 +8,7 @@ from tgt_grease_core_util import SQLAlchemyConnection
 from sqlalchemy import update, and_, or_
 from datetime import datetime
 from tgt_grease_core_util import Grease
+from psutil import cpu_percent, virtual_memory
 from . import Daemon
 import threading
 import os
@@ -222,13 +223,26 @@ class DaemonRouter(GreaseRouter.Router):
         if len(job_queue) is 0:
             # have we moved forward since the last second
             self.log_message_once_a_second("Total Jobs To Process: [0]", -1)
+            del job_queue
+            self.thread_check()
+            return True
         else:
-            if len(self._ContextMgr) >= int(self._config.get('GREASE_THREAD_MAX', '15')):
+            # Ensure we aren't swamping the system
+            cpu = cpu_percent()
+            mem = virtual_memory().percent
+            if cpu >= int(self._config.get('GREASE_THREAD_MAX', '85')) or mem >= int(self._config.get('GREASE_THREAD_MAX', '85')):
                 self.log_message_once_a_second(
-                    "Thread Maximum Reached",
+                    "Thread Maximum Reached CPU: [{0}] Memory: [{1}]".format(cpu, mem),
                     -10
                 )
+                # remove variables
+                del cpu
+                del mem
+                self.thread_check()
                 return True
+            # remove variables
+            del cpu
+            del mem
             # We have some jobs to process
             if self._job_metadata['normal'] is 0:
                 # we only have persistent jobs to process
@@ -238,7 +252,7 @@ class DaemonRouter(GreaseRouter.Router):
                     0
                 )
             else:
-                self._log.debug("Total Jobs To Process: [0]", -1)
+                self._log.debug("Total On-Demand Jobs to Process: [{0}]".format(self._job_metadata['normal']))
             # now lets loop through the job schedule
             for job in job_queue:
                 # start class up

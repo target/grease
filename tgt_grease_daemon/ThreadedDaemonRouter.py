@@ -26,7 +26,6 @@ class DaemonRouter(GreaseRouter.Router):
     __version__ = "1.0"
 
     _config = Configuration()
-    _runs = 0
     _throttle_tick = 0
     _job_completed_queue = []
     _current_real_second = datetime.now().second
@@ -109,7 +108,6 @@ class DaemonRouter(GreaseRouter.Router):
             else:
                 self.process_queue_threaded()
             # Final Clean Up
-            self.inc_runs()
             self.inc_throttle_tick()
             self.have_we_moved_forward_in_time()
             # After all this check for new windows services
@@ -142,21 +140,19 @@ class DaemonRouter(GreaseRouter.Router):
         # type: () -> bool
         job_queue = self.get_assigned_jobs()
         if len(job_queue) is 0:
-            self.log_message_once_a_second("Total Jobs To Process: [0] Current Runs: [{0}]".format(self.get_runs()), -1)
+            self.log_message_once_a_second("Total Jobs To Process: [0]", -1)
         else:
             # We have some jobs to process
             if self._job_metadata['normal'] > 0:
                 # if we have any normal jobs lets log
-                self._log.debug("Total Jobs To Process: [{0}] Current Runs: [{1}]".format(
-                    self._job_metadata['normal'],
-                    self.get_runs()
+                self._log.debug("Total Jobs To Process: [{0}]".format(
+                    self._job_metadata['normal']
                 )
                 )
             else:
                 # we only have persistent jobs to process
-                self.log_message_once_a_second("Total Jobs To Process: [{0}] Current Runs: [{1}]".format(
-                        len(job_queue),
-                        self.get_runs()
+                self.log_message_once_a_second("Total Jobs To Process: [{0}]".format(
+                        len(job_queue)
                     ),
                     0
                 )
@@ -225,26 +221,24 @@ class DaemonRouter(GreaseRouter.Router):
         job_queue = self.get_assigned_jobs()
         if len(job_queue) is 0:
             # have we moved forward since the last second
-            self.log_message_once_a_second("Total Jobs To Process: [0] Current Runs: [{0}]".format(self.get_runs()), -1)
+            self.log_message_once_a_second("Total Jobs To Process: [0]", -1)
         else:
             if len(self._ContextMgr) >= int(self._config.get('GREASE_THREAD_MAX', '15')):
-                self.log_message_once_a_second("Thread Maximum Reached::Current Runs: [{0}]".format(
-                            self.get_runs()
-                        ),
+                self.log_message_once_a_second(
+                    "Thread Maximum Reached",
                     -10
                 )
                 return True
             # We have some jobs to process
             if self._job_metadata['normal'] is 0:
                 # we only have persistent jobs to process
-                self.log_message_once_a_second("Total Jobs To Process: [{0}] Current Runs: [{1}]".format(
-                            len(job_queue),
-                            self.get_runs()
+                self.log_message_once_a_second("Total Jobs To Process: [{0}]".format(
+                            len(job_queue)
                     ),
                     0
                 )
             else:
-                self._log.debug("Total Jobs To Process: [0] Current Runs: [{0}]".format(self.get_runs()), -1)
+                self._log.debug("Total Jobs To Process: [0]", -1)
             # now lets loop through the job schedule
             for job in job_queue:
                 # start class up
@@ -463,33 +457,6 @@ class DaemonRouter(GreaseRouter.Router):
         return final
 
     # Class Property getter/setters/methods
-
-    # run counter
-    def get_runs(self):
-        """
-        returns int of amount of loops
-        :return: int
-        """
-        # type: () -> int
-        return int(self._runs)
-
-    def inc_runs(self):
-        """
-        increments run count
-        :return: None
-        """
-        # type: () -> bool
-        self._runs += 1
-        return True
-
-    def reset_runs(self):
-        """
-        resets the run counter to 0
-        :return: bool
-        """
-        # type: () -> bool
-        self._runs = 0
-        return True
 
     # Job Completed Queue
     def add_job_to_completed_queue(self, job_ib):

@@ -4,7 +4,7 @@ import os
 
 setup(
     name='tgt_grease',
-    version='1.2.8',
+    version='1.3.8',
     description='GRE Application Service Engine',
     long_description="Automation Engine for operations",
     classifiers=[
@@ -32,7 +32,8 @@ setup(
         'requests',
         'pymongo',
         'sqlalchemy',
-        'python-dotenv'
+        'python-dotenv',
+        'psutil'
     ] + (
          ["pypiwin32"] if "nt" == os.name else []
         ),

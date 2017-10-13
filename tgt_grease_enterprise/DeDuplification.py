@@ -10,7 +10,7 @@ from difflib import SequenceMatcher
 
 
 class SourceDeDuplify(object):
-    def __init__(self, logger):
+    def __init__(self, logger, collection='source_dedup'):
         # type: (Logging.Logger) -> None
         self._logger = logger
         try:
@@ -20,7 +20,7 @@ class SourceDeDuplify(object):
                 name=os.getenv('GREASE_MONGO_DB', 'grease'),
                 write_concern=pymongo.WriteConcern(w=0)
             )
-            self._collection = self._db.get_collection(name='source_dedup')
+            self._collection = self._db.get_collection(name=collection)
             self._dedup = True
         except ServerSelectionTimeoutError:
             self._mongo_connection = None
@@ -30,11 +30,7 @@ class SourceDeDuplify(object):
             self._dedup = False
 
     def __del__(self):
-        del self._collection
-        del self._db
         self._client.close()
-        del self._client
-        del self._mongo_connection
 
     def create_unique_source(self, source_name, field_set, source):
         # type: (str, list, list) -> list

@@ -24,8 +24,6 @@ class ScanOnConfig(GreaseDaemonCommand):
     def __del__(self):
         super(ScanOnConfig, self).__del__()
         self._sql.get_session().close()
-        self._duplification_filter.__del__()
-        del self._duplification_filter
 
     def get_source_data(self):
         # type: () -> dict
@@ -38,7 +36,8 @@ class ScanOnConfig(GreaseDaemonCommand):
     def execute(self, context='{}'):
         # engage scanning
         self.scan()
-        # clear up this 
+        # clear up this
+        self._duplification_filter.__del__()
         del self._duplification_filter
         return True
 

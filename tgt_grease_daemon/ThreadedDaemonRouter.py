@@ -13,6 +13,7 @@ from . import Daemon
 import threading
 import os
 import sys
+import gc
 
 # PyWin32
 if os.name == 'nt':
@@ -89,6 +90,8 @@ class DaemonRouter(GreaseRouter.Router):
         if self._config.get('GREASE_EXECUTE_LINEAR'):
             self._log.debug("LINEAR EXECUTION MODE DETECTED")
         while True:
+            # Garbage collection
+            gc.collect()
             # Windows Signal Catching
             if self._config.op_name == 'nt':
                 if not rc != win32event.WAIT_OBJECT_0:
@@ -115,6 +118,8 @@ class DaemonRouter(GreaseRouter.Router):
             if os.name == 'nt':
                 # Block .5ms to listen for exit sig
                 rc = win32event.WaitForSingleObject(self.get_process().hWaitStop, 50)
+            # garbage collection
+            gc.collect()
 
     def log_message_once_a_second(self, message, queue_id):
         # type: (str, int) -> bool

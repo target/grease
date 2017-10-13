@@ -29,6 +29,13 @@ class SourceDeDuplify(object):
             self._collection = None
             self._dedup = False
 
+    def __del__(self):
+        del self._collection
+        del self._db
+        self._client.close()
+        del self._client
+        del self._mongo_connection
+
     def create_unique_source(self, source_name, field_set, source):
         # type: (str, list, list) -> list
         if not self._dedup:

@@ -251,8 +251,6 @@ class DaemonRouter(GreaseRouter.Router):
                     ),
                     0
                 )
-            else:
-                self._log.debug("Total On-Demand Jobs to Process: [{0}]".format(self._job_metadata['normal']))
             # now lets loop through the job schedule
             for job in job_queue:
                 # start class up
@@ -322,7 +320,7 @@ class DaemonRouter(GreaseRouter.Router):
             self._log.debug("Beginning persistent execution of job [{0}] on thread".format(cid), True)
         else:
             self.mark_job_in_progress(cid)
-            self._log.debug("Beginning on-demand execution of job [{0}] on thread".format(cid), True)
+            self._log.debug("Beginning on-demand execution of job [{0}] on thread".format(cid))
         # start
         proc.start()
         # add command to pool

@@ -60,6 +60,7 @@ class SourceDeDuplify(object):
                 self._collection.insert_one({
                     'expiry': self.generate_expiry_time(),
                     'max_expiry': self.generate_max_expiry_time(),
+                    'source': str(source_name),
                     'score': 1,
                     'hash': self.generate_hash(source_obj)
                 })

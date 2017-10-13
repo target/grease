@@ -91,6 +91,7 @@ class DaemonRouter(GreaseRouter.Router):
             self._log.debug("LINEAR EXECUTION MODE DETECTED")
         while True:
             # Garbage collection
+            self._log.debug("Garbage Collection Occurring", verbose=True)
             gc.collect()
             # Windows Signal Catching
             if self._config.op_name == 'nt':
@@ -119,6 +120,7 @@ class DaemonRouter(GreaseRouter.Router):
                 # Block .5ms to listen for exit sig
                 rc = win32event.WaitForSingleObject(self.get_process().hWaitStop, 50)
             # garbage collection
+            self._log.debug("Garbage Collection Occurring", verbose=True)
             gc.collect()
 
     def log_message_once_a_second(self, message, queue_id):

@@ -228,7 +228,7 @@ class DaemonRouter(GreaseRouter.Router):
             return True
         else:
             # Ensure we aren't swamping the system
-            cpu = cpu_percent()
+            cpu = cpu_percent(interval=1)
             mem = virtual_memory().percent
             if cpu >= int(self._config.get('GREASE_THREAD_MAX', '85')) or mem >= int(self._config.get('GREASE_THREAD_MAX', '85')):
                 self.log_message_once_a_second(

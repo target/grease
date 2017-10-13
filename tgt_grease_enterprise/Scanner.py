@@ -36,7 +36,8 @@ class ScanOnConfig(GreaseDaemonCommand):
     def execute(self, context='{}'):
         # engage scanning
         self.scan()
-        # clear up this 
+        # clear up this
+        self._duplification_filter.__del__()
         del self._duplification_filter
         return True
 

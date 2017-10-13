@@ -10,7 +10,7 @@ from difflib import SequenceMatcher
 
 
 class SourceDeDuplify(object):
-    def __init__(self, logger):
+    def __init__(self, logger, collection='source_dedup'):
         # type: (Logging.Logger) -> None
         self._logger = logger
         try:
@@ -20,7 +20,7 @@ class SourceDeDuplify(object):
                 name=os.getenv('GREASE_MONGO_DB', 'grease'),
                 write_concern=pymongo.WriteConcern(w=0)
             )
-            self._collection = self._db.get_collection(name='source_dedup')
+            self._collection = self._db.get_collection(name=collection)
             self._dedup = True
         except ServerSelectionTimeoutError:
             self._mongo_connection = None
@@ -28,6 +28,9 @@ class SourceDeDuplify(object):
             self._db = None
             self._collection = None
             self._dedup = False
+
+    def __del__(self):
+        self._client.close()
 
     def create_unique_source(self, source_name, field_set, source):
         # type: (str, list, list) -> list
@@ -57,8 +60,10 @@ class SourceDeDuplify(object):
                 self._collection.insert_one({
                     'expiry': self.generate_expiry_time(),
                     'max_expiry': self.generate_max_expiry_time(),
+                    'source': str(source_name),
                     'score': 1,
-                    'hash': self.generate_hash(source_obj)
+                    'hash': self.generate_hash(source_obj),
+                    'type': 1
                 })
                 # Next start field level processing
                 # first check if our fields are limited
@@ -162,6 +167,7 @@ class SourceDeDuplify(object):
                     check_document['score'] = 1
                     check_document['expiry'] = self.generate_expiry_time()
                     check_document['max_expiry'] = self.generate_max_expiry_time()
+                    check_document['type'] = 2
                     self._collection.insert_one(check_document)
                     # now lets either choose the highest probable match we found or 0 being a completely globally
                     # unique value (No matches found in the above loop

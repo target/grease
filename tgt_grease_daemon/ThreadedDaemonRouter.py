@@ -13,6 +13,7 @@ from . import Daemon
 import threading
 import os
 import sys
+import gc
 
 # PyWin32
 if os.name == 'nt':
@@ -89,6 +90,9 @@ class DaemonRouter(GreaseRouter.Router):
         if self._config.get('GREASE_EXECUTE_LINEAR'):
             self._log.debug("LINEAR EXECUTION MODE DETECTED")
         while True:
+            # Garbage collection
+            self._log.debug("Garbage Collection Occurring", verbose=True)
+            gc.collect()
             # Windows Signal Catching
             if self._config.op_name == 'nt':
                 if not rc != win32event.WAIT_OBJECT_0:
@@ -115,6 +119,9 @@ class DaemonRouter(GreaseRouter.Router):
             if os.name == 'nt':
                 # Block .5ms to listen for exit sig
                 rc = win32event.WaitForSingleObject(self.get_process().hWaitStop, 50)
+            # garbage collection
+            self._log.debug("Garbage Collection Occurring", verbose=True)
+            gc.collect()
 
     def log_message_once_a_second(self, message, queue_id):
         # type: (str, int) -> bool
@@ -228,7 +235,7 @@ class DaemonRouter(GreaseRouter.Router):
             return True
         else:
             # Ensure we aren't swamping the system
-            cpu = cpu_percent()
+            cpu = cpu_percent(interval=1)
             mem = virtual_memory().percent
             if cpu >= int(self._config.get('GREASE_THREAD_MAX', '85')) or mem >= int(self._config.get('GREASE_THREAD_MAX', '85')):
                 self.log_message_once_a_second(
@@ -251,8 +258,6 @@ class DaemonRouter(GreaseRouter.Router):
                     ),
                     0
                 )
-            else:
-                self._log.debug("Total On-Demand Jobs to Process: [{0}]".format(self._job_metadata['normal']))
             # now lets loop through the job schedule
             for job in job_queue:
                 # start class up
@@ -322,7 +327,7 @@ class DaemonRouter(GreaseRouter.Router):
             self._log.debug("Beginning persistent execution of job [{0}] on thread".format(cid), True)
         else:
             self.mark_job_in_progress(cid)
-            self._log.debug("Beginning on-demand execution of job [{0}] on thread".format(cid), True)
+            self._log.debug("Beginning on-demand execution of job [{0}] on thread".format(cid))
         # start
         proc.start()
         # add command to pool

@@ -11,13 +11,14 @@ class Configuration(object):
 
     _config = {}
     if os.name == 'nt':
-        grease_dir = "C:\\grease"
+        grease_dir = "C:\\grease\\"
     else:
-        grease_dir = "/var/tmp/grease"
+        grease_dir = "/var/tmp/grease" + os.sep
     fs_Separator = os.sep
     op_name = os.name
     grease_log = grease_dir + os.sep + "grease.log"
     identity_file = grease_dir + os.sep + "grease_identity.txt"
+    mock_dir = grease_dir + os.sep + "mock" + os.sep
     identity = None
     _node_db_id = None
 
@@ -25,6 +26,8 @@ class Configuration(object):
         # Ensure the GREASE Dir
         if not os.path.isdir(self.grease_dir):
             os.mkdir(self.grease_dir)
+        if not os.path.isdir(self.mock_dir):
+            os.mkdir(self.mock_dir)
         # load up config
         self._load_config()
 

@@ -71,18 +71,22 @@ class ScanOnConfig(GreaseDaemonCommand):
                     "PARSING SOURCE [{0}]".format(str(scanner)),
                     True
                 )
-                parser.parse_source(self._scanner_config.get_scanner_config(scanner))
-                # lets get the results of the parse
-                # here we run our de-duplication logic
-                self._ioc.message().debug(
-                    "PASSING RESULT TO DEDUPLICATION ENGINE [{0}]".format(str(scanner)),
-                    True
-                )
-                source = self._duplification_filter.create_unique_source(
-                    scanner,
-                    parser.duplicate_check_fields(),
-                    list(parser.get_records())
-                )
+                if not self._config.get('GREASE_LOCAL_SOURCING'):
+                    parser.parse_source(self._scanner_config.get_scanner_config(scanner))
+                    # lets get the results of the parse
+                    # here we run our de-duplication logic
+                    self._ioc.message().debug(
+                        "PASSING RESULT TO DEDUPLICATION ENGINE [{0}]".format(str(scanner)),
+                        True
+                    )
+                    source = self._duplification_filter.create_unique_source(
+                        scanner,
+                        parser.duplicate_check_fields(),
+                        list(parser.get_records())
+                    )
+                else:
+                    self._ioc.message().warning("Local Sourcing Mode Detected")
+                    source = parser.mock_data()
                 self._ioc.message().debug(
                     "ATTEMPTING DETECTION SCHEDULING [{0}]".format(str(scanner)),
                     True

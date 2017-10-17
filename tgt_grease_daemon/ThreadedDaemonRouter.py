@@ -87,8 +87,6 @@ class DaemonRouter(GreaseRouter.Router):
         # initial rc value
         rc = "Garbage"
         # All programs are just loops
-        if self._config.get('GREASE_EXECUTE_LINEAR'):
-            self._log.debug("LINEAR EXECUTION MODE DETECTED")
         while True:
             # Garbage collection
             gc.collect()
@@ -107,10 +105,11 @@ class DaemonRouter(GreaseRouter.Router):
                     self.have_we_moved_forward_in_time()
                     continue
             # Job Processing
-            if self._config.get('GREASE_EXECUTE_LINEAR'):
-                self.process_queue_standard()
-            else:
+            if not self._config.get('GREASE_EXECUTE_LINEAR'):
                 self.process_queue_threaded()
+            else:
+                self.log_message_once_a_second("LINEAR EXECUTION MODE DETECTED", -12)
+                self.process_queue_standard()
             # Final Clean Up
             self.inc_throttle_tick()
             self.have_we_moved_forward_in_time()

@@ -30,8 +30,8 @@ class DaemonRouter(GreaseRouter.Router):
     _config = Configuration()
     _throttle_tick = 0
     _job_completed_queue = []
-    _current_real_second = datetime.now().second
-    _current_run_second = datetime.now().second
+    _current_real_second = datetime.utcnow().second
+    _current_run_second = datetime.utcnow().second
     _log = Logger()
     _process = None
     _importer = Importer(_log)
@@ -254,7 +254,9 @@ class DaemonRouter(GreaseRouter.Router):
             # Ensure we aren't swamping the system
             cpu = cpu_percent(interval=1)
             mem = virtual_memory().percent
-            if cpu >= int(self._config.get('GREASE_THREAD_MAX', '85')) or mem >= int(self._config.get('GREASE_THREAD_MAX', '85')):
+            if \
+                    cpu >= int(self._config.get('GREASE_THREAD_MAX', '85')) \
+                    or mem >= int(self._config.get('GREASE_THREAD_MAX', '85')):
                 self.log_message_once_a_second(
                     "Thread Maximum Reached CPU: [{0}] Memory: [{1}]".format(cpu, mem),
                     -10
@@ -398,7 +400,9 @@ class DaemonRouter(GreaseRouter.Router):
         :param job_id: int
         :return: bool
         """
-        stmt = update(JobQueue).where(JobQueue.id == job_id).values(in_progress=False, completed=True, complete_time=datetime.now())
+        stmt = update(JobQueue)\
+            .where(JobQueue.id == job_id)\
+            .values(in_progress=False, completed=True, complete_time=datetime.utcnow())
         self._alchemyConnection.get_session().execute(stmt)
         self._alchemyConnection.get_session().commit()
         return True
@@ -434,7 +438,12 @@ class DaemonRouter(GreaseRouter.Router):
             .query(JobQueue, JobConfig)\
             .filter(JobQueue.host_name == self._config.node_db_id())\
             .filter(JobQueue.job_id == JobConfig.id) \
-            .filter(or_(and_(JobQueue.in_progress == False, JobQueue.completed == False), JobQueue.in_progress == True)) \
+            .filter(or_(
+                and_(
+                        JobQueue.in_progress == False, JobQueue.completed == False
+                ),
+                JobQueue.in_progress == True)
+            ) \
             .filter(JobQueue.failures < 6)\
             .all()
         if not result:
@@ -492,7 +501,6 @@ class DaemonRouter(GreaseRouter.Router):
         """
         # type: int -> bool
         if int(job_ib) not in self._job_completed_queue:
-            self._log.debug("Job Executed This Second [{0}]".format(job_ib), True)
             self._job_completed_queue.append(int(job_ib))
             return True
         else:
@@ -516,7 +524,6 @@ class DaemonRouter(GreaseRouter.Router):
         :return: bool
         """
         # type: () -> bool
-        self._log.debug("Completed Per-Second Queue Cleared", True)
         self._job_completed_queue = []
 
     # throttle tick
@@ -571,7 +578,7 @@ class DaemonRouter(GreaseRouter.Router):
         :return: int
         """
         # type: () -> int
-        return datetime.now().second
+        return datetime.utcnow().second
 
     def get_current_run_second(self):
         """
@@ -600,7 +607,6 @@ class DaemonRouter(GreaseRouter.Router):
         if self.get_current_run_second() == self.get_current_real_second():
             return False
         else:
-            self._log.debug("Time has moved forward! Restoring Context", True)
             self.set_current_run_second(self.get_current_real_second())
             self.reset_completed_job_queue()
             self.reset_throttle_tick()

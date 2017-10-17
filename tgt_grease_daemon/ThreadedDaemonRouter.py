@@ -142,6 +142,27 @@ class DaemonRouter(GreaseRouter.Router):
             else:
                 return False
 
+    def create_obj(self, mod, command):
+        # start class up
+        command = self._importer.load(mod, command)
+        # ensure we got back the correct type
+        if not command:
+            self._log.error(
+                "Failed To Load Command [{0}] of [{1}]"
+                .format(
+                    command,
+                    mod
+                ),
+                hipchat=True
+            )
+            del command
+            return None
+        if not isinstance(command, GreaseDaemonCommand):
+            self._log.error("Instance created was not of type GreaseDaemonCommand", hipchat=True)
+            del command
+            return None
+        return command
+
     def process_queue_standard(self):
         # type: () -> bool
         job_queue = self.get_assigned_jobs()
@@ -229,7 +250,6 @@ class DaemonRouter(GreaseRouter.Router):
             # have we moved forward since the last second
             self.log_message_once_a_second("Total Jobs To Process: [0]", -1)
             del job_queue
-            self.thread_check()
             return True
         else:
             # Ensure we aren't swamping the system
@@ -258,47 +278,32 @@ class DaemonRouter(GreaseRouter.Router):
                 )
             # now lets loop through the job schedule
             for job in job_queue:
-                # start class up
-                command = self._importer.load(job['module'], job['command'])
-                # ensure we got back the correct type
-                if not command:
-                    self._log.error(
-                        "Failed To Load Command [{0}] of [{1}]"
-                        .format(
-                            job['command'],
-                            job['module']
-                        ),
-                        hipchat=True
-                    )
-                    del command
-                    continue
-                if not isinstance(command, GreaseDaemonCommand):
-                    self._log.error("Instance created was not of type GreaseDaemonCommand", hipchat=True)
-                    del command
-                    continue
+                # check for persistent status
                 if not job['persistent']:
                     # This is an on-demand job
                     # we just need to execute it
                     self._log.debug("Passing on-demand job [{0}] to thread manager".format(job['id']), True)
-                    self.thread_execute(command, job['id'], job['additional'], False, job['failures'])
+                    command = self.create_obj(job['module'], job['command'])
+                    if command:
+                        self.thread_execute(command, job['id'], job['additional'], False, job['failures'])
+                    else:
+                        self._ioc.message().error("Failed to generate command [{0}]".format(job['command']))
                 else:
                     # This is a persistent job
                     if self.has_job_run(job['id']):
                         # Job Already Executed
-                        command.__del__()
-                        del command
                         continue
                     else:
                         if job['tick'] is self.get_current_run_second():
-                            self._log.debug("Passing persistent job [{0}] to thread manager".format(job['id']), True)
-                            self.thread_execute(command, job['id'], job['additional'], True)
+                            command = self.create_obj(job['module'], job['command'])
+                            if command:
+                                self.thread_execute(command, job['id'], job['additional'], True)
+                            else:
+                                self._ioc.message().error("Failed to generate command [{0}]".format(job['command']))
                             self.add_job_to_completed_queue(job['id'])
                         else:
                             # continue because we are not in the tick required
-                            command.__del__()
-                            del command
                             continue
-        self.thread_check()
         return True
 
     def thread_execute(self, command, cid, additional, persistent, failures=0):
@@ -340,14 +345,18 @@ class DaemonRouter(GreaseRouter.Router):
 
     def thread_check(self):
         final = []
-        # Check for tread completion else add back to list
-        for command in self._ContextMgr:
-            if command[1].isAlive():
-                final.append(command)
-            else:
-                self._log.info("Job completed [{0}]".format(command[2]), True)
-                self.record_telemetry(command[0], command[2], command[4], command[3])
-        self._ContextMgr = final
+        if not len(self._ContextMgr):
+            # context manager is empty
+            return
+        else:
+            # Check for tread completion else add back to list
+            for command in self._ContextMgr:
+                if command[1].isAlive():
+                    final.append(command)
+                else:
+                    self._log.info("Job completed [{0}]".format(command[2]), True)
+                    self.record_telemetry(command[0], command[2], command[4], command[3])
+            self._ContextMgr = final
         return
 
     def record_telemetry(self, command, cid, failures, persistent):

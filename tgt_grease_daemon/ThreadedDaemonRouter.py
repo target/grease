@@ -223,7 +223,7 @@ class DaemonRouter(GreaseRouter.Router):
         self._ioc.message().debug("Threaded Processing  starting [{0}]".format(datetime.utcnow()), verbose=True)
         self.thread_check()
         # Ensure we aren't swamping the system
-        cpu = cpu_percent(interval=1)
+        cpu = cpu_percent(interval=.1)
         mem = virtual_memory().percent
         if \
                 cpu >= int(self._config.get('GREASE_THREAD_MAX', '85')) \

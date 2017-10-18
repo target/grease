@@ -89,7 +89,7 @@ class SourceDeDuplify(object):
         # create the auto del index if it doesnt already exist
         self._collection.create_index([('expiry', 1), ('expireAfterSeconds', 1)])
         self._collection.create_index([('max_expiry', 1), ('expireAfterSeconds', 1)])
-        if len(final):
+        if len(final) == 1:
             self._logger.debug("DEDUPLICATION COMPLETE::REMAINING OBJECTS [1]")
             return final
         else:

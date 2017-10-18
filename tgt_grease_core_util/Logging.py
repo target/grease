@@ -5,7 +5,6 @@ from collections import deque
 from logging.config import fileConfig
 from .Notifier import Notifier
 from .Configuration import Configuration
-from datetime import datetime
 # POSTGRES
 from sqlalchemy.exc import OperationalError
 
@@ -43,6 +42,7 @@ class Logger:
                 + "\", \"thread\": \"%(threadName)s\", \"level\" : \"%(levelname)s\", \"message\" : \"%(message)s\"}",
                 "%Y-%m-%d %H:%M:%S"
             )
+            self._formatter.converter = time.gmtime
             if not GREASE_LOG_HANDLER:
                 GREASE_LOG_HANDLER = logging.FileHandler(logFilename)
                 GREASE_LOG_HANDLER.setLevel(logging.DEBUG)

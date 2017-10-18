@@ -1,4 +1,4 @@
-from tgt_grease_core_util import Logging
+from tgt_grease_core_util import Logging, Configuration
 from tgt_grease_core_util.Database import MongoConnection
 import datetime
 from pymongo.errors import ServerSelectionTimeoutError
@@ -7,12 +7,15 @@ import hashlib
 import os
 import pymongo
 from difflib import SequenceMatcher
+from psutil import cpu_percent, virtual_memory
+import threading
 
 
 class SourceDeDuplify(object):
     def __init__(self, logger, collection='source_dedup'):
         # type: (Logging.Logger) -> None
         self._logger = logger
+        self._config = Configuration()
         try:
             self._mongo_connection = MongoConnection()
             self._client = self._mongo_connection.client()
@@ -42,83 +45,126 @@ class SourceDeDuplify(object):
             self._logger.error('DeDuplification did not receive list returning empty', hipchat=True)
             return []
         self._logger.debug("STARTING DEDUPLICATION::TOTAL OBJECTS TO PROCESS [" + str(len(source)) + "]")
-        final = []
         # now comes James' version of machine learning. I call it "Blue Collar Machine Learning"
         source_pointer = 0
         source_max = len(source)
-        for source_obj in source:
-            if not isinstance(source_obj, dict):
-                self._logger.warning('DeDuplification Received NON-DICT Type: [' + str(type(source_obj)) + ']')
+        threads = []
+        final = []
+        while source_pointer < source_max:
+            # Ensure we aren't swamping the system
+            cpu = cpu_percent(interval=.1)
+            mem = virtual_memory().percent
+            if \
+                    cpu >= int(self._config.get('GREASE_THREAD_MAX', '85')) \
+                    or mem >= int(self._config.get('GREASE_THREAD_MAX', '85')):
+                self._logger.info("sleeping due to high memory consumption", verbose=True)
+                # remove variables
+                del cpu
+                del mem
                 continue
-            source_pointer += 1
-            # first thing try to find the object level hash
-            hash_obj = self._collection.find_one({'hash': self.generate_hash(source_obj)})
-            if not hash_obj:
-                self._logger.debug("Failed To Locate Type1 Match, Performing Type2 Search Match", True)
-                # Globally unique hash for request
-                # create a completely new document hash and all the field set hashes
-                self._collection.insert_one({
-                    'expiry': self.generate_expiry_time(),
-                    'max_expiry': self.generate_max_expiry_time(),
-                    'source': str(source_name),
-                    'score': 1,
-                    'hash': self.generate_hash(source_obj),
-                    'type': 1
-                })
-                # Next start field level processing
-                # first check if our fields are limited
-                if len(field_set) < 1:
-                    # All fields need to be considered for de-dup
-                    fields = source_obj.keys()
-                else:
-                    # only registered fields
-                    fields = field_set
-                # now lets get the composite score
-                composite_score = self.get_field_score(source_name, source_obj, fields)
-                self._logger.debug(
-                    "DEDUPLICATION COMPOSITE SCORE ["
-                    + str(source_pointer)
-                    + "/"
-                    + str(source_max)
-                    + "]: "
-                    + str(composite_score)
+            if not isinstance(source[source_pointer], dict):
+                self._logger.warning(
+                    'DeDuplification Received NON-DICT Type: [' + str(type(source[source_pointer])) + ']'
                 )
-                # now lets observe to see if we have a 'unique' source
-                if composite_score < float(os.getenv('GREASE_DEDUP_SCORE', 85)):
-                    # look at that its time to add it to the final list
-                    self._logger.debug("Type2 ruled Unique adding to final result", True)
-                    final.append(source_obj)
+                continue
+            if source_pointer is 0:
+                pid_num = 1
             else:
-                # we have a duplicate source document
-                # increase the counter and expiry and move on (DROP)
-                self._logger.debug("Type1 match found, dropping", True)
-                if 'max_expiry' in hash_obj:
-                    update_statement = {
-                        "$set": {
-                            'score': int(hash_obj['score']) + 1,
-                            'expiry': self.generate_expiry_time()
-                        }
-                    }
-                else:
-                    update_statement = {
-                        "$set": {
-                            'score': int(hash_obj['score']) + 1,
-                            'expiry': self.generate_expiry_time(),
-                            'max_expiry': self.generate_max_expiry_time()
-                        }
-                    }
-                self._collection.update_one(
-                    {'_id': hash_obj['_id']},
-                    update_statement
-                )
+                pid_num = source_pointer
+            proc = threading.Thread(
+                target=self.process_obj,
+                args=(source_name, source_max, source_pointer, field_set, source[source_pointer], final,),
+                name="GREASE DEDUPLICATION THREAD [{0}/{1}]".format(pid_num, source_max)
+            )
+            proc.daemon = True
+            proc.start()
+            threads.append(proc)
+            source_pointer += 1
+        self._logger.debug("All source objects have been threaded for processing", verbose=True)
+        while len(threads) > 0:
+            self._logger.debug("Current DeDuplication Threads [{0}]".format(len(threads)), verbose=True)
+            threads_final = []
+            for thread in threads:
+                if thread.isAlive():
+                    threads_final.append(thread)
+            threads = threads_final
+            self._logger.debug("Remaining DeDuplication Threads [{0}]".format(len(threads)), verbose=True)
         # create the auto del index if it doesnt already exist
         self._collection.create_index([('expiry', 1), ('expireAfterSeconds', 1)])
         self._collection.create_index([('max_expiry', 1), ('expireAfterSeconds', 1)])
-        remaining = len(final) - 1
-        if remaining < 0:
-            remaining = 0
-        self._logger.debug("DEDUPLICATION COMPLETE::REMAINING OBJECTS [" + str(remaining) + "]")
-        return final
+        if len(final) == 1:
+            self._logger.debug("DEDUPLICATION COMPLETE::REMAINING OBJECTS [1]")
+            return final
+        else:
+            remaining = len(final) - 1
+            self._logger.debug("DEDUPLICATION COMPLETE::REMAINING OBJECTS [{0}]".format(remaining))
+            return final
+
+    def process_obj(self, source_name, source_max, source_pointer, field_set, source_obj, final):
+        # first thing try to find the object level hash
+        hash_obj = self._collection.find_one({'hash': self.generate_hash(source_obj)})
+        if not hash_obj:
+            self._logger.debug("Failed To Locate Type1 Match, Performing Type2 Search Match", True)
+            # Globally unique hash for request
+            # create a completely new document hash and all the field set hashes
+            self._collection.insert_one({
+                'expiry': self.generate_expiry_time(),
+                'max_expiry': self.generate_max_expiry_time(),
+                'source': str(source_name),
+                'score': 1,
+                'hash': self.generate_hash(source_obj),
+                'type': 1
+            })
+            # Next start field level processing
+            # first check if our fields are limited
+            if len(field_set) < 1:
+                # All fields need to be considered for de-dup
+                fields = source_obj.keys()
+            else:
+                # only registered fields
+                fields = field_set
+            # now lets get the composite score
+            composite_score = self.get_field_score(source_name, source_obj, fields)
+            if source_pointer is 0:
+                compo_spot = 1
+            else:
+                compo_spot = source_pointer
+            self._logger.debug(
+                "DEDUPLICATION COMPOSITE SCORE ["
+                + str(compo_spot)
+                + "/"
+                + str(source_max)
+                + "]: "
+                + str(composite_score)
+            )
+            # now lets observe to see if we have a 'unique' source
+            if composite_score < float(os.getenv('GREASE_DEDUP_SCORE', 85)):
+                # look at that its time to add it to the final list
+                self._logger.debug("Type2 ruled Unique adding to final result", True)
+                final.append(source_obj)
+        else:
+            # we have a duplicate source document
+            # increase the counter and expiry and move on (DROP)
+            self._logger.debug("Type1 match found, dropping", True)
+            if 'max_expiry' in hash_obj:
+                update_statement = {
+                    "$set": {
+                        'score': int(hash_obj['score']) + 1,
+                        'expiry': self.generate_expiry_time()
+                    }
+                }
+            else:
+                update_statement = {
+                    "$set": {
+                        'score': int(hash_obj['score']) + 1,
+                        'expiry': self.generate_expiry_time(),
+                        'max_expiry': self.generate_max_expiry_time()
+                    }
+                }
+            self._collection.update_one(
+                {'_id': hash_obj['_id']},
+                update_statement
+            )
 
     def get_field_score(self, source_name, document, field_set):
         # type: (str, dict, list) -> float

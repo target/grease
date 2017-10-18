@@ -3,7 +3,6 @@ import time
 import logging
 from collections import deque
 from logging.config import fileConfig
-import random
 from .Notifier import Notifier
 from .Configuration import Configuration
 from datetime import datetime

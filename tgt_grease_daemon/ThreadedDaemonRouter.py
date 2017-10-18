@@ -89,8 +89,6 @@ class DaemonRouter(GreaseRouter.Router):
         while True:
             # Garbage collection
             gc.collect()
-            if not datetime.utcnow().second % 10:
-                self._ioc.message().debug("GREASE Daemon server is running")
             # Windows Signal Catching
             if self._config.op_name == 'nt':
                 if not rc != win32event.WAIT_OBJECT_0:

@@ -32,6 +32,9 @@ class DaemonRouter(GreaseRouter.Router):
     _job_completed_queue = []
     _current_real_second = datetime.utcnow().second
     _current_run_second = datetime.utcnow().second
+    _current_real_minute = datetime.utcnow().minute
+    _current_run_minute = datetime.utcnow().minute
+    _job_minute_queue = []
     _log = Logger()
     _process = None
     _importer = Importer(_log)
@@ -90,6 +93,9 @@ class DaemonRouter(GreaseRouter.Router):
         while True:
             # Garbage collection
             gc.collect()
+            if not self.has_job_minute_run(0):
+                self.add_job_to_minute_completed_queue(0)
+                self._ioc.message().debug("GREASE Daemon Running")
             # Windows Signal Catching
             if self._config.op_name == 'nt':
                 if not rc != win32event.WAIT_OBJECT_0:
@@ -117,8 +123,6 @@ class DaemonRouter(GreaseRouter.Router):
             if os.name == 'nt':
                 # Block .5ms to listen for exit sig
                 rc = win32event.WaitForSingleObject(self.get_process().hWaitStop, 50)
-            # garbage collection
-            gc.collect()
 
     def log_message_once_a_second(self, message, queue_id):
         # type: (str, int) -> bool
@@ -244,67 +248,48 @@ class DaemonRouter(GreaseRouter.Router):
     def process_queue_threaded(self):
         # type: () -> bool
         self.thread_check()
-        job_queue = self.get_assigned_jobs()
-        if len(job_queue) is 0:
-            # have we moved forward since the last second
-            self.log_message_once_a_second("Total Jobs To Process: [0]", -1)
-            del job_queue
-            return True
-        else:
-            # Ensure we aren't swamping the system
-            cpu = cpu_percent(interval=1)
-            mem = virtual_memory().percent
-            if \
-                    cpu >= int(self._config.get('GREASE_THREAD_MAX', '85')) \
-                    or mem >= int(self._config.get('GREASE_THREAD_MAX', '85')):
-                self.log_message_once_a_second(
-                    "Thread Maximum Reached CPU: [{0}] Memory: [{1}]".format(cpu, mem),
-                    -10
-                )
-                # remove variables
-                del cpu
-                del mem
-                self.thread_check()
-                return True
+        # Ensure we aren't swamping the system
+        cpu = cpu_percent(interval=1)
+        mem = virtual_memory().percent
+        if \
+                cpu >= int(self._config.get('GREASE_THREAD_MAX', '85')) \
+                or mem >= int(self._config.get('GREASE_THREAD_MAX', '85')):
+            self.log_message_once_a_second(
+                "Thread Maximum Reached CPU: [{0}] Memory: [{1}]".format(cpu, mem),
+                -10
+            )
             # remove variables
             del cpu
             del mem
-            # We have some jobs to process
-            if self._job_metadata['normal'] is 0:
-                # we only have persistent jobs to process
-                self.log_message_once_a_second("Total Jobs To Process: [{0}]".format(
-                            len(job_queue)
-                    ),
-                    0
-                )
-            # now lets loop through the job schedule
-            for job in job_queue:
-                # check for persistent status
-                if not job['persistent']:
-                    # This is an on-demand job
-                    # we just need to execute it
-                    self._log.debug("Passing on-demand job [{0}] to thread manager".format(job['id']), True)
-                    command = self.create_obj(job['module'], job['command'])
-                    if command:
-                        self.thread_execute(command, job['id'], job['additional'], False, job['failures'])
-                    else:
-                        self._ioc.message().error("Failed to generate command [{0}]".format(job['command']))
+            self.thread_check()
+            return True
+        # remove variables
+        del cpu
+        del mem
+        # We have some jobs to process
+        job_queue = self.get_assigned_jobs()
+        # now lets loop through the job schedule
+        for job in job_queue:
+            # check for persistent status
+            if not job['persistent']:
+                # This is an on-demand job
+                # we just need to execute it
+                command = self.create_obj(job['module'], job['command'])
+                if command:
+                    self.thread_execute(command, job['id'], job['additional'], False, job['failures'])
                 else:
-                    # This is a persistent job
-                    if self.has_job_run(job['id']):
-                        # Job Already Executed
-                        continue
-                    else:
-                        if job['tick'] is self.get_current_run_second():
-                            command = self.create_obj(job['module'], job['command'])
-                            if command:
-                                self.thread_execute(command, job['id'], job['additional'], True)
-                            else:
-                                self._ioc.message().error("Failed to generate command [{0}]".format(job['command']))
-                            self.add_job_to_completed_queue(job['id'])
+                    self._ioc.message().error("Failed to generate command [{0}]".format(job['command']))
+            else:
+                # This is a persistent job
+                if not self.has_job_run(job['id']):
+                    if job['tick'] is self.get_current_run_second():
+                        command = self.create_obj(job['module'], job['command'])
+                        if command:
+                            self.thread_execute(command, job['id'], job['additional'], True)
                         else:
-                            # continue because we are not in the tick required
-                            continue
+                            self._ioc.message().error("Failed to generate command [{0}]".format(job['command']))
+                        self.add_job_to_completed_queue(job['id'])
+        del job_queue
         return True
 
     def thread_execute(self, command, cid, additional, persistent, failures=0):
@@ -597,6 +582,49 @@ class DaemonRouter(GreaseRouter.Router):
         # type: int -> None
         self._current_run_second = int(sec)
 
+    @staticmethod
+    def get_current_real_minute():
+        return datetime.utcnow().minute
+
+    def get_current_run_minute(self):
+        return self._current_run_minute
+
+    def set_current_run_minute(self, minute):
+        self._current_run_minute = int(minute)
+
+    def add_job_to_minute_completed_queue(self, job_ib):
+        """
+        Adds Job to queue so we don't run the job again
+        :param job_ib: int
+        :return: bool
+        """
+        # type: int -> bool
+        if int(job_ib) not in self._job_minute_queue:
+            self._job_minute_queue.append(int(job_ib))
+            return True
+        else:
+            return False
+
+    def has_job_minute_run(self, job_id):
+        """
+        Determines if the job ID has run during the current cycle
+        :param job_id: int
+        :return: bool
+        """
+        # type: int -> bool
+        if int(job_id) in self._job_minute_queue:
+            return True
+        else:
+            return False
+
+    def reset_job_minute_queue(self):
+        """
+        clears job run queue
+        :return: bool
+        """
+        # type: () -> bool
+        self._job_minute_queue = []
+
     def have_we_moved_forward_in_time(self):
         """
         Answers the question "have we moved forward in time?"
@@ -604,6 +632,9 @@ class DaemonRouter(GreaseRouter.Router):
         :return: bool
         """
         # type: () -> bool
+        if self.get_current_run_minute() != self.get_current_real_minute():
+            self.set_current_run_minute(self.get_current_real_minute())
+            self.reset_job_minute_queue()
         if self.get_current_run_second() == self.get_current_real_second():
             return False
         else:

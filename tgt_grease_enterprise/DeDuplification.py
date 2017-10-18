@@ -15,7 +15,6 @@ class SourceDeDuplify(object):
     def __init__(self, logger, collection='source_dedup'):
         # type: (Logging.Logger) -> None
         self._logger = logger
-        self._final_result = []
         self._config = Configuration()
         try:
             self._mongo_connection = MongoConnection()
@@ -50,6 +49,7 @@ class SourceDeDuplify(object):
         source_pointer = 0
         source_max = len(source)
         threads = []
+        final = []
         while source_pointer != source_max:
             # Ensure we aren't swamping the system
             cpu = cpu_percent(interval=.1)
@@ -67,31 +67,36 @@ class SourceDeDuplify(object):
                     'DeDuplification Received NON-DICT Type: [' + str(type(source[source_pointer])) + ']'
                 )
                 continue
+            if source_pointer is 0:
+                pid_num = 1
+            else:
+                pid_num = source_pointer
             proc = threading.Thread(
                 target=self.process_obj,
-                args=(source_name, source_max, source_pointer, field_set, source[source_pointer],),
-                name="GREASE DEDUPLICATION THREAD [{0}/{1}]".format(source_pointer, source_max)
+                args=(source_name, source_max, source_pointer, field_set, source[source_pointer], final,),
+                name="GREASE DEDUPLICATION THREAD [{0}/{1}]".format(pid_num, source_max)
             )
             proc.daemon = True
             proc.start()
             threads.append(proc)
             source_pointer += 1
         while len(threads) > 0:
-            final = []
+            threads_final = []
             for thread in threads:
                 if thread.isAlive():
-                    final.append(thread)
-            threads = final
+                    threads_final.append(thread)
+            threads = threads_final
         # create the auto del index if it doesnt already exist
         self._collection.create_index([('expiry', 1), ('expireAfterSeconds', 1)])
         self._collection.create_index([('max_expiry', 1), ('expireAfterSeconds', 1)])
-        remaining = len(self._final_result) - 1
-        if remaining < 0:
-            remaining = 0
-        self._logger.debug("DEDUPLICATION COMPLETE::REMAINING OBJECTS [" + str(remaining) + "]")
-        return self._final_result
+        if len(final):
+            self._logger.debug("DEDUPLICATION COMPLETE::REMAINING OBJECTS [1]")
+            return final
+        else:
+            remaining = len(final) - 1
+            self._logger.debug("DEDUPLICATION COMPLETE::REMAINING OBJECTS [{0}]".format(remaining))
 
-    def process_obj(self, source_name, source_max, source_pointer, field_set, source_obj):
+    def process_obj(self, source_name, source_max, source_pointer, field_set, source_obj, final):
         # first thing try to find the object level hash
         hash_obj = self._collection.find_one({'hash': self.generate_hash(source_obj)})
         if not hash_obj:
@@ -116,9 +121,13 @@ class SourceDeDuplify(object):
                 fields = field_set
             # now lets get the composite score
             composite_score = self.get_field_score(source_name, source_obj, fields)
+            if source_pointer is 0:
+                compo_spot = 1
+            else:
+                compo_spot = source_pointer
             self._logger.debug(
                 "DEDUPLICATION COMPOSITE SCORE ["
-                + str(source_pointer)
+                + str(compo_spot)
                 + "/"
                 + str(source_max)
                 + "]: "
@@ -128,7 +137,7 @@ class SourceDeDuplify(object):
             if composite_score < float(os.getenv('GREASE_DEDUP_SCORE', 85)):
                 # look at that its time to add it to the final list
                 self._logger.debug("Type2 ruled Unique adding to final result", True)
-                self._final_result.append(source_obj)
+                final.append(source_obj)
         else:
             # we have a duplicate source document
             # increase the counter and expiry and move on (DROP)

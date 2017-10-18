@@ -32,9 +32,6 @@ class DaemonRouter(GreaseRouter.Router):
     _job_completed_queue = []
     _current_real_second = datetime.utcnow().second
     _current_run_second = datetime.utcnow().second
-    _current_real_minute = datetime.utcnow().minute
-    _current_run_minute = datetime.utcnow().minute
-    _job_minute_queue = []
     _log = Logger()
     _process = None
     _importer = Importer(_log)
@@ -93,9 +90,8 @@ class DaemonRouter(GreaseRouter.Router):
         while True:
             # Garbage collection
             gc.collect()
-            if not self.has_job_minute_run(0):
-                self.add_job_to_minute_completed_queue(0)
-                self._ioc.message().debug("GREASE Daemon Running")
+            if not datetime.utcnow().second % 10:
+                self._ioc.message().debug("GREASE Daemon server is running")
             # Windows Signal Catching
             if self._config.op_name == 'nt':
                 if not rc != win32event.WAIT_OBJECT_0:
@@ -247,6 +243,7 @@ class DaemonRouter(GreaseRouter.Router):
 
     def process_queue_threaded(self):
         # type: () -> bool
+        self._ioc.message().debug("Threaded Processing [{0}]".format(datetime.utcnow()), verbose=True)
         self.thread_check()
         # Ensure we aren't swamping the system
         cpu = cpu_percent(interval=1)
@@ -582,49 +579,6 @@ class DaemonRouter(GreaseRouter.Router):
         # type: int -> None
         self._current_run_second = int(sec)
 
-    @staticmethod
-    def get_current_real_minute():
-        return datetime.utcnow().minute
-
-    def get_current_run_minute(self):
-        return self._current_run_minute
-
-    def set_current_run_minute(self, minute):
-        self._current_run_minute = int(minute)
-
-    def add_job_to_minute_completed_queue(self, job_ib):
-        """
-        Adds Job to queue so we don't run the job again
-        :param job_ib: int
-        :return: bool
-        """
-        # type: int -> bool
-        if int(job_ib) not in self._job_minute_queue:
-            self._job_minute_queue.append(int(job_ib))
-            return True
-        else:
-            return False
-
-    def has_job_minute_run(self, job_id):
-        """
-        Determines if the job ID has run during the current cycle
-        :param job_id: int
-        :return: bool
-        """
-        # type: int -> bool
-        if int(job_id) in self._job_minute_queue:
-            return True
-        else:
-            return False
-
-    def reset_job_minute_queue(self):
-        """
-        clears job run queue
-        :return: bool
-        """
-        # type: () -> bool
-        self._job_minute_queue = []
-
     def have_we_moved_forward_in_time(self):
         """
         Answers the question "have we moved forward in time?"
@@ -632,9 +586,6 @@ class DaemonRouter(GreaseRouter.Router):
         :return: bool
         """
         # type: () -> bool
-        if self.get_current_run_minute() != self.get_current_real_minute():
-            self.set_current_run_minute(self.get_current_real_minute())
-            self.reset_job_minute_queue()
         if self.get_current_run_second() == self.get_current_real_second():
             return False
         else:

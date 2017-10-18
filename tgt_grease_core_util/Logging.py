@@ -6,16 +6,20 @@ from logging.config import fileConfig
 import random
 from .Notifier import Notifier
 from .Configuration import Configuration
+from datetime import datetime
 # POSTGRES
 from sqlalchemy.exc import OperationalError
 
 
-class Logger:
+GREASE_LOG_HANDLER = None
 
+
+class Logger:
     _config = Configuration()
     _unregisteredMode = False
 
     def __init__(self):
+        global GREASE_LOG_HANDLER
         self.start_time = time.time()
         self._messages = deque(())
         self._notifier = Notifier()
@@ -29,24 +33,25 @@ class Logger:
         # Setup Log Configuration
         if type(self._config.get('GREASE_LOG_FILE')) == str and os.path.isfile(self._config.get('GREASE_LOG_FILE')):
             fileConfig(self._config.get('GREASE_LOG_FILE'))
-            self._logger = logging.getLogger('GREASE-' + str(random.random()))
+            self._logger = logging.getLogger('GREASE')
         else:
             logFilename = self._config.grease_dir + self._config.fs_Separator + "grease.log"
-            self._logger = logging.getLogger('GREASE-' + str(random.random()))
+            self._logger = logging.getLogger('GREASE')
             self._logger.setLevel(logging.DEBUG)
-            self._handler = logging.FileHandler(logFilename)
-            self._handler.setLevel(logging.DEBUG)
             self._formatter = logging.Formatter(
                 "{\"timestamp\": \"%(asctime)s.%(msecs)03d\", \"node\": \""
                 + str(self._node_id)
                 + "\", \"thread\": \"%(threadName)s\", \"level\" : \"%(levelname)s\", \"message\" : \"%(message)s\"}",
                 "%Y-%m-%d %H:%M:%S"
             )
-            self._handler.setFormatter(self._formatter)
-            self._logger.addHandler(self._handler)
+            if not GREASE_LOG_HANDLER:
+                GREASE_LOG_HANDLER = logging.FileHandler(logFilename)
+                GREASE_LOG_HANDLER.setLevel(logging.DEBUG)
+                GREASE_LOG_HANDLER.setFormatter(self._formatter)
+                self._logger.addHandler(GREASE_LOG_HANDLER)
 
     def __del__(self):
-        self._logger.removeHandler(self._handler)
+        return
 
     def get_logger(self):
         # type: () -> logging

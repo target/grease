@@ -50,7 +50,7 @@ class SourceDeDuplify(object):
         source_max = len(source)
         threads = []
         final = []
-        while source_pointer != source_max:
+        while source_pointer < source_max:
             # Ensure we aren't swamping the system
             cpu = cpu_percent(interval=.1)
             mem = virtual_memory().percent
@@ -80,12 +80,15 @@ class SourceDeDuplify(object):
             proc.start()
             threads.append(proc)
             source_pointer += 1
+        self._logger.debug("All source objects have been threaded for processing", verbose=True)
         while len(threads) > 0:
+            self._logger.debug("Current DeDuplication Threads [{0}]".format(len(threads)), verbose=True)
             threads_final = []
             for thread in threads:
                 if thread.isAlive():
                     threads_final.append(thread)
             threads = threads_final
+            self._logger.debug("Remaining DeDuplication Threads [{0}]".format(len(threads)), verbose=True)
         # create the auto del index if it doesnt already exist
         self._collection.create_index([('expiry', 1), ('expireAfterSeconds', 1)])
         self._collection.create_index([('max_expiry', 1), ('expireAfterSeconds', 1)])
@@ -95,6 +98,7 @@ class SourceDeDuplify(object):
         else:
             remaining = len(final) - 1
             self._logger.debug("DEDUPLICATION COMPLETE::REMAINING OBJECTS [{0}]".format(remaining))
+            return final
 
     def process_obj(self, source_name, source_max, source_pointer, field_set, source_obj, final):
         # first thing try to find the object level hash

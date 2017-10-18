@@ -1,4 +1,4 @@
-from tgt_grease_core_util import Logging
+from tgt_grease_core_util import Logging, Configuration
 from tgt_grease_core_util.Database import MongoConnection
 import datetime
 from pymongo.errors import ServerSelectionTimeoutError
@@ -7,6 +7,7 @@ import hashlib
 import os
 import pymongo
 from difflib import SequenceMatcher
+from psutil import cpu_percent, virtual_memory
 import threading
 
 
@@ -15,6 +16,7 @@ class SourceDeDuplify(object):
         # type: (Logging.Logger) -> None
         self._logger = logger
         self._final_result = []
+        self._config = Configuration()
         try:
             self._mongo_connection = MongoConnection()
             self._client = self._mongo_connection.client()
@@ -48,19 +50,32 @@ class SourceDeDuplify(object):
         source_pointer = 0
         source_max = len(source)
         threads = []
-        for source_obj in source:
-            source_pointer += 1
-            if not isinstance(source_obj, dict):
-                self._logger.warning('DeDuplification Received NON-DICT Type: [' + str(type(source_obj)) + ']')
+        while source_pointer != source_max:
+            # Ensure we aren't swamping the system
+            cpu = cpu_percent(interval=.1)
+            mem = virtual_memory().percent
+            if \
+                    cpu >= int(self._config.get('GREASE_THREAD_MAX', '85')) \
+                    or mem >= int(self._config.get('GREASE_THREAD_MAX', '85')):
+                self._logger.info("sleeping due to high memory consumption", verbose=True)
+                # remove variables
+                del cpu
+                del mem
+                continue
+            if not isinstance(source[source_pointer], dict):
+                self._logger.warning(
+                    'DeDuplification Received NON-DICT Type: [' + str(type(source[source_pointer])) + ']'
+                )
                 continue
             proc = threading.Thread(
                 target=self.process_obj,
-                args=(source_name, source_max, source_pointer, field_set, source_obj,),
+                args=(source_name, source_max, source_pointer, field_set, source[source_pointer],),
                 name="GREASE DEDUPLICATION THREAD [{0}/{1}]".format(source_pointer, source_max)
             )
             proc.daemon = True
             proc.start()
             threads.append(proc)
+            source_pointer += 1
         while len(threads) > 0:
             final = []
             for thread in threads:

@@ -243,7 +243,7 @@ class DaemonRouter(GreaseRouter.Router):
 
     def process_queue_threaded(self):
         # type: () -> bool
-        self._ioc.message().debug("Threaded Processing [{0}]".format(datetime.utcnow()), verbose=True)
+        self._ioc.message().debug("Threaded Processing  starting [{0}]".format(datetime.utcnow()), verbose=True)
         self.thread_check()
         # Ensure we aren't swamping the system
         cpu = cpu_percent(interval=1)
@@ -287,6 +287,7 @@ class DaemonRouter(GreaseRouter.Router):
                             self._ioc.message().error("Failed to generate command [{0}]".format(job['command']))
                         self.add_job_to_completed_queue(job['id'])
         del job_queue
+        self._ioc.message().debug("Threaded Processing has ended [{0}]".format(datetime.utcnow()), verbose=True)
         return True
 
     def thread_execute(self, command, cid, additional, persistent, failures=0):

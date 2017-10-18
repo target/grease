@@ -87,7 +87,8 @@ class DaemonRouter(GreaseRouter.Router):
         rc = "Garbage"
         # All programs are just loops
         while True:
-            self.log_message_once_a_second("GREASE Daemon process is running", -100)
+            if self._config.get('GREASE_VERBOSE_LOGGING'):
+                self.log_message_once_a_second("GREASE Daemon process is running", -100)
             # Garbage collection
             gc.collect()
             # Windows Signal Catching
@@ -182,7 +183,11 @@ class DaemonRouter(GreaseRouter.Router):
                     # Job Already Executed
                     continue
                 else:
-                    if job['tick'] is self.get_current_run_second():
+                    if int(job['tick']) == 0:
+                        tick = 1
+                    else:
+                        tick = int(job['tick'])
+                    if self.get_current_run_second() % tick == 0:
                         self._log.debug("Preparing to execute persistent job [{0}]".format(job['id']), True)
                         command = self.create_obj(job['module'], job['command'])
                         if command:
@@ -252,7 +257,11 @@ class DaemonRouter(GreaseRouter.Router):
             else:
                 # This is a persistent job
                 if not self.has_job_run(job['id']):
-                    if job['tick'] is self.get_current_run_second():
+                    if int(job['tick']) == 0:
+                        tick = 1
+                    else:
+                        tick = int(job['tick'])
+                    if self.get_current_run_second() % tick == 0:
                         command = self.create_obj(job['module'], job['command'])
                         if command:
                             self.thread_execute(command, job['id'], job['additional'], True)

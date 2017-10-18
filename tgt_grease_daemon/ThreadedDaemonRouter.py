@@ -87,6 +87,7 @@ class DaemonRouter(GreaseRouter.Router):
         rc = "Garbage"
         # All programs are just loops
         while True:
+            self.log_message_once_a_second("GREASE Daemon process is running", -100)
             # Garbage collection
             gc.collect()
             # Windows Signal Catching
@@ -161,7 +162,6 @@ class DaemonRouter(GreaseRouter.Router):
 
     def process_queue_standard(self):
         # type: () -> bool
-        self._ioc.message().debug("Linear Processing  starting [{0}]".format(datetime.utcnow()), verbose=True)
         job_queue = self.get_assigned_jobs()
         # now lets loop through the job schedule
         for job in job_queue:
@@ -213,12 +213,10 @@ class DaemonRouter(GreaseRouter.Router):
                     self.mark_job_failure(job['id'], job['failures'])
             command.__del__()
             del command
-        self._ioc.message().debug("Lenear Processing has ended [{0}]".format(datetime.utcnow()), verbose=True)
         return True
 
     def process_queue_threaded(self):
         # type: () -> bool
-        self._ioc.message().debug("Threaded Processing  starting [{0}]".format(datetime.utcnow()), verbose=True)
         self.thread_check()
         # Ensure we aren't swamping the system
         cpu = cpu_percent(interval=.1)
@@ -262,7 +260,6 @@ class DaemonRouter(GreaseRouter.Router):
                             self._ioc.message().error("Failed to generate command [{0}]".format(job['command']))
                         self.add_job_to_completed_queue(job['id'])
         del job_queue
-        self._ioc.message().debug("Threaded Processing has ended [{0}]".format(datetime.utcnow()), verbose=True)
         return True
 
     def thread_execute(self, command, cid, additional, persistent, failures=0):

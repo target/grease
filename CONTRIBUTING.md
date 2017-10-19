@@ -35,5 +35,27 @@ as clean as possible. Here is the basic workflow:
     item of work for you to review. Additionally if changes
     need to be made, _please_ let us know! We want to make
     GREASE as awesome as possible!
+  2. Maintainers will Maintain 
+     * As a maintainer, you're expected to help the 
+    community out!
+     * We want to ensure contributors feel the speed at which 
+     we pride ourselves in. Maintainers are expected:
+       * To triage any new PR within 24 hours of submission
+       * If review is requested/required: Completed in 96 hours
+       of submission
+       * If there are large merge conflicts (more than 5 files)
+       work with the contributor if they request it to resolve
+       the conflicts
+  3. You are responsible for your PR
+     * Filing a PR to GREASE is exciting! Make sure to take
+     ownership of the process to ensure speedy processing
+     * Maintainers are busy and it is our responsibility to respond.
+     We do though ask you to respond quickly when we ask for changes,
+     make comments or ask questions. We will respond by our time line
+     from the previous point, But we will expect you to interact back
+     if required
+       
+[_be sure to checkout the code of conduct as well_](https://github.com/target/grease/blob/master/.github/CODE_OF_CONDUCT.md)
+  
     
 ## _Thanks!_

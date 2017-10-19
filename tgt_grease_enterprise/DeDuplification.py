@@ -35,7 +35,7 @@ class SourceDeDuplify(object):
     def __del__(self):
         self._client.close()
 
-    def create_unique_source(self, source_name, field_set, source):
+    def create_unique_source(self, source_name, field_set, source, strength=None):
         # type: (str, list, list) -> list
         if not self._dedup:
             self._logger.error("Failed To connect to MongoDB de-duplication is off", hipchat=True)
@@ -73,7 +73,7 @@ class SourceDeDuplify(object):
                 pid_num = source_pointer
             proc = threading.Thread(
                 target=self.process_obj,
-                args=(source_name, source_max, source_pointer, field_set, source[source_pointer], final,),
+                args=(source_name, source_max, source_pointer, field_set, source[source_pointer], final, strength,),
                 name="GREASE DEDUPLICATION THREAD [{0}/{1}]".format(pid_num, source_max)
             )
             proc.daemon = True
@@ -100,7 +100,7 @@ class SourceDeDuplify(object):
             self._logger.debug("DEDUPLICATION COMPLETE::REMAINING OBJECTS [{0}]".format(remaining))
             return final
 
-    def process_obj(self, source_name, source_max, source_pointer, field_set, source_obj, final):
+    def process_obj(self, source_name, source_max, source_pointer, field_set, source_obj, final, strength=None):
         # first thing try to find the object level hash
         hash_obj = self._collection.find_one({'hash': self.generate_hash(source_obj)})
         if not hash_obj:
@@ -138,7 +138,15 @@ class SourceDeDuplify(object):
                 + str(composite_score)
             )
             # now lets observe to see if we have a 'unique' source
-            if composite_score < float(os.getenv('GREASE_DEDUP_SCORE', 85)):
+            if strength is None:
+                composite_score_limit = float(os.getenv('GREASE_DEDUP_SCORE', 85))
+            else:
+                if isinstance(strength, int) or isinstance(strength, float):
+                    self._logger.debug("Global DeDuplication strength override", verbose=True)
+                    composite_score_limit = float(strength)
+                else:
+                    composite_score_limit = float(os.getenv('GREASE_DEDUP_SCORE', 85))
+            if composite_score < composite_score_limit:
                 # look at that its time to add it to the final list
                 self._logger.debug("Type2 ruled Unique adding to final result", True)
                 final.append(source_obj)

@@ -82,7 +82,8 @@ class ScanOnConfig(GreaseDaemonCommand):
                     source = self._duplification_filter.create_unique_source(
                         scanner,
                         parser.duplicate_check_fields(),
-                        list(parser.get_records())
+                        list(parser.get_records()),
+                        parser.composite_score_strength_limit
                     )
                 else:
                     self._ioc.message().warning("Local Sourcing Mode Detected")

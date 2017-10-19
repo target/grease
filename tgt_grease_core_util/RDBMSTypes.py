@@ -156,7 +156,7 @@ def __main__():
         threads=1,
         human_avg=1,
         machine_avg=1,
-        tick=21
+        tick=0
     )
     Scheduler = JobConfig(
         command_module='enterprise',
@@ -165,7 +165,7 @@ def __main__():
         threads=1,
         human_avg=1,
         machine_avg=1,
-        tick=41
+        tick=0
     )
     ClusterHealth = JobConfig(
         command_module='enterprise',
@@ -174,7 +174,7 @@ def __main__():
         threads=1,
         human_avg=1,
         machine_avg=1,
-        tick=50
+        tick=0
     )
     print("ADDING SCANNER")
     sql.get_session().add(Scanner)

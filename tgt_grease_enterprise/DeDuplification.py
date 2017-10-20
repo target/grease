@@ -63,6 +63,17 @@ class SourceDeDuplify(object):
                 del cpu
                 del mem
                 continue
+            # ensure we don't open too many connections
+            self._logger.debug("Current Running DeDuplication Threads [{0}]".format(len(threads)), verbose=True)
+            threads_final = []
+            for thread in threads:
+                if thread.isAlive():
+                    threads_final.append(thread)
+            threads = threads_final
+            self._logger.debug("Remaining Running DeDuplication Threads [{0}]".format(len(threads)), verbose=True)
+            if len(threads) >= int(self._config.get("GREASE_DEDUP_POOL", "150")):
+                self._logger.debug("Waiting for DeDup Threads to Complete", verbose=True)
+                continue
             if not isinstance(source[source_pointer], dict):
                 self._logger.warning(
                     'DeDuplification Received NON-DICT from source: [{0}] Type: [{1}] got: [{2}]'.format(
@@ -197,6 +208,7 @@ class SourceDeDuplify(object):
                 {'_id': hash_obj['_id']},
                 update_statement
             )
+        mongo_connection.client().close()
 
     @staticmethod
     def get_field_score(collection, logger, source_name, document, field_set):

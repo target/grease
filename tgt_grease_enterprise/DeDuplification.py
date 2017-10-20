@@ -66,6 +66,7 @@ class SourceDeDuplify(object):
                 self._logger.warning(
                     'DeDuplification Received NON-DICT Type: [' + str(type(source[source_pointer])) + ']'
                 )
+                source_pointer += 1
                 continue
             if source_pointer is 0:
                 pid_num = 1

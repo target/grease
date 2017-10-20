@@ -99,7 +99,7 @@ class ScanOnConfig(GreaseDaemonCommand):
                 del parser
             else:
                 # else something went haywire pls feel free to fix your config
-                self._ioc.message().error("Invalid Scanner In Configurations: [" + str(scanner) + "]", hipchat=True)
+                self._ioc.message().error("Invalid Scanner In Configurations: [" + str(scanner) + "]")
 
     def _schedule_detection(self, sources, scanner):
         # type: (dict, str)  -> bool

@@ -64,7 +64,11 @@ class SourceDeDuplify(object):
                 continue
             if not isinstance(source[source_pointer], dict):
                 self._logger.warning(
-                    'DeDuplification Received NON-DICT Type: [' + str(type(source[source_pointer])) + ']'
+                    'DeDuplification Received NON-DICT from source: [{0}] Type: [{1}] got: [{2}]'.format(
+                        source_name,
+                        str(type(source[source_pointer])),
+                        str(source[source_pointer])
+                    )
                 )
                 source_pointer += 1
                 continue

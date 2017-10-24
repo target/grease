@@ -20,7 +20,7 @@ install:
   
 script:
   - python setup.py test
-  - grease enterprise bridge register
+  - grease enterprise bridge load-db
   - grease enterprise bridge list-pjobs
   - grease enterprise bridge list-jobs
   - grease enterprise bridge enable-detection

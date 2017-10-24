@@ -32,7 +32,7 @@ class Database(Telemetry):
         # type: () -> None
         telemetry = JobTelemetry(
             command=self._command.get_exe_state().get('command_id', 1),
-            success=str(success_state),
+            success=success_state,
             affected=str(self._command.get_effected()),
             start_time=str(datetime.datetime.fromtimestamp(self._command.get_start_time()).strftime('%Y-%m-%d %H:%M:%S')),
             entry_time=datetime.datetime.utcnow(),

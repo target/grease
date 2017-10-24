@@ -21,15 +21,13 @@ install:
   
 script:
   - python setup.py test
+  - grease enterprise bridge register
+  - grease enterprise bridge list-pjobs
+  - grease enterprise bridge list-jobs
 
 matrix:
   allow_failures:
     - python: nightly
-
-after_script:
-  - grease enterprise bridge register
-  - grease enterprise bridge list-pjobs
-  - grease enterprise bridge list-jobs
 
 deploy:
   on:

@@ -13,7 +13,6 @@ before_script:
   - export GREASE_DB_PASSWORD=""
   - export GREASE_PKG_LOADER="tgt_grease_"
   - export GREASE_VERBOSE_LOGGING=1
-  - python ./bin/install_db.py
 
 install:
   - python setup.py install

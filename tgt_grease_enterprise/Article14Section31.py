@@ -154,7 +154,7 @@ class Section31(GreaseDaemonCommand):
         if result and result.doctor != '':
             self._ioc.message().error("SERVER DOCTOR ALREADY DECLARED FOR [{0}]".format(server_id))
             return
-        stmt = update(ServerHealth).where(ServerHealth.server == server_id).values(docter=self._config.node_db_id())
+        stmt = update(ServerHealth).where(ServerHealth.server == server_id).values(doctor=self._config.node_db_id())
         self._sql.get_session().execute(stmt)
         self._sql.get_session().commit()
 

@@ -1,4 +1,4 @@
-from BaseDetectorClass import BaseDetector
+from .BaseDetectorClass import BaseDetector
 from datetime import datetime
 
 

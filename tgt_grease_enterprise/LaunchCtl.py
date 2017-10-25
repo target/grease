@@ -96,7 +96,9 @@ class LaunchCtl(GreaseDaemonCommand):
             )
             self._sql.get_session().add(server)
             self._sql.get_session().commit()
-            file(self._config.identity_file, 'w').write(str(uid))
+            fil = open(self._config.identity_file, 'w')
+            fil.write(str(uid))
+            fil.close()
             return True
 
     def _action_cull_server(self):

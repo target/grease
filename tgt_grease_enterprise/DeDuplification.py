@@ -122,6 +122,9 @@ class SourceDeDuplify(object):
         if len(final) == 1:
             self._logger.debug("DEDUPLICATION COMPLETE::REMAINING OBJECTS [1]")
             return final
+        elif len(final) is 0:
+            self._logger.debug("DEDUPLICATION COMPLETE::REMAINING OBJECTS [0]")
+            return final
         else:
             remaining = len(final) - 1
             self._logger.debug("DEDUPLICATION COMPLETE::REMAINING OBJECTS [{0}]".format(remaining))

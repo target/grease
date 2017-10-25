@@ -27,9 +27,11 @@ class DateRange(BaseDetector):
         rules_passed = 0
 
         for range_conf in rules:
+            # Mandatory field tests
             if 'field' not in range_conf or 'date_format' not in range_conf:
                 self._result = {'result': False}
                 return
+
 
             if range_conf['field'] in source:
                 range_compare = False
@@ -37,13 +39,16 @@ class DateRange(BaseDetector):
 
                 try:
                     source_dt = datetime.strptime(str(source[range_conf['field']]), date_format)
+                    # "Between" case
                     if 'max' in range_conf and 'min' in range_conf:
                         max_dt = datetime.strptime(str(range_conf['max']), date_format)
                         min_dt = datetime.strptime(str(range_conf['min']), date_format)
                         range_compare = min_dt <= source_dt <= max_dt
+                    # "After" case
                     elif 'min' in range_conf:
                         min_dt = datetime.strptime(str(range_conf['min']), date_format)
                         range_compare = min_dt <= source_dt
+                    # "Before" case
                     elif 'max' in range_conf:
                         max_dt = datetime.strptime(str(range_conf['max']), date_format)
                         range_compare = source_dt <= max_dt
@@ -59,6 +64,7 @@ class DateRange(BaseDetector):
                 if range_compare:
                     rules_passed += 1
                     self._result['result'] = True
+                    # Add variable to final result if the config says to
                     if 'variable' in range_conf:
                         if range_conf['variable'] and 'variable_name' in range_conf:
                             self._result[range_conf['variable_name']] = str(source[range_conf['field']])

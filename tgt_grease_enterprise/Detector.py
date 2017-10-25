@@ -17,6 +17,10 @@ class Detector(GreaseDaemonCommand):
         self._excelsior_config = DetectorConfiguration.ConfigurationLoader()
         self._importer = Importer(self._ioc.message())
 
+    def __del__(self):
+        super(Detector, self).__del__()
+        self._sql.get_session().close()
+
     def execute(self, context='{}'):
         # first lets see if we have some stuff to parse
         result = self._sql.get_session().query(SourceData, JobServers)\
@@ -28,7 +32,7 @@ class Detector(GreaseDaemonCommand):
             .limit(15)\
             .all()
         if not result:
-            self._ioc.message().debug("No sources scheduled for detection on this node")
+            self._ioc.message().debug("No sources scheduled for detection on this node", True)
             return True
         else:
             # Now lets loop through
@@ -160,7 +164,7 @@ class Detector(GreaseDaemonCommand):
                             break
                     else:
                         # we got an invalid detector and it couldn't be found
-                        self._ioc.message().error("Invalid Detector: [" + str(detector) + "]")
+                        self._ioc.message().error("Invalid Detector: [" + str(detector) + "]", hipchat=True)
                         del detector_instance
                         break
                 # finally lets convert back to normal dict for the rule
@@ -198,7 +202,8 @@ class Detector(GreaseDaemonCommand):
             .order_by(JobServers.jobs_assigned)\
             .first()
         if not result:
-            self._ioc.message().error("Failed to find active scheduling server!::Dropping Scan")
+            self._ioc.message().error("Failed to find active scheduling server!::Dropping Scan", hipchat=True)
+            return False
         else:
             server = result.id
             # Now lets update the sources for the determined server to work

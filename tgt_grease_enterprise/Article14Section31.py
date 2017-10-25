@@ -13,15 +13,23 @@ class Section31(GreaseDaemonCommand):
         self._config = Configuration()
         self._sql = SQLAlchemyConnection(self._config)
 
+    def __del__(self):
+        super(Section31, self).__del__()
+        self._sql.get_session().close()
+
     def execute(self, context='{}'):
         # first lets get the entire farm
+        self._ioc.message().debug("Fetching Current Farm Status", True)
         farm = self._get_farm_status()
         # now lets check each server from the last known state
+        self._ioc.message().debug("Examining each server. Current servers: [{0}]".format(len(farm)), True)
         for server in farm:
             if self._server_alive(server):
                 # server seems to be alive keep going
+                self._ioc.message().debug("Server is Alive::Skipping", True)
                 continue
             else:
+                self._ioc.message().debug("Server is not alive! Attempting to claim", True)
                 # server is not alive, we need to migrate work from it
                 # first lets declare ourselves as the doctor
                 self._declare_doctor(server[0])
@@ -30,9 +38,11 @@ class Section31(GreaseDaemonCommand):
                 # okay lets ensure we are still the doctor
                 if self._am_i_the_doctor(server[0]):
                     # time to reassign
+                    self._ioc.message().debug("I am still the doctor, preparing to cull", True)
                     self._cull_server(server[0])
                 else:
                     # during our slumber someone else decided to work on this server let them have it
+                    self._ioc.message().debug("Doctor previously declared. Returning", True)
                     continue
         return True
 
@@ -79,7 +89,7 @@ class Section31(GreaseDaemonCommand):
                     count(sf.id) AS total
                   FROM
                     source_data sf
-                    INNER JOIN grease.job_servers js ON (js.id = sf.detection_server)
+                    INNER JOIN job_servers js ON (js.id = sf.detection_server)
                   WHERE
                     (
                       (
@@ -99,7 +109,7 @@ class Section31(GreaseDaemonCommand):
                     count(sq.id) AS total
                   FROM
                     source_data sq
-                    INNER JOIN grease.job_servers js ON (js.id = sq.scheduling_server)
+                    INNER JOIN job_servers js ON (js.id = sq.scheduling_server)
                   WHERE
                     (
                       (
@@ -144,7 +154,7 @@ class Section31(GreaseDaemonCommand):
         if result and result.doctor != '':
             self._ioc.message().error("SERVER DOCTOR ALREADY DECLARED FOR [{0}]".format(server_id))
             return
-        stmt = update(ServerHealth).where(ServerHealth.server == server_id).values(docter=self._config.node_db_id())
+        stmt = update(ServerHealth).where(ServerHealth.server == server_id).values(doctor=self._config.node_db_id())
         self._sql.get_session().execute(stmt)
         self._sql.get_session().commit()
 
@@ -161,16 +171,19 @@ class Section31(GreaseDaemonCommand):
 
     def _server_alive(self, server):
         # type: (list) -> bool
+        self._ioc.message().debug("data received to be processed [{0}]".format(str(server)), True)
         result = self._sql.get_session().query(ServerHealth)\
             .filter(ServerHealth.server == server[0])\
             .first()
         if not result:
+            self._ioc.message().debug("Server not in health::registering", True)
             # if this is a server not checked into health before
-            self._register_in_health(server[0])
+            self._register_in_health(server)
             result = self._sql.get_session().query(ServerHealth)\
                 .filter(ServerHealth.server == server[0])\
                 .first()
         # now return to regular logic
+        self._ioc.message().debug("Inspecting last check timestamp", True)
         if result.check_time < (datetime.datetime.now(result.check_time.tzinfo) - datetime.timedelta(hours=6)):
             # server status is old
             # lets check the hash though
@@ -239,13 +252,14 @@ class Section31(GreaseDaemonCommand):
         else:
             # there are no other execution servers for that environment
             self._ioc.message().error(
-                "No other valid execution environment for jobs assigned to server [{0}]".format(server_id)
+                "No other valid execution environment for jobs assigned to server [{0}]".format(server_id),
+                hipchat=True
             )
             return False
 
     def _cull_server(self, server_id):
         # type: (int) -> None
-        self._ioc.message().warning("DEACTIVATING SERVER [{0}]".format(server_id))
+        self._ioc.message().warning("DEACTIVATING SERVER [{0}]".format(server_id), hipchat=True)
         # first lets deactivate the job server
         self._deactivate_server(server_id)
         # next we need to check for any jobs scheduled to that instance and reassign them
@@ -350,11 +364,11 @@ class Section31(GreaseDaemonCommand):
             # oh crap we have no job detector servers left alive
             # Me IRL Right now:
             # https://68.media.tumblr.com/e59c51080e14cee56ce93416cf8055c8/tumblr_mzncp3nYXh1syplf0o1_250.gif
-            # TODO: Alert via side channel
             self._ioc.message().error(
                 "NO AVAILABLE DETECTOR SERVER CANNOT REASSIGN JOBS [{0}] FROM SERVER [{1}]".format(
                     source_file_ids, origin_server
-                )
+                ),
+                hipchat=True
             )
             # bail because we have no one to reassign to
             return
@@ -380,11 +394,11 @@ class Section31(GreaseDaemonCommand):
         else:
             # oh crap we have no job scheduler servers left alive
             # Me IRL Right now: https://media.giphy.com/media/HUkOv6BNWc1HO/giphy.gif
-            # TODO: Alert via side channel
             self._ioc.message().error(
                 "NO AVAILABLE SCHEDULER SERVER CANNOT REASSIGN JOBS [{0}] FROM SERVER [{1}]".format(
                     schedule_ids, origin_server
-                )
+                ),
+                hipchat=True
             )
             # bail because we have no one to reassign to
             return

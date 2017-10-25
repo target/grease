@@ -18,6 +18,7 @@ class Configuration(object):
     op_name = os.name
     grease_log = grease_dir + os.sep + "grease.log"
     identity_file = grease_dir + os.sep + "grease_identity.txt"
+    opt_dir = grease_dir + os.sep + "opt" + os.sep
     identity = None
     _node_db_id = None
 
@@ -25,6 +26,8 @@ class Configuration(object):
         # Ensure the GREASE Dir
         if not os.path.isdir(self.grease_dir):
             os.mkdir(self.grease_dir)
+        if not os.path.isdir(self.opt_dir):
+            os.mkdir(self.opt_dir)
         # load up config
         self._load_config()
 

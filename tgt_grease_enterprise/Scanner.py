@@ -21,6 +21,10 @@ class ScanOnConfig(GreaseDaemonCommand):
         self._importer = Importer(self._ioc.message())
         self._duplification_filter = SourceDeDuplify(self._ioc.message())
 
+    def __del__(self):
+        super(ScanOnConfig, self).__del__()
+        self._sql.get_session().close()
+
     def get_source_data(self):
         # type: () -> dict
         return self._source_data
@@ -32,7 +36,8 @@ class ScanOnConfig(GreaseDaemonCommand):
     def execute(self, context='{}'):
         # engage scanning
         self.scan()
-        # clear up this 
+        # clear up this
+        self._duplification_filter.__del__()
         del self._duplification_filter
         return True
 
@@ -66,18 +71,23 @@ class ScanOnConfig(GreaseDaemonCommand):
                     "PARSING SOURCE [{0}]".format(str(scanner)),
                     True
                 )
-                parser.parse_source(self._scanner_config.get_scanner_config(scanner))
-                # lets get the results of the parse
-                # here we run our de-duplication logic
-                self._ioc.message().debug(
-                    "PASSING RESULT TO DEDUPLICATION ENGINE [{0}]".format(str(scanner)),
-                    True
-                )
-                source = self._duplification_filter.create_unique_source(
-                    scanner,
-                    parser.duplicate_check_fields(),
-                    list(parser.get_records())
-                )
+                if not self._config.get('GREASE_LOCAL_SOURCING'):
+                    parser.parse_source(self._scanner_config.get_scanner_config(scanner))
+                    # lets get the results of the parse
+                    # here we run our de-duplication logic
+                    self._ioc.message().debug(
+                        "PASSING RESULT TO DEDUPLICATION ENGINE [{0}]".format(str(scanner)),
+                        True
+                    )
+                    source = self._duplification_filter.create_unique_source(
+                        scanner,
+                        parser.duplicate_check_fields(),
+                        list(parser.get_records()),
+                        parser.composite_score_strength_limit
+                    )
+                else:
+                    self._ioc.message().warning("Local Sourcing Mode Detected")
+                    source = parser.mock_data()
                 self._ioc.message().debug(
                     "ATTEMPTING DETECTION SCHEDULING [{0}]".format(str(scanner)),
                     True
@@ -85,7 +95,7 @@ class ScanOnConfig(GreaseDaemonCommand):
                 if self._schedule_detection(source, scanner):
                     self._ioc.message().info("Detector job scheduled from scanner: [" + str(scanner) + "]")
                 else:
-                    self._ioc.message().error("Failed to schedule source detection for [" + str(scanner) + "]")
+                    self._ioc.message().error("Failed to schedule source detection for [" + str(scanner) + "]", hipchat=True)
                 del parser
             else:
                 # else something went haywire pls feel free to fix your config
@@ -102,7 +112,7 @@ class ScanOnConfig(GreaseDaemonCommand):
             .order_by(JobServers.jobs_assigned)\
             .first()
         if not result:
-            self._ioc.message().error("Failed to find detection server! dropping scan!")
+            self._ioc.message().error("Failed to find detection server! dropping scan!", hipchat=True)
             return False
         else:
             server = result.id

@@ -4,19 +4,29 @@ python:
   - "2.7" #what we built it for originally
   - "nightly" #whatever 3.x is hemorrhaging-edge
 
+services:
+  - postgresql
+
+before_script:
+  - pip install psycopg2 pymongo requests sqlalchemy
+  - export GREASE_DB_USER="postgres"
+  - export GREASE_DB_PASSWORD=""
+  - export GREASE_PKG_LOADER="tgt_grease_"
+  - export GREASE_VERBOSE_LOGGING=1
+
 install:
   - python setup.py install
   
 script:
   - python setup.py test
-
-matrix:
-  allow_failures:
-    - python: nightly
-
-before_script:
-  - pip install psycopg2 pymongo requests sqlalchemy
-
+  - grease enterprise bridge load-db
+  - grease enterprise bridge list-pjobs
+  - grease enterprise bridge list-jobs
+  - grease enterprise bridge enable-detection
+  - grease enterprise bridge enable-scheduling
+  - grease enterprise bridge disable-detection
+  - grease enterprise bridge disable-scheduling
+  - grease enterprise bridge kill-server
 
 deploy:
   on:

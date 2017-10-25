@@ -47,7 +47,10 @@ class GreaseDaemonCommand(GreaseCommand):
             self.set_exe_state('result', bool(self.execute(context)))
             self.set_exe_state('execution', True)
         except:
-            self._ioc.message().error("Command Execution Failed! Exception Raised: [{0}]".format(str(sys.exc_info())))
+            self._ioc.message().error(
+                "Command Execution Failed! Exception Raised: [{0}]".format(str(sys.exc_info())),
+                hipchat=True
+            )
             return
         return
 
@@ -64,37 +67,3 @@ class GreaseDaemonCommand(GreaseCommand):
         # type: (list) -> bool
         """execute should be the primary logic for your execution"""
         pass
-
-
-class GreaseDaemonThreadedCommand(GreaseDaemonCommand, threading.Thread):
-
-    __metaclass__ = ABCMeta
-
-    def __init__(self):
-        GreaseDaemonCommand.__init__(self)
-        threading.Thread.__init__(self)
-        self.context = "{}"
-        self.threadID = 1
-        self.name = type(self).__name__
-        self.purpose = "Abstract Base For Threaded Commands"
-
-    def thread_setup(self, context, thread_id, thread_name):
-        # type: (str, int, str) -> None
-        self.context = context
-        self.threadID = thread_id
-        self.name = thread_name
-
-    @abstractmethod
-    def execute(self, context="{}"):
-        """execute should be the primary logic for your execution"""
-        self._ioc.message().debug("Hello World! I am Example Command", True)
-        return True
-
-    def run(self):
-        self.execute(self.context)
-
-    def set_context(self, context):
-        self.context = context
-
-    def get_context(self):
-        return self.context

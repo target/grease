@@ -5,13 +5,15 @@ from tgt_grease_core_util import Importer
 from tgt_grease_core_util import Logger
 from tgt_grease_core_util.RDBMSTypes import JobQueue, PersistentJobs, JobConfig
 from tgt_grease_core_util import SQLAlchemyConnection
-from sqlalchemy import update
+from sqlalchemy import update, and_, or_
 from datetime import datetime
 from tgt_grease_core_util import Grease
+from psutil import cpu_percent, virtual_memory
 from . import Daemon
 import threading
 import os
 import sys
+import gc
 
 # PyWin32
 if os.name == 'nt':
@@ -26,15 +28,13 @@ class DaemonRouter(GreaseRouter.Router):
     __version__ = "1.0"
 
     _config = Configuration()
-    _runs = 0
     _throttle_tick = 0
     _job_completed_queue = []
-    _current_real_second = datetime.now().second
-    _current_run_second = datetime.now().second
+    _current_real_second = datetime.utcnow().second
+    _current_run_second = datetime.utcnow().second
     _log = Logger()
     _process = None
     _importer = Importer(_log)
-    _job_metadata = {'normal': 0, 'persistent': 0}
     _alchemyConnection = SQLAlchemyConnection(_config)
     _ioc = Grease()
     _ContextMgr = []
@@ -86,9 +86,11 @@ class DaemonRouter(GreaseRouter.Router):
         # initial rc value
         rc = "Garbage"
         # All programs are just loops
-        if self._config.get('GREASE_EXECUTE_LINEAR'):
-            self._log.debug("LINEAR EXECUTION MODE DETECTED")
         while True:
+            if self._config.get('GREASE_VERBOSE_LOGGING'):
+                self.log_message_once_a_second("GREASE Daemon process is running", -100)
+            # Garbage collection
+            gc.collect()
             # Windows Signal Catching
             if self._config.op_name == 'nt':
                 if not rc != win32event.WAIT_OBJECT_0:
@@ -100,15 +102,16 @@ class DaemonRouter(GreaseRouter.Router):
                 if int(self.get_throttle_tick()) > int(str(self._config.get('GREASE_THROTTLE'))):
                     # prevent more than 1000 loops per second by default
                     # check time
+                    self.log_message_once_a_second("Throttle reached", -11)
                     self.have_we_moved_forward_in_time()
                     continue
             # Job Processing
-            if self._config.get('GREASE_EXECUTE_LINEAR'):
-                self.process_queue_standard()
-            else:
+            if not self._config.get('GREASE_EXECUTE_LINEAR'):
                 self.process_queue_threaded()
+            else:
+                self.log_message_once_a_second("LINEAR EXECUTION MODE DETECTED", -12)
+                self.process_queue_standard()
             # Final Clean Up
-            self.inc_runs()
             self.inc_throttle_tick()
             self.have_we_moved_forward_in_time()
             # After all this check for new windows services
@@ -116,225 +119,156 @@ class DaemonRouter(GreaseRouter.Router):
                 # Block .5ms to listen for exit sig
                 rc = win32event.WaitForSingleObject(self.get_process().hWaitStop, 50)
 
+    def log_message_once_a_second(self, message, queue_id):
+        # type: (str, int) -> bool
+        # have we moved forward since the last second
+        if self.have_we_moved_forward_in_time():
+            # if we have we can log since the log does not have a record for this second
+            self._log.debug(message)
+            # We also ensure we record we already logged for zero jobs to process this second
+            self.add_job_to_completed_queue(queue_id)
+            return True
+        else:
+            # we have not moved forward in time
+            # have we logged for this second
+            if not self.has_job_run(queue_id):
+                # We have not logged for this second so lets do that now
+                self._log.debug(message)
+                # record that we logged for this second
+                self.add_job_to_completed_queue(queue_id)
+                return True
+            else:
+                return False
+
+    def create_obj(self, mod, command):
+        # start class up
+        command = self._importer.load(mod, command)
+        # ensure we got back the correct type
+        if not command:
+            self._log.error(
+                "Failed To Load Command [{0}] of [{1}]"
+                .format(
+                    command,
+                    mod
+                ),
+                hipchat=True
+            )
+            del command
+            return None
+        if not isinstance(command, GreaseDaemonCommand):
+            self._log.error("Instance created was not of type GreaseDaemonCommand", hipchat=True)
+            del command
+            return None
+        return command
+
     def process_queue_standard(self):
         # type: () -> bool
         job_queue = self.get_assigned_jobs()
-        if len(job_queue) is 0:
-            # have we moved forward since the last second
-            if self.have_we_moved_forward_in_time():
-                # if we have we can log since the log does not have a record for this second
-                self._log.debug("Total Jobs To Process: [0] Current Runs: [{0}]".format(self.get_runs()))
-                # We also ensure we record we already logged for zero jobs to process this second
-                self.add_job_to_completed_queue(-1)
-            else:
-                # we have not moved forward in time
-                # have we logged for this second
-                if not self.has_job_run(-1):
-                    # We have not logged for this second so lets do that now
-                    self._log.debug("Total Jobs To Process: [0] Current Runs: [{0}]".format(self.get_runs()))
-                    # record that we logged for this second
-                    self.add_job_to_completed_queue(-1)
-        else:
-            # We have some jobs to process
-            if self._job_metadata['normal'] > 0:
-                # if we have any normal jobs lets log
-                self._log.debug("Total Jobs To Process: [{0}] Current Runs: [{1}]".format(
-                    self._job_metadata['normal'],
-                    self.get_runs()
-                )
-                )
-            else:
-                # we only have persistent jobs to process
-                # have we moved forward since the last second
-                if self.have_we_moved_forward_in_time():
-                    # if we have we can log since the log does not have a record for this second
-                    self._log.debug("Total Jobs To Process: [{0}] Current Runs: [{1}]".format(
-                        len(job_queue),
-                        self.get_runs()
-                    ))
-                    # We also ensure we record we already logged for zero jobs to process this second
-                    self.add_job_to_completed_queue(0)
-                else:
-                    # we have not moved forward in time
-                    # have we logged for this second
-                    if not self.has_job_run(0):
-                        # We have not logged for this second so lets do that now
-                        self._log.debug("Total Jobs To Process: [{0}] Current Runs: [{1}]".format(
-                            len(job_queue),
-                            self.get_runs())
-                        )
-                        # record that we logged for this second
-                        self.add_job_to_completed_queue(0)
-            # now lets loop through the job schedule
-            for job in job_queue:
-                # start class up
-                command = self._importer.load(job['module'], job['command'])
-                # ensure we got back the correct type
-                if not command:
-                    self._log.error(
-                        "Failed To Load Command [{0}] of [{1}]"
-                            .format(
-                            job['command'],
-                            job['module']
-                        )
-                    )
-                    del command
-                    continue
-                if not isinstance(command, GreaseDaemonCommand):
-                    self._log.error("Instance created was not of type GreaseDaemonCommand")
-                    del command
-                    continue
-                if not job['persistent']:
-                    # This is an on-demand job
-                    # we just need to execute it
-                    self.mark_job_in_progress(job['id'])
-                    self._log.debug("Preparing to execute on-demand job [{0}]".format(job['id']), True)
+        # now lets loop through the job schedule
+        for job in job_queue:
+            if not job['persistent']:
+                # This is an on-demand job
+                # we just need to execute it
+                self.mark_job_in_progress(job['id'])
+                self._log.debug("Preparing to execute on-demand job [{0}]".format(job['id']), True)
+                command = self.create_obj(job['module'], job['command'])
+                if command:
                     command.attempt_execution(job['id'], job['additional'])
                 else:
-                    # This is a persistent job
-                    if self.has_job_run(job['id']):
-                        # Job Already Executed
-                        continue
-                    else:
-                        if job['tick'] is self.get_current_run_second():
-                            self._log.debug("Preparing to execute persistent job [{0}]".format(job['id']), True)
-                            command.attempt_execution(job['id'], job['additional'])
-                            self.add_job_to_completed_queue(job['id'])
-                        else:
-                            # continue because we are not in the tick required
-                            continue
-                # Report Telemetry
-                self._ioc.run_daemon_telemetry(command)
-                if command.get_exe_state()['result']:
-                    # job success
-                    if job['persistent']:
-                        self._log.debug("Persistent Job Successful [{0}]".format(job['id']))
-                    else:
-                        self._log.debug("On-Demand Job Successful [{0}]".format(job['id']))
-                        self.mark_job_complete(job['id'])
+                    self._ioc.message().error("Failed to generate command [{0}]".format(job['command']))
+                    continue
+            else:
+                # This is a persistent job
+                if self.has_job_run(job['id']):
+                    # Job Already Executed
+                    continue
                 else:
-                    # job failed
-                    if job['persistent']:
-                        self._log.debug("Persistent Job Failed [{0}]".format(job['id']))
+                    if int(job['tick']) == 0:
+                        tick = 1
                     else:
-                        self._log.debug("On-Demand Job Failed [{0}]".format(job['id']))
-                        self.mark_job_failure(job['id'], job['failures'])
-                command.__del__()
-                del command
+                        tick = int(job['tick'])
+                    if self.get_current_run_second() % tick == 0:
+                        self._log.debug("Preparing to execute persistent job [{0}]".format(job['id']), True)
+                        command = self.create_obj(job['module'], job['command'])
+                        if command:
+                            command.attempt_execution(job['id'], job['additional'])
+                        else:
+                            self._ioc.message().error("Failed to generate command [{0}]".format(job['command']))
+                            self.add_job_to_completed_queue(job['id'])
+                            continue
+                        self.add_job_to_completed_queue(job['id'])
+                    else:
+                        # continue because we are not in the tick required
+                        continue
+            # Report Telemetry
+            self._ioc.run_daemon_telemetry(command)
+            if command.get_exe_state()['result']:
+                # job success
+                if job['persistent']:
+                    self._log.debug("Persistent Job Successful [{0}]".format(job['id']))
+                else:
+                    self._log.debug("On-Demand Job Successful [{0}]".format(job['id']))
+                    self.mark_job_complete(job['id'])
+            else:
+                # job failed
+                if job['persistent']:
+                    self._log.debug("Persistent Job Failed [{0}]".format(job['id']))
+                else:
+                    self._log.debug("On-Demand Job Failed [{0}]".format(job['id']))
+                    self.mark_job_failure(job['id'], job['failures'])
+            command.__del__()
+            del command
         return True
 
     def process_queue_threaded(self):
         # type: () -> bool
         self.thread_check()
+        # Ensure we aren't swamping the system
+        cpu = cpu_percent(interval=.1)
+        mem = virtual_memory().percent
+        if \
+                cpu >= int(self._config.get('GREASE_THREAD_MAX', '85')) \
+                or mem >= int(self._config.get('GREASE_THREAD_MAX', '85')):
+            self.log_message_once_a_second(
+                "Thread Maximum Reached CPU: [{0}] Memory: [{1}]".format(cpu, mem),
+                -10
+            )
+            # remove variables
+            del cpu
+            del mem
+            self.thread_check()
+            return True
+        # remove variables
+        del cpu
+        del mem
+        # We have some jobs to process
         job_queue = self.get_assigned_jobs()
-        if len(job_queue) is 0:
-            # have we moved forward since the last second
-            if self.have_we_moved_forward_in_time():
-                # if we have we can log since the log does not have a record for this second
-                self._log.debug("Total Jobs To Process: [0] Current Runs: [{0}]".format(self.get_runs()))
-                # We also ensure we record we already logged for zero jobs to process this second
-                self.add_job_to_completed_queue(-1)
-            else:
-                # we have not moved forward in time
-                # have we logged for this second
-                if not self.has_job_run(-1):
-                    # We have not logged for this second so lets do that now
-                    self._log.debug("Total Jobs To Process: [0] Current Runs: [{0}]".format(self.get_runs()))
-                    # record that we logged for this second
-                    self.add_job_to_completed_queue(-1)
-        else:
-            if len(self._ContextMgr) >= 15:
-                if self.have_we_moved_forward_in_time():
-                    # if we have we can log since the log does not have a record for this second
-                    self._log.debug("Thread Maximum Reached::Current Runs: [{0}]".format(
-                        self.get_runs()
-                    ))
-                    # We also ensure we record we already logged for zero jobs to process this second
-                    self.add_job_to_completed_queue(-10)
-                else:
-                    # we have not moved forward in time
-                    # have we logged for this second
-                    if not self.has_job_run(-10):
-                        # We have not logged for this second so lets do that now
-                        self._log.debug("Thread Maximum Reached::Current Runs: [{0}]".format(
-                            self.get_runs()
-                        ))
-                        # record that we logged for this second
-                        self.add_job_to_completed_queue(-10)
-                return True
-            # We have some jobs to process
-            if self._job_metadata['normal'] > 0:
-                # if we have any normal jobs lets log
-                self._log.debug("Total Jobs To Process: [{0}] Current Runs: [{1}]".format(
-                    self._job_metadata['normal'],
-                    self.get_runs()
-                    )
-                )
-            else:
-                # we only have persistent jobs to process
-                # have we moved forward since the last second
-                if self.have_we_moved_forward_in_time():
-                    # if we have we can log since the log does not have a record for this second
-                    self._log.debug("Total Jobs To Process: [{0}] Current Runs: [{1}]".format(
-                        len(job_queue),
-                        self.get_runs()
-                    ))
-                    # We also ensure we record we already logged for zero jobs to process this second
-                    self.add_job_to_completed_queue(0)
-                else:
-                    # we have not moved forward in time
-                    # have we logged for this second
-                    if not self.has_job_run(0):
-                        # We have not logged for this second so lets do that now
-                        self._log.debug("Total Jobs To Process: [{0}] Current Runs: [{1}]".format(
-                            len(job_queue),
-                            self.get_runs())
-                        )
-                        # record that we logged for this second
-                        self.add_job_to_completed_queue(0)
-            # now lets loop through the job schedule
-            for job in job_queue:
-                # start class up
-                command = self._importer.load(job['module'], job['command'])
-                # ensure we got back the correct type
-                if not command:
-                    self._log.error(
-                        "Failed To Load Command [{0}] of [{1}]"
-                        .format(
-                            job['command'],
-                            job['module']
-                        )
-                    )
-                    del command
-                    continue
-                if not isinstance(command, GreaseDaemonCommand):
-                    self._log.error("Instance created was not of type GreaseDaemonCommand")
-                    del command
-                    continue
-                if not job['persistent']:
-                    # This is an on-demand job
-                    # we just need to execute it
-                    self.mark_job_in_progress(job['id'])
-                    self._log.debug("Passing on-demand job [{0}] to thread manager".format(job['id']), True)
+        # now lets loop through the job schedule
+        for job in job_queue:
+            # check for persistent status
+            if not job['persistent']:
+                # This is an on-demand job
+                # we just need to execute it
+                command = self.create_obj(job['module'], job['command'])
+                if command:
                     self.thread_execute(command, job['id'], job['additional'], False, job['failures'])
                 else:
-                    # This is a persistent job
-                    if self.has_job_run(job['id']):
-                        # Job Already Executed
-                        command.__del__()
-                        del command
-                        continue
+                    self._ioc.message().error("Failed to generate command [{0}]".format(job['command']))
+            else:
+                # This is a persistent job
+                if not self.has_job_run(job['id']):
+                    if int(job['tick']) == 0:
+                        tick = 1
                     else:
-                        if job['tick'] is self.get_current_run_second():
-                            self._log.debug("Passing persistent job [{0}] to thread manager".format(job['id']), True)
+                        tick = int(job['tick'])
+                    if self.get_current_run_second() % tick == 0:
+                        command = self.create_obj(job['module'], job['command'])
+                        if command:
                             self.thread_execute(command, job['id'], job['additional'], True)
-                            self.add_job_to_completed_queue(job['id'])
                         else:
-                            # continue because we are not in the tick required
-                            command.__del__()
-                            del command
-                            continue
-        self.thread_check()
+                            self._ioc.message().error("Failed to generate command [{0}]".format(job['command']))
+                        self.add_job_to_completed_queue(job['id'])
+        del job_queue
         return True
 
     def thread_execute(self, command, cid, additional, persistent, failures=0):
@@ -353,14 +287,15 @@ class DaemonRouter(GreaseRouter.Router):
         proc = threading.Thread(
                 target=command.attempt_execution,
                 args=(cid, additional),
-                name="GREASE EXECUTION THREAD"
+                name="GREASE EXECUTION THREAD::CID [{0}]".format(cid)
             )
         # set for background
         proc.daemon = True
         if persistent:
             self._log.debug("Beginning persistent execution of job [{0}] on thread".format(cid), True)
         else:
-            self._log.debug("Beginning on-demand execution of job [{0}] on thread".format(cid), True)
+            self.mark_job_in_progress(cid)
+            self._log.debug("Beginning on-demand execution of job [{0}] on thread".format(cid))
         # start
         proc.start()
         # add command to pool
@@ -375,13 +310,18 @@ class DaemonRouter(GreaseRouter.Router):
 
     def thread_check(self):
         final = []
-        # Check for tread completion else add back to list
-        for command in self._ContextMgr:
-            if command[1].isAlive():
-                final.append(command)
-            else:
-                self.record_telemetry(command[0], command[2], command[4], command[3])
-        self._ContextMgr = final
+        if not len(self._ContextMgr):
+            # context manager is empty
+            return
+        else:
+            # Check for tread completion else add back to list
+            for command in self._ContextMgr:
+                if command[1].isAlive():
+                    final.append(command)
+                else:
+                    self._log.info("Job completed [{0}]".format(command[2]), True)
+                    self.record_telemetry(command[0], command[2], command[4], command[3])
+            self._ContextMgr = final
         return
 
     def record_telemetry(self, command, cid, failures, persistent):
@@ -424,7 +364,9 @@ class DaemonRouter(GreaseRouter.Router):
         :param job_id: int
         :return: bool
         """
-        stmt = update(JobQueue).where(JobQueue.id == job_id).values(in_progress=False, completed=True, complete_time=datetime.now())
+        stmt = update(JobQueue)\
+            .where(JobQueue.id == job_id)\
+            .values(in_progress=False, completed=True, complete_time=datetime.utcnow())
         self._alchemyConnection.get_session().execute(stmt)
         self._alchemyConnection.get_session().commit()
         return True
@@ -449,9 +391,6 @@ class DaemonRouter(GreaseRouter.Router):
         :return: list
         """
         # type: () -> list
-        # reset job queue metadata
-        self._job_metadata['normal'] = 0
-        self._job_metadata['persistent'] = 0
         # create final result
         final = []
         # first find normal jobs
@@ -459,26 +398,27 @@ class DaemonRouter(GreaseRouter.Router):
             .get_session()\
             .query(JobQueue, JobConfig)\
             .filter(JobQueue.host_name == self._config.node_db_id())\
-            .filter(JobQueue.job_id == JobConfig.id)\
+            .filter(JobQueue.job_id == JobConfig.id) \
+            .filter(or_(
+                and_(
+                        JobQueue.in_progress == False, JobQueue.completed == False
+                ),
+                JobQueue.in_progress == True)
+            ) \
             .filter(JobQueue.failures < 6)\
             .all()
-        if not result:
-            # No Jobs Found
-            self._job_metadata['normal'] = 0
-        else:
-            # Walk the job list
-            for job in result:
-                self._job_metadata['normal'] += 1
-                final.append({
-                    'id': job.JobQueue.id,
-                    'module': job.JobConfig.command_module,
-                    'command': job.JobConfig.command_name,
-                    'request_time': datetime.utcnow(),
-                    'additional': job.JobQueue.additional,
-                    'tick': job.JobConfig.tick,
-                    'persistent': False,
-                    'failures': job.JobQueue.failures
-                })
+        # Walk the job list
+        for job in result:
+            final.append({
+                'id': job.JobQueue.id,
+                'module': job.JobConfig.command_module,
+                'command': job.JobConfig.command_name,
+                'request_time': datetime.utcnow(),
+                'additional': job.JobQueue.additional,
+                'tick': job.JobConfig.tick,
+                'persistent': False,
+                'failures': job.JobQueue.failures
+            })
         # Now search for persistent jobs
         result = self._alchemyConnection\
             .get_session()\
@@ -487,13 +427,8 @@ class DaemonRouter(GreaseRouter.Router):
             .filter(PersistentJobs.command == JobConfig.id)\
             .filter(PersistentJobs.enabled == True)\
             .all()
-        if not result:
-            # No Jobs Found
-            self._job_metadata['persistent'] = 0
-        else:
-            # Walk the job list
-            for job in result:
-                self._job_metadata['persistent'] += 1
+        # Walk the job list
+        for job in result:
                 final.append({
                     'id': job.PersistentJobs.id,
                     'module': job.JobConfig.command_module,
@@ -507,33 +442,6 @@ class DaemonRouter(GreaseRouter.Router):
         return final
 
     # Class Property getter/setters/methods
-
-    # run counter
-    def get_runs(self):
-        """
-        returns int of amount of loops
-        :return: int
-        """
-        # type: () -> int
-        return int(self._runs)
-
-    def inc_runs(self):
-        """
-        increments run count
-        :return: None
-        """
-        # type: () -> bool
-        self._runs += 1
-        return True
-
-    def reset_runs(self):
-        """
-        resets the run counter to 0
-        :return: bool
-        """
-        # type: () -> bool
-        self._runs = 0
-        return True
 
     # Job Completed Queue
     def add_job_to_completed_queue(self, job_ib):
@@ -621,7 +529,7 @@ class DaemonRouter(GreaseRouter.Router):
         :return: int
         """
         # type: () -> int
-        return datetime.now().second
+        return datetime.utcnow().second
 
     def get_current_run_second(self):
         """

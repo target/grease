@@ -20,6 +20,10 @@ class LaunchCtl(GreaseDaemonCommand):
         super(LaunchCtl, self).__init__()
         self.purpose = "Register machine with Job Control Database"
 
+    def __del__(self):
+        super(LaunchCtl, self).__del__()
+        self._sql.get_session().close()
+
     def execute(self, context='{}'):
         if len(sys.argv) >= 4:
             action = str(sys.argv[3])
@@ -92,7 +96,9 @@ class LaunchCtl(GreaseDaemonCommand):
             )
             self._sql.get_session().add(server)
             self._sql.get_session().commit()
-            file(self._config.identity_file, 'w').write(str(uid))
+            fil = open(self._config.identity_file, 'w')
+            fil.write(str(uid))
+            fil.close()
             return True
 
     def _action_cull_server(self):
@@ -325,4 +331,6 @@ class LaunchCtl(GreaseDaemonCommand):
     def _action_load_db(self):
         print("LOADING DB")
         RDBMSTypes.__main__()
+        if not os.path.isfile(self._config.identity_file):
+            self._action_register()
         return True

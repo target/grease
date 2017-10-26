@@ -156,7 +156,7 @@ class SourceDeDuplify(object):
                 'score': 1,
                 'hash': SourceDeDuplify.generate_hash(source_obj),
                 'type': 1,
-                'uuid': str(Obj_UUID)
+                'object_uuid': str(Obj_UUID)
             })
             # Next start field level processing
             # first check if our fields are limited
@@ -273,7 +273,7 @@ class SourceDeDuplify(object):
                     check_document['expiry'] = SourceDeDuplify.generate_expiry_time()
                     check_document['max_expiry'] = SourceDeDuplify.generate_max_expiry_time()
                     check_document['type'] = 2
-                    check_document['parent_uuid'] = str(obj_uuid)
+                    check_document['object_uuid'] = str(obj_uuid)
                     collection.insert_one(check_document)
                     # now lets either choose the highest probable match we found or 0 being a completely globally
                     # unique value (No matches found in the above loop

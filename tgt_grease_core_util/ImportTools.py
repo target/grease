@@ -22,7 +22,7 @@ class Importer(object):
                     "Loading partially qualified module from GREASE_PKG_LOADER :: "
                     + str(self._config.get('GREASE_PKG_LOADER', '')), verbose=True
                 )
-                self._log.debug("Loading module :: " + str(module_name))
+                self._log.debug("Loading module :: " + str(module_name), verbose=True)
                 loaded_module = importlib.import_module(
                     str(self._config.get('GREASE_PKG_LOADER', '')) + str(module_name)
                 )

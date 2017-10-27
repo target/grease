@@ -8,6 +8,8 @@ from tgt_grease_core_util import Configuration
 class BaseSource(object):
     __metaclass__ = ABCMeta
 
+    composite_score_strength_limit = None
+
     def mock_data(self):
         # type: () -> list
         conf = Configuration()
@@ -39,4 +41,3 @@ class BaseSource(object):
     def duplicate_check_fields(self):
         # type: () -> list
         return []
-

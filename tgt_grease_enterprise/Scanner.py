@@ -82,7 +82,8 @@ class ScanOnConfig(GreaseDaemonCommand):
                     source = self._duplification_filter.create_unique_source(
                         scanner,
                         parser.duplicate_check_fields(),
-                        list(parser.get_records())
+                        list(parser.get_records()),
+                        parser.composite_score_strength_limit
                     )
                 else:
                     self._ioc.message().warning("Local Sourcing Mode Detected")
@@ -98,7 +99,7 @@ class ScanOnConfig(GreaseDaemonCommand):
                 del parser
             else:
                 # else something went haywire pls feel free to fix your config
-                self._ioc.message().error("Invalid Scanner In Configurations: [" + str(scanner) + "]", hipchat=True)
+                self._ioc.message().error("Invalid Scanner In Configurations: [" + str(scanner) + "]")
 
     def _schedule_detection(self, sources, scanner):
         # type: (dict, str)  -> bool

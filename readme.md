@@ -46,33 +46,11 @@ to Django, you write your application, GREASE just serves it.
 ## Installation & Requirements
 
 ### Requirements
-  1. PostgreSQL 9.4+
-      * Provision the database with the `database.sql` file
-      included here.
-  2. Python2.7
-  3. Pip
-      * Requests
-      * Psycopg2
-      * PyMongo
-
-### Installation
-  1. Setup Your Environment Variables
-      * `GREASE_DSN` is the only one required at this point
-  2. Install GREASE
-      * `python setup.py install`
-  3. Register with your database
-      * `grease enterprise bridge register`
-  4. Next Steps
-      * Develop your module for GREASE Commands and Configurations
-      * Setup your environment for this package:
-          * `GREASE_CONF_PKG`: Your configuration Package
-          * `GREASE_CONF_DIR`: The directory in your package for 
-          configurations to be loaded from
-          * `GREASE_SOURCES_PKG`: The package to load sources from
-      * if you plan to enable MongoDB for source de-duplication you'll
-      need some additional variables set:
-          * `GREASE_MONGO_HOST`: MongoDB Host Name
-          * `GREASE_MONGO_PORT`: MongoDB Port (Defaults to 27017)
-          * `GREASE_MONGO_USER`: MongoDB Auth Username
-          * `GREASE_MONGO_PASSWORD`: MongoDB Auth Password
-          * `GREASE_MONGO_DB`: Database Name (defaults to grease)
+  1. Python2.7
+  2. Pip
+     * psycopg2
+     * requests
+     * pymongo
+     * sqlalchemy
+     * python-dotenv
+     * psutil

@@ -2,6 +2,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, JSON, Boolean, ForeignKey, DateTime
 from sqlalchemy.orm import relationship
 from datetime import datetime
+from uuid import uuid1
 
 
 Base = declarative_base()
@@ -33,7 +34,7 @@ class JobServers(Base):
 
 class JobQueue(Base):
     __tablename__ = "job_queue"
-    id = Column(Integer, primary_key=True, nullable=False)
+    id = Column(String, primary_key=True, nullable=False, default=uuid1)
     host_name = Column(Integer, ForeignKey('job_servers.id'))
     ticket = Column(String)
     additional = Column(JSON, nullable=False)
@@ -68,8 +69,8 @@ class JobTelemetry(Base):
 
 class JobTelemetryDaemon(Base):
     __tablename__ = "job_telemetry_daemon"
-    id = Column(Integer, primary_key=True, nullable=False)
-    command = Column(Integer, nullable=False)
+    id = Column(String, primary_key=True, nullable=False, default=uuid1)
+    command = Column(String, nullable=False)
     affected = Column(Integer, nullable=False, default=0)
     start_time = Column(DateTime, nullable=False, default=datetime.utcnow)
     entry_time = Column(DateTime, nullable=False, default=datetime.utcnow)
@@ -94,7 +95,7 @@ class PersistentJobs(Base):
 
 class SourceData(Base):
     __tablename__ = "source_data"
-    id = Column(Integer, primary_key=True, nullable=False)
+    id = Column(String, primary_key=True, nullable=False, default=uuid1)
     source_data = Column(JSON, nullable=False)
     source_server = Column(Integer, ForeignKey('job_servers.id'), nullable=False)
     created_time = Column(DateTime, nullable=False)
@@ -155,7 +156,7 @@ def __main__():
         threads=1,
         human_avg=1,
         machine_avg=1,
-        tick=21
+        tick=0
     )
     Scheduler = JobConfig(
         command_module='enterprise',
@@ -164,7 +165,7 @@ def __main__():
         threads=1,
         human_avg=1,
         machine_avg=1,
-        tick=41
+        tick=0
     )
     ClusterHealth = JobConfig(
         command_module='enterprise',
@@ -173,7 +174,7 @@ def __main__():
         threads=1,
         human_avg=1,
         machine_avg=1,
-        tick=50
+        tick=0
     )
     print("ADDING SCANNER")
     sql.get_session().add(Scanner)

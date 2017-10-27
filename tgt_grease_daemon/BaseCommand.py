@@ -41,8 +41,8 @@ class GreaseDaemonCommand(GreaseCommand):
         return float(self._start_time)
 
     def attempt_execution(self, command_id, context='{}'):
-        # type: (int, dict) -> None
-        self.set_exe_state('command_id', int(command_id))
+        # type: (any, dict) -> None
+        self.set_exe_state('command_id', command_id)
         try:
             self.set_exe_state('result', bool(self.execute(context)))
             self.set_exe_state('execution', True)

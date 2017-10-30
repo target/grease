@@ -5,6 +5,7 @@ from collections import deque
 from logging.config import fileConfig
 from .Notifier import Notifier
 from .Configuration import Configuration
+from datetime import datetime
 # POSTGRES
 from sqlalchemy.exc import OperationalError
 
@@ -15,6 +16,7 @@ GREASE_LOG_HANDLER = None
 class Logger:
     _config = Configuration()
     _unregisteredMode = False
+    _current_minute = datetime.utcnow().minute
 
     def __init__(self):
         global GREASE_LOG_HANDLER
@@ -68,6 +70,9 @@ class Logger:
 
     def dress_message(self, message, level, hipchat, verbose, message_color='gray'):
         # type: (str, str, bool, bool, str) -> str
+        if self._current_minute != datetime.utcnow().minute:
+            self._messages = deque(())
+            self._current_minute = datetime.utcnow().minute
         message = "[{0}]::".format(str(self._node_id)) + message
         if verbose:
             message = "VERBOSE::" + message

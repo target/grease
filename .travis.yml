@@ -28,10 +28,6 @@ script:
   - grease enterprise bridge disable-scheduling
   - grease enterprise bridge kill-server
 
-matrix:
-  allow_failures:
-    - python: nightly
-
 deploy:
   on:
     branch: master

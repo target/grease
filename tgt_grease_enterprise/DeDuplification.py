@@ -9,6 +9,7 @@ import pymongo
 from difflib import SequenceMatcher
 from psutil import cpu_percent, virtual_memory
 import threading
+from uuid import uuid4
 
 
 class SourceDeDuplify(object):
@@ -122,6 +123,9 @@ class SourceDeDuplify(object):
         if len(final) == 1:
             self._logger.debug("DEDUPLICATION COMPLETE::REMAINING OBJECTS [1]")
             return final
+        elif len(final) is 0:
+            self._logger.debug("DEDUPLICATION COMPLETE::REMAINING OBJECTS [0]")
+            return final
         else:
             remaining = len(final) - 1
             self._logger.debug("DEDUPLICATION COMPLETE::REMAINING OBJECTS [{0}]".format(remaining))
@@ -142,13 +146,17 @@ class SourceDeDuplify(object):
             logger.debug("Failed To Locate Type1 Match, Performing Type2 Search Match", True)
             # Globally unique hash for request
             # create a completely new document hash and all the field set hashes
+            # generate a pointer for the object
+            Obj_UUID = uuid4()
+            # insert to mongo
             collection.insert_one({
                 'expiry': SourceDeDuplify.generate_expiry_time(),
                 'max_expiry': SourceDeDuplify.generate_max_expiry_time(),
                 'source': str(source_name),
                 'score': 1,
                 'hash': SourceDeDuplify.generate_hash(source_obj),
-                'type': 1
+                'type': 1,
+                'object_uuid': str(Obj_UUID)
             })
             # Next start field level processing
             # first check if our fields are limited
@@ -159,7 +167,9 @@ class SourceDeDuplify(object):
                 # only registered fields
                 fields = field_set
             # now lets get the composite score
-            composite_score = SourceDeDuplify.get_field_score(collection, logger, source_name, source_obj, fields)
+            composite_score = SourceDeDuplify.get_field_score(
+                collection, logger, source_name, source_obj, fields, Obj_UUID
+            )
             if source_pointer is 0:
                 compo_spot = 1
             else:
@@ -211,7 +221,7 @@ class SourceDeDuplify(object):
         mongo_connection.client().close()
 
     @staticmethod
-    def get_field_score(collection, logger, source_name, document, field_set):
+    def get_field_score(collection, logger, source_name, document, field_set, obj_uuid):
         # type: (Collection, Logging.Logger, str, dict, list) -> float
         # This function does a field by field assessment of a source
         # Woo is what I said too
@@ -263,6 +273,7 @@ class SourceDeDuplify(object):
                     check_document['expiry'] = SourceDeDuplify.generate_expiry_time()
                     check_document['max_expiry'] = SourceDeDuplify.generate_max_expiry_time()
                     check_document['type'] = 2
+                    check_document['object_uuid'] = str(obj_uuid)
                     collection.insert_one(check_document)
                     # now lets either choose the highest probable match we found or 0 being a completely globally
                     # unique value (No matches found in the above loop

@@ -1,5 +1,5 @@
 from unittest import TestCase
-from tgt_grease import Configuration
+from tgt_grease.core import Configuration
 import os
 
 

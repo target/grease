@@ -1,1 +1,1 @@
-from .Configuration import Configuration
+from . import core

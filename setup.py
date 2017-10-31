@@ -5,8 +5,13 @@ import os
 setup(
     name='tgt_grease',
     version='2.0.0',
+    license="MIT",
     description='GRE Application Service Engine',
-    long_description="Automation Engine for operations",
+    long_description="""
+    GREASE is an automation tool for SRE like teams. Rather than providing every solution under the sun, GREASE
+    offers developers a framework to develop automation for their needs. GREASE offers a suite of tools and services
+    to make automation easy.
+    """,
     classifiers=[
         'Development Status :: 5 - Production/Stable',
         'Programming Language :: Python :: 2.7',
@@ -23,7 +28,8 @@ setup(
         'Programming Language :: Python :: 2.7'
     ],
     keywords='python automated recovery',
-    author='james.e.bell@target.com',
+    author='James E. Bell Jr.',
+    author_email="james.e.bell@target.com",
     packages=find_packages(),
     test_suite='nose.collector',
     tests_require=['nose', 'nose-cover3'],

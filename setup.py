@@ -4,7 +4,7 @@ import os
 
 setup(
     name='tgt_grease',
-    version='1.5.5',
+    version='2.0.0',
     description='GRE Application Service Engine',
     long_description="Automation Engine for operations",
     classifiers=[
@@ -22,7 +22,7 @@ setup(
         'Operating System :: POSIX',
         'Programming Language :: Python :: 2.7'
     ],
-    keywords='python automated recovery incident',
+    keywords='python automated recovery',
     author='james.e.bell@target.com',
     packages=find_packages(),
     test_suite='nose.collector',
@@ -41,7 +41,6 @@ setup(
     zip_safe=False,
     scripts=[
         'bin/grease',
-        'bin/grease-daemon',
         'bin/greasectl.py',
         'bin/greasectl.ps1'
     ]

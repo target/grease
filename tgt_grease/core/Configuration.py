@@ -18,6 +18,8 @@ class Configuration(object):
         greaseDir (str): The root directory of GREASE
         fs_sep (str): The filesystem separator for the installed OS
         greaseConfigFile (str): Location of the current configuration file
+        FileSystem (list): Directories of the GREASE filesystem
+        GREASE_CONFIG (dict): Actual config
 
     """
     global GREASE_CONFIG
@@ -125,6 +127,8 @@ class Configuration(object):
             'Logging': {
                 'mode': 'filesystem',
                 'verbose': False,
+                'trace': False,
+                'foreground': False,
                 'file': Configuration.greaseDir + os.sep + 'log' + os.sep + 'grease.log'
             },
             'Configuration': {

@@ -145,6 +145,7 @@ class Configuration(object):
             },
             'Notifications': {
                 'HipChat': {
+                    'enabled': False,
                     'token': None,
                     'room': None
                 }

@@ -50,7 +50,47 @@ class Notifications(object):
             bool: Success of sending
 
         """
-        return True
+        if channel \
+                and 'enabled' in self._conf.get('Notifications', channel, {}) \
+                and self._conf.get('Notifications', channel, {}).get('enabled'):
+            return bool(self._route_notification(channel, message, level))
+        else:
+            # Capture object for notification channel statuses
+            NotificationStatus = []
+            # Loop through those channels
+            for Notifier, Config in self._conf.get('Notifications', default={}).iteritems:
+                # ensure channel is enabled
+                if 'enabled' in Config and Config.get('enabled'):
+                    # loop through the channels
+                    NotificationStatus.append(bool(self._route_notification(Notifier, message, level)))
+            # make the list unique
+            NotificationStatus = list(set(NotificationStatus))
+            if len(NotificationStatus) > 1:
+                # we got at least one true and at least one false
+                return False
+            elif len(NotificationStatus) is 1:
+                # return what the categorical state was
+                return bool(NotificationStatus[0])
+            else:
+                # nothing was configured to run return true
+                return True
+
+    def _route_notification(self, channel, message, level):
+        """Handle actual calling of notification channels
+
+        Args:
+            channel (str): Channel to notify
+            message (str): Message to send
+            level (int): Level to send at
+
+        Returns:
+            bool: Method success status
+
+        """
+        if channel == "HipChat":
+            return self.send_hipchat_message(message, level)
+        else:
+            return False
 
     def send_hipchat_message(self, message, level, color=None):
         """Send a hipchat message

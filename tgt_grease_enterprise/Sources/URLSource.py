@@ -1,17 +1,19 @@
 import os
+import json
+from .BaseSourceClass import BaseSource
 from tgt_grease_core_util import Configuration
-from tgt_grease_enterprise import BaseSource
 
 
 class URLSource(BaseSource):
     def __init__(self):
+        print('newing up URLSource')
         self._result = {}
 
     def _get_online(self, host):
         if os.name == 'nt':
             parameters = "-n 1"
         else:
-            parameters = "-c 1"
+            parameters = "-q -c 1"
 
         call = "ping " + parameters + " " + host
         print call
@@ -23,15 +25,12 @@ class URLSource(BaseSource):
 
     def parse_source(self, rule_config):
         # type (dict) -> None
-        print "IN parse_source"
-        print rule_config
-        hosts = rule_config[0]['hosts']
-        for host in hosts:
-            print self._get_online(host)
-        #Iterate over a list of IP addresses to ping.
-        #Iterate over a list of hostnames to ping.
-        #Iterate over a list of API endpoints to hit.
-        #Return a dict
+        strip_header = json.loads(rule_config)['URLSource'][0]
+
+        for url in strip_header['url']:
+            continue
+            #self._result.append(self._get_online(url))
+
 
     def get_records(self):
         # type: () -> dict

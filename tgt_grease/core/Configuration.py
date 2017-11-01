@@ -143,6 +143,12 @@ class Configuration(object):
                 'foreground': False,
                 'file': Configuration.greaseDir + 'log' + os.sep + 'grease.log'
             },
+            'Notifications': {
+                'HipChat': {
+                    'token': None,
+                    'room': None
+                }
+            },
             'Configuration': {
                 'mode': 'filesystem',
                 'dir': Configuration.greaseDir + 'etc' + os.sep

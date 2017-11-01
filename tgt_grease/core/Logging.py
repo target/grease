@@ -31,7 +31,7 @@ class Logging(object):
             self._conf = Config
         else:
             self._conf = Configuration()
-        self._notifications = Notifications(self.getConfig(), self)
+        self._notifications = Notifications(self.getConfig())
         self.ProvisionLoggers()
 
     def getConfig(self):

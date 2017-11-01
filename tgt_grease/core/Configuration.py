@@ -71,23 +71,27 @@ class Configuration(object):
             fil.close()
 
     @staticmethod
-    def get(section, key):
+    def get(section, key=None, default=None):
         """Retrieve configuration item
 
         Args:
             section (str): Configuration Section to read from
             key (str): Configuration key to retrieve
+            default (object): Default value if section/key is not found
 
         """
         global GREASE_CONFIG
         if isinstance(GREASE_CONFIG, dict):
             if GREASE_CONFIG.get(section):
-                if isinstance(GREASE_CONFIG.get(section), dict) and key in GREASE_CONFIG.get(section):
-                    return GREASE_CONFIG.get(section).get(key)
+                if key:
+                    if isinstance(GREASE_CONFIG.get(section), dict) and key in GREASE_CONFIG.get(section):
+                        return GREASE_CONFIG.get(section).get(key)
+                    else:
+                        return default
                 else:
-                    return None
+                    return GREASE_CONFIG.get(section)
             else:
-                return None
+                return default
         else:
             return False
 

@@ -7,7 +7,7 @@ python:
   - "nightly" #whatever 3.x is hemorrhaging-edge
 
 services:
-  - postgresql
+  - mongodb
 
 before_script:
   - pip install psycopg2 pymongo requests sqlalchemy

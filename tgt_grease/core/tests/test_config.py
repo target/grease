@@ -16,6 +16,15 @@ class TestConfiguration(TestCase):
         for elem in conf.FileSystem:
             self.assertTrue(os.path.isdir(conf.greaseDir + conf.fs_sep + elem))
 
+    def test_no_key(self):
+        conf = Configuration()
+        self.assertDictEqual({'MongoDB': {'host': 'localhost', 'port': 27017}}, conf.get('Connectivity'))
+
+    def test_default(self):
+        conf = Configuration()
+        self.assertTrue(conf.get('FakeSection', default=True))
+        self.assertTrue(conf.get('Connectivity', 'MongoDB'))
+
     def test_defaults(self):
         conf = Configuration()
         self.assertEqual(conf.get('Connectivity', 'MongoDB').get('host'), 'localhost')

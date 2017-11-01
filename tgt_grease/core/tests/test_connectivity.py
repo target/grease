@@ -13,7 +13,7 @@ class TestConnectivity(TestCase):
         mongo = Mongo()
         client = mongo.Client()
         collection = client.get_database('grease').get_collection('test')
-        collection.insert({'test': 'var'})
+        collection.insert_one({'test': 'var'})
         result = collection.find({'test': 'var'}).count()
         self.assertTrue(result == 1)
         collection.drop()

@@ -14,21 +14,21 @@ class Logging(object):
     enable centralized log aggregation
 
     Attributes:
-        conf (Configuration): This is an instance of the Config to enable configuring loggers
+        _conf (Configuration): This is an instance of the Config to enable configuring loggers
         _logger (logging.Logger): This is the actual logger for GREASE
         _formatter (logging.Formatter): This is the log formatter
 
     """
 
-    conf = None
+    _conf = None
     _logger = None
     _formatter = None
 
     def __init__(self, Config=None):
         if isinstance(Config, Configuration):
-            self.conf = Config
+            self._conf = Config
         else:
-            self.conf = Configuration()
+            self._conf = Configuration()
         self.ProvisionLoggers()
 
     def getConfig(self):
@@ -38,7 +38,7 @@ class Logging(object):
             Configuration: The loaded configuration object
 
         """
-        return self.conf
+        return self._conf
 
     def TriageMessage(self, message, additional=None, verbose=False, trace=False, notify=False, level=logging.DEBUG):
         """Central message handler
@@ -56,10 +56,10 @@ class Logging(object):
 
         """
         # first prevent verbose processing
-        if verbose and not self.conf.get('Logging', 'verbose'):
+        if verbose and not self._conf.get('Logging', 'verbose'):
             return True
         # prevent trace processing
-        if trace and not self.conf.get('Logging', 'trace'):
+        if trace and not self._conf.get('Logging', 'trace'):
             return True
         # create a pre-message
         if level is 0:
@@ -80,9 +80,9 @@ class Logging(object):
             preMsg = "VERBOSE::{0}".format(preMsg)
         if trace:
             preMsg = "TRACE::{0}".format(preMsg)
-        message = "{0}::{1}::{2}::{3}".format(preMsg, self.conf.NodeIdentity, message, additional)
+        message = "{0}::{1}::{2}::{3}".format(preMsg, self._conf.NodeIdentity, message, additional)
         # Foreground mode print log messages
-        if self.conf.get('Logging', 'foreground'):
+        if self._conf.get('Logging', 'foreground'):
             print(message)
         # actually log the message
         if level is 0:
@@ -91,7 +91,7 @@ class Logging(object):
             self._logger.log(level, message)
         # notify if needed
         if notify:
-            # TODO: Third Party Notifications
+            # TODO: Third party notifications
             return True
         return True
 
@@ -252,9 +252,9 @@ class Logging(object):
             None: Simple loader, Nothing needed
 
         """
-        if self.conf.get('Logging', 'ConfigurationFile'):
-            if os.path.isfile(self.conf.get('Logging', 'ConfigurationFile')):
-                config.fileConfig(self.conf.get('Logging', 'ConfigurationFile'))
+        if self._conf.get('Logging', 'ConfigurationFile'):
+            if os.path.isfile(self._conf.get('Logging', 'ConfigurationFile')):
+                config.fileConfig(self._conf.get('Logging', 'ConfigurationFile'))
                 self._logger = logging.getLogger('GREASE')
             else:
                 self.DefaultLogger()
@@ -269,7 +269,7 @@ class Logging(object):
 
         """
         global GREASE_LOG_HANDLER
-        logFilename = self.conf.get('Logging', 'file')
+        logFilename = self._conf.get('Logging', 'file')
         self._logger = logging.getLogger('GREASE')
         self._logger.setLevel(logging.DEBUG)
         self._formatter = logging.Formatter(

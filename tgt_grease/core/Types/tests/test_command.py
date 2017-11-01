@@ -15,3 +15,7 @@ class TestCommand(TestCase):
     def test_ioc(self):
         cmd = TestCmd()
         self.assertTrue(isinstance(cmd.ioc, GreaseContainer))
+
+    def test_variable_storage(self):
+        cmd = TestCmd()
+        self.assertEqual(cmd.variable_storage.name, "TestCmd")

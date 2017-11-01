@@ -38,6 +38,14 @@ class Configuration(object):
 
     greaseConfigFile = greaseDir + "grease.conf.json"
 
+    if os.path.isfile(greaseDir + 'grease.identity'):
+        fil = open(greaseDir + 'grease.identity')
+        NodeIdentity = fil.read().rstrip()
+        fil.close()
+        del fil
+    else:
+        NodeIdentity = "Unknown"
+
     def __init__(self, ConfigFile=None):
         self.EnsureGreaseFS()
         self.ReloadConfig(ConfigFile)

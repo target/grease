@@ -25,6 +25,13 @@ class TestConfiguration(TestCase):
         self.assertTrue(conf.get('FakeSection', default=True))
         self.assertTrue(conf.get('Connectivity', 'MongoDB'))
 
+    def test_get_section(self):
+        conf = Configuration()
+        # test for section that should have stuff
+        self.assertTrue(conf.get('Notifications'))
+        # Section that is empty
+        self.assertFalse(conf.get('Additional'))
+
     def test_defaults(self):
         conf = Configuration()
         self.assertEqual(conf.get('Connectivity', 'MongoDB').get('host'), 'localhost')

@@ -43,6 +43,15 @@ class Logging(object):
         """
         return self._conf
 
+    def getNotification(self):
+        """Get Notification Class
+
+        Returns:
+            Notifications: The current Notifications instance
+
+        """
+        return self._notifications
+
     def TriageMessage(self, message, additional=None, verbose=False, trace=False, notify=False, level=logging.DEBUG):
         """Central message handler
 

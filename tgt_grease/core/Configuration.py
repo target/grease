@@ -67,7 +67,7 @@ class Configuration(object):
             GREASE_CONFIG = Configuration.DefaultConfig()
             # write config to disk
             fil = open(Configuration.greaseConfigFile, 'w')
-            fil.write(json.dumps(GREASE_CONFIG))
+            fil.write(json.dumps(GREASE_CONFIG, indent=4, sort_keys=True))
             fil.close()
 
     @staticmethod
@@ -129,15 +129,15 @@ class Configuration(object):
                 'verbose': False,
                 'trace': False,
                 'foreground': False,
-                'file': Configuration.greaseDir + os.sep + 'log' + os.sep + 'grease.log'
+                'file': Configuration.greaseDir + 'log' + os.sep + 'grease.log'
             },
             'Configuration': {
                 'mode': 'filesystem',
-                'dir': Configuration.greaseDir + os.sep + 'etc'
+                'dir': Configuration.greaseDir + 'etc' + os.sep
             },
             'Sourcing': {
                 'mode': 'filesystem',
-                'dir': Configuration.greaseDir + os.sep + 'etc'
+                'dir': Configuration.greaseDir + 'etc' + os.sep
             },
             'Import': {
                 'searchPath': [

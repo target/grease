@@ -23,7 +23,7 @@ class Notifications(object):
     hipchat_token = None
     hipchat_room = None
 
-    def __init__(self, Config=None, Logger=None):
+    def __init__(self, Config=None):
         if Config and isinstance(Config, Configuration):
             self._conf = Config
         else:
@@ -142,6 +142,5 @@ class Notifications(object):
                 return True
             else:
                 return False
-        except HTTPError as e:
-            self._log.error("Failed to transmit hipchat message error: [{0}]".format(e.message), notify=False)
+        except HTTPError:
             return False

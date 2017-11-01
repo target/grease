@@ -1,4 +1,4 @@
-from tgt_grease.core import Configuration
+from tgt_grease.core import Configuration, Notifications
 from logging import config
 import logging
 import os
@@ -17,18 +17,21 @@ class Logging(object):
         _conf (Configuration): This is an instance of the Config to enable configuring loggers
         _logger (logging.Logger): This is the actual logger for GREASE
         _formatter (logging.Formatter): This is the log formatter
+        _notifications (Notifications): Notifications instance
 
     """
 
     _conf = None
     _logger = None
     _formatter = None
+    _notifications = None
 
     def __init__(self, Config=None):
         if isinstance(Config, Configuration):
             self._conf = Config
         else:
             self._conf = Configuration()
+        self._notifications = Notifications(self.getConfig(), self)
         self.ProvisionLoggers()
 
     def getConfig(self):
@@ -91,8 +94,7 @@ class Logging(object):
             self._logger.log(level, message)
         # notify if needed
         if notify:
-            # TODO: Third party notifications
-            return True
+            return bool(self._notifications.SendMessage(message, level))
         return True
 
     def trace(self, message, additional=None, verbose=False, trace=False, notify=False):
@@ -195,7 +197,7 @@ class Logging(object):
             level=logging.WARNING
         ))
 
-    def error(self, message, additional=None, verbose=False, trace=False, notify=False):
+    def error(self, message, additional=None, verbose=False, trace=False, notify=True):
         """Error Messages
 
         Use this method for logging error statements
@@ -220,7 +222,7 @@ class Logging(object):
             level=logging.ERROR
         ))
 
-    def critical(self, message, additional=None, verbose=False, trace=False, notify=False):
+    def critical(self, message, additional=None, verbose=False, trace=False, notify=True):
         """Critical Messages
 
         Use this method for logging critical statements

@@ -19,7 +19,7 @@ class Command(object):
     ioc = None
     variable_storage = None
     start_time = None
-    exec_data = {'execVal': False, 'retVal': False, 'retData': {}}
+    exec_data = {'execVal': False, 'retVal': False, 'data': {}}
 
     def __init__(self, Logger=None):
         if Logging and isinstance(Logger, Logging):
@@ -50,17 +50,17 @@ class Command(object):
         """
         return self.exec_data.get('retVal', False)
 
-    def getRetData(self):
+    def getData(self):
         """Get any data the execute method wanted to put into telemetry
 
         Returns:
             dict: The Key/Value pairs from the execute method execution
 
         """
-        return self.exec_data.get('retData', {})
+        return self.exec_data.get('data', {})
 
-    def setRetData(self, Key, Data):
-        """Put Data into the retData object to be inserted into telemetry
+    def setData(self, Key, Data):
+        """Put Data into the data object to be inserted into telemetry
 
         Args:
             Key (str): Key for the data to be stored
@@ -70,7 +70,7 @@ class Command(object):
             None: Void Method to put data
 
         """
-        self.exec_data['retData'][Key] = Data
+        self.exec_data['data'][Key] = Data
 
     def __del__(self):
         # close mongo connection
@@ -78,7 +78,17 @@ class Command(object):
         del self.variable_storage
 
     def safe_execute(self, context):
-        return bool(self.execute(context))
+        """Attempt execution and prevent MOST exceptions
+
+        Returns:
+            None: Void method to attempt exceptions
+
+        """
+        try:
+            self.exec_data['execVal'] = True
+            self.exec_data['retVal'] = bool(self.execute(context))
+        except:
+            self.exec_data['execVal'] = False
 
     @abstractmethod
     def execute(self, context):

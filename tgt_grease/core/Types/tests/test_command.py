@@ -9,8 +9,28 @@ class TestCmd(Command):
 
     def execute(self, context):
         for key, val in context.iteritems():
-            self.setRetData(key, val)
+            self.setData(key, val)
         return True
+
+
+class TestCmdFail(Command):
+    def __init__(self):
+        super(TestCmdFail, self).__init__()
+
+    def execute(self, context):
+        for key, val in context.iteritems():
+            self.setData(key, val)
+        return False
+
+
+class TestCmdExcept(Command):
+    def __init__(self):
+        super(TestCmdExcept, self).__init__()
+
+    def execute(self, context):
+        for key, val in context.iteritems():
+            self.setData(key, val)
+        raise AttributeError
 
 
 class TestCommand(TestCase):
@@ -35,4 +55,16 @@ class TestCommand(TestCase):
     def test_get_ret_data(self):
         cmd = TestCmd()
         cmd.safe_execute({'key': 'value'})
-        self.assertDictEqual(cmd.getRetData(), {'key': 'value'})
+        self.assertDictEqual(cmd.getData(), {'key': 'value'})
+
+    def test_failed_cmd(self):
+        cmd = TestCmdFail()
+        cmd.safe_execute({})
+        self.assertTrue(cmd.getExecVal())
+        self.assertFalse(cmd.getRetVal())
+
+    def test_except_cmd(self):
+        cmd = TestCmdExcept()
+        cmd.safe_execute({})
+        self.assertFalse(cmd.getExecVal())
+        self.assertFalse(cmd.getRetVal())

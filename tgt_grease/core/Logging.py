@@ -31,6 +31,15 @@ class Logging(object):
             self.conf = Configuration()
         self.ProvisionLoggers()
 
+    def getConfig(self):
+        """Getter for Configuration
+
+        Returns:
+            Configuration: The loaded configuration object
+
+        """
+        return self.conf
+
     def TriageMessage(self, message, additional=None, verbose=False, trace=False, notify=False, level=logging.DEBUG):
         """Central message handler
 

@@ -13,6 +13,10 @@ class TestLogging(TestCase):
         log = Logging(conf)
         self.assertTrue(isinstance(log, Logging))
 
+    def test_config_getter(self):
+        log = Logging()
+        self.assertTrue(isinstance(log.getConfig(), Configuration))
+
     def test_trace(self):
         log = Logging()
         initial = self._log_line_count()

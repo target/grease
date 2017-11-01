@@ -139,5 +139,11 @@ class Configuration(object):
                 'mode': 'filesystem',
                 'dir': Configuration.greaseDir + os.sep + 'etc'
             },
+            'Import': {
+                'searchPath': [
+                    'tgt_grease.core',
+                    'tgt_grease.enterprise'
+                ]
+            },
             "Additional": {}
         }

@@ -46,7 +46,7 @@ class GreaseContainer(object):
         """Gets the Configuration Instance
 
         Returns:
-            tgt_grease.core.Configuration: the configuration instance
+            tgt_grease.core.Configuration.Configuration: the configuration instance
 
         """
         return self._logger.getConfig()

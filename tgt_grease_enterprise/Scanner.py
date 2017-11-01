@@ -4,7 +4,7 @@ from .Detectors import DetectorConfiguration
 from tgt_grease_core_util import SQLAlchemyConnection, Configuration
 from tgt_grease_core_util.ImportTools import Importer
 from tgt_grease_core_util.RDBMSTypes import JobServers, SourceData
-from tgt_grease_enterprise import BaseSource
+from .Sources import BaseSource
 from .DeDuplification import SourceDeDuplify
 from datetime import datetime
 from sqlalchemy import update

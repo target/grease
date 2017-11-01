@@ -29,7 +29,6 @@ class Notifications(object):
         else:
             self._conf = Configuration()
 
-
     def SendMessage(self, message, level=DEBUG, channel=None):
         """Send Message to configured channels
 

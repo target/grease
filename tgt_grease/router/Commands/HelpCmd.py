@@ -27,18 +27,17 @@ class Help(Command):
     def execute(self, context):
         print("")
         print("Welcome to GREASE Help")
-        print("======================")
         impTool = ImportTool(self.ioc.getLogger())
         for route in self.ioc.getConfig().get('Import', 'searchPath'):
             mod = importlib.import_module(route)
             for attr in dir(mod):
                 cmd = impTool.load(attr)
                 if cmd and isinstance(cmd, Command):
+                    print("<======================>")
                     print("[{0}] Purpose: [{1}]".format(
                         cmd.__class__.__name__,
                         cmd.purpose
                     ))
                     print(cmd.help)
-                else:
-                    continue
+                    print("<======================>")
         return True

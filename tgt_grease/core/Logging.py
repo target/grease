@@ -92,7 +92,10 @@ class Logging(object):
             preMsg = "VERBOSE::{0}".format(preMsg)
         if trace:
             preMsg = "TRACE::{0}".format(preMsg)
-        message = "{0}::{1}::{2}::{3}".format(preMsg, self._conf.NodeIdentity, message, additional)
+        if additional:
+            message = "{0}::{1}::{2}::{3}".format(preMsg, self._conf.NodeIdentity, message, additional)
+        else:
+            message = "{0}::{1}::{2}".format(preMsg, self._conf.NodeIdentity, message)
         # Foreground mode print log messages
         if self._conf.get('Logging', 'foreground'):
             print(message)

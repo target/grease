@@ -89,6 +89,9 @@ class Command(object):
             self.exec_data['retVal'] = bool(self.execute(context))
         except:
             self.exec_data['execVal'] = False
+            self.ioc.getLogger().error(
+                "Failed to execute [{0}] execute got exception!".format(self.__class__.__name__)
+            )
 
     @abstractmethod
     def execute(self, context):

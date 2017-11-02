@@ -8,7 +8,7 @@ class TestCmd(Command):
         super(TestCmd, self).__init__()
 
     def execute(self, context):
-        for key, val in context.iteritems():
+        for key, val in context.items():
             self.setData(key, val)
         return True
 
@@ -18,7 +18,7 @@ class TestCmdFail(Command):
         super(TestCmdFail, self).__init__()
 
     def execute(self, context):
-        for key, val in context.iteritems():
+        for key, val in context.items():
             self.setData(key, val)
         return False
 
@@ -28,7 +28,7 @@ class TestCmdExcept(Command):
         super(TestCmdExcept, self).__init__()
 
     def execute(self, context):
-        for key, val in context.iteritems():
+        for key, val in context.items():
             self.setData(key, val)
         raise AttributeError
 

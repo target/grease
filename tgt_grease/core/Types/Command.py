@@ -9,6 +9,10 @@ class Command(object):
     Attributes:
         __metaclass__ (ABCMeta): Metadata class object
         purpose (str): The purpose of the command
+        help (str): Help string for the command line
+        __author__ (str): Authorship string
+        __version__ (str): Command Version
+        os_needed (str): If a specific OS is needed then set this
         ioc (GreaseContainer): IOC container for access to system resources
         variable_storage (pymongo.collection): collection object for command
 
@@ -23,6 +27,7 @@ class Command(object):
     """
     __author__ = "Jimmy The Programmer"
     __version__ = "1.0.0"
+    os_needed = None
 
     __metaclass__ = ABCMeta
     ioc = None

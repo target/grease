@@ -161,6 +161,7 @@ class Configuration(object):
             'Import': {
                 'searchPath': [
                     'tgt_grease.core',
+                    'tgt_grease.router.Commands',
                     'tgt_grease'
                 ]
             },

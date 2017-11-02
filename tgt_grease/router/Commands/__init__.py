@@ -1,1 +1,1 @@
-from .HelpCmd import Help
+from .HelpCmd import Help as help

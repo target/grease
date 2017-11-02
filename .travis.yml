@@ -1,11 +1,13 @@
 language: python
 
+sudo: required
+
 python:
   - "2.7" #what we built it for originally
   - "nightly" #whatever 3.x is hemorrhaging-edge
 
 services:
-  - postgresql
+  - mongodb
 
 before_script:
   - pip install psycopg2 pymongo requests sqlalchemy
@@ -19,14 +21,15 @@ install:
   
 script:
   - python setup.py test
-  - grease enterprise bridge load-db
-  - grease enterprise bridge list-pjobs
-  - grease enterprise bridge list-jobs
-  - grease enterprise bridge enable-detection
-  - grease enterprise bridge enable-scheduling
-  - grease enterprise bridge disable-detection
-  - grease enterprise bridge disable-scheduling
-  - grease enterprise bridge kill-server
+# TODO: Redo Node Tests
+#  - grease enterprise bridge load-db
+#  - grease enterprise bridge list-pjobs
+#  - grease enterprise bridge list-jobs
+#  - grease enterprise bridge enable-detection
+#  - grease enterprise bridge enable-scheduling
+#  - grease enterprise bridge disable-detection
+#  - grease enterprise bridge disable-scheduling
+#  - grease enterprise bridge kill-server
 
 deploy:
   on:

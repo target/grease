@@ -26,4 +26,53 @@ class Daemon(Command):
         super(Daemon, self).__init__()
 
     def execute(self, context):
-        return True
+        if 'install' in context.get('grease_other_args'):
+            return bool(self.install())
+        elif 'start' in context.get('grease_other_args'):
+            return bool(self.start())
+        elif 'stop' in context.get('grease_other_args'):
+            return bool(self.stop())
+        elif 'run' in context.get('grease_other_args'):
+            try:
+                self.run()
+                return True
+            except KeyboardInterrupt:
+                return True
+        else:
+            return False
+
+    def install(self):
+        """Handle Daemon Installation based on the platform we're working with
+
+        Returns:
+            bool: installation success
+
+        """
+        pass
+
+    def run(self):
+        """Actual running of the daemon
+
+        Returns:
+            None: Should never return
+
+        """
+        pass
+
+    def start(self):
+        """Starting the daemon based on platform
+
+        Returns:
+            bool: start success
+
+        """
+        pass
+
+    def stop(self):
+        """Stopping the daemon based on the platform
+
+        Returns:
+            bool: stop success
+
+        """
+        pass

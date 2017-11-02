@@ -38,9 +38,15 @@ class TestCommand(TestCase):
         cmd = TestCmd()
         self.assertTrue(isinstance(cmd.ioc, GreaseContainer))
 
-    def test_variable_storage(self):
+    def test_variable_storage_name(self):
         cmd = TestCmd()
         self.assertEqual(cmd.variable_storage.name, "TestCmd")
+
+    def test_variable_storage(self):
+        cmd = TestCmd()
+        cmd.variable_storage.insert_one({'test': 'value'})
+        self.assertEqual(cmd.variable_storage.find({'test': 'value'}).count(), 1)
+        self.assertTrue(cmd.variable_storage.delete_one({'test': 'value'}))
 
     def test_get_exec_info(self):
         cmd = TestCmd()

@@ -59,7 +59,7 @@ class Notifications(object):
             NotificationStatus = []
             NotificationChannels = self._conf.get('Notifications', default={})  # type: dict
             # Loop through those channels
-            for Notifier, Config in NotificationChannels.iteritems():
+            for Notifier, Config in NotificationChannels.items():
                 # ensure channel is enabled
                 if 'enabled' in Config and Config.get('enabled'):
                     # loop through the channels

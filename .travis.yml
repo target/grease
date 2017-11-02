@@ -25,6 +25,8 @@ script:
   - grease enterprise bridge enable-scheduling
   - grease enterprise bridge disable-detection
   - grease enterprise bridge disable-scheduling
+  - grease enterprise bridge list-pjobs
+  - grease enterprise bridge list-jobs
   - grease enterprise bridge kill-server
 
 deploy:

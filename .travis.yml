@@ -22,7 +22,7 @@ install:
 script:
   - python setup.py test
 # TODO: Redo Node Tests
-#  - grease enterprise bridge load-db
+  - grease help
 #  - grease enterprise bridge list-pjobs
 #  - grease enterprise bridge list-jobs
 #  - grease enterprise bridge enable-detection

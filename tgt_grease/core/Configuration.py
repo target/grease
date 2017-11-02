@@ -161,7 +161,8 @@ class Configuration(object):
             'Import': {
                 'searchPath': [
                     'tgt_grease.core',
-                    'tgt_grease.enterprise'
+                    'tgt_grease.enterprise',
+                    'tgt_grease'
                 ]
             },
             "Additional": {}

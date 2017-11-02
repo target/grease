@@ -44,12 +44,11 @@ class GreaseRouter(object):
 
         """
         # ensure at least a sub-command has been provided
-        # TODO: Ensure we are loading the job asked for
         if len(sys.argv) > 1:
-            inst = self._importTool.load(sys.argv[1])
-            if isinstance(inst, Command):
+            cmd, context = self.get_arguments()
+            if cmd:
                 # Parse long args to command context
-                if inst.execute(self.get_arguments()):
+                if cmd.execute(context):
                     return 0
                 else:
                     return 3
@@ -75,24 +74,24 @@ class GreaseRouter(object):
         if message:
             self._logger.info("Message: [{0}]".format(message))
             if code != 0:
-                print("ERROR: {0}".format("message"))
+                print("ERROR: {0}".format(message))
             else:
                 print(message)
         self._logger.debug("GREASE exit code: [{0}]".format(code), verbose=True)
         sys.exit(code)
 
-    @staticmethod
-    def get_arguments():
+    def get_arguments(self):
         """Parse CLI long arguments into dictionaries
 
         This expects arguments separated by space `--opt val`, colon `--opt:val`, or equal `--opt=val` signs
 
         Returns:
-            dict: key->value pairs of arguments
+            object, dict: key->value pairs of arguments
 
         """
         i = 0
         context = {}
+        cmd = None
         while i < len(sys.argv):
             arg = str(sys.argv[i])
             if arg.startswith("--"):
@@ -105,7 +104,15 @@ class GreaseRouter(object):
                     context[arg.split(":")[0].strip("--")] = arg.split(":")[1]
                 else:
                     # space separated
-                    context[arg.strip("--")] = sys.argv[i + 1]
+                    possible_imp = self._importTool.load(sys.argv[i + 1])
+                    if not isinstance(possible_imp, Command):
+                        context[arg.strip("--")] = sys.argv[i + 1]
+                    else:
+                        cmd = possible_imp
                     i += 1
+            else:
+                possible_imp = self._importTool.load(sys.argv[i])
+                if isinstance(possible_imp, Command):
+                    cmd = possible_imp
             i += 1
-        return context
+        return cmd, context

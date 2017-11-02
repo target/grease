@@ -34,7 +34,7 @@ class ImportTool(object):
             self._log.trace("Searching path [{0}]".format(path), trace=True)
             try:
                 SearchModule = importlib.import_module(str(path))
-            except ImportError as e:
+            except ImportError:
                 self._log.error("Failed to import module [{0}]".format(path), verbose=True)
                 continue
             if className in dir(SearchModule):
@@ -42,9 +42,15 @@ class ImportTool(object):
                 try:
                     instance = req()
                     return instance
-                except AttributeError as e:
+                except AttributeError:
                     self._log.error(
-                        "Failed to create instance of class [{0}] from module [{1}]".format(className, path)
+                        "ATTRERROR: Failed to create instance of class [{0}] from module [{1}]".format(className, path),
+                        verbose=True
                     )
                     continue
+                except TypeError:
+                    self._log.error(
+                        "TYPEERROR: Failed to create instance of class [{0}] from module [{1}]".format(className, path),
+                        verbose=True
+                    )
         return None

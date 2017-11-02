@@ -1,9 +1,10 @@
 from abc import ABCMeta, abstractmethod
 from tgt_grease.core import Logging, GreaseContainer
+from tgt_grease.core.Types import GreaseClass
 from datetime import datetime
 
 
-class Command(object):
+class Command(GreaseClass):
     """Abstract class for commands in GREASE
 
     Attributes:
@@ -14,8 +15,13 @@ class Command(object):
 
     """
 
+    purpose = "Base Class for Commands"
+    help = """
+    This class helps provide a WireFrame for command building in GREASE
+    """
+    __version__ = "2.0.0"
+
     __metaclass__ = ABCMeta
-    purpose = "Stuff"
     ioc = None
     variable_storage = None
     start_time = None

@@ -31,7 +31,7 @@ setup(
         'psycopg2',
         'requests',
         'pymongo',
-        'sqlalchemy',
+        'sqlalchemy>=1.1',
         'python-dotenv',
         'psutil'
     ] + (

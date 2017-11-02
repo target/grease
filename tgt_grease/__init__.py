@@ -1,3 +1,3 @@
 from . import core
 from . import router
-from .router import Help as help
+from .router.Commands import Help as help

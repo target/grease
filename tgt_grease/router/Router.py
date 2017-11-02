@@ -2,7 +2,6 @@ from tgt_grease.core import Logging, Configuration, ImportTool
 from tgt_grease.core.Types import Command
 import os
 import sys
-import getopt
 
 
 class GreaseRouter(object):
@@ -89,8 +88,9 @@ class GreaseRouter(object):
             object, dict: key->value pairs of arguments
 
         """
-        i = 0
+        i = 1
         context = {}
+        other = []
         cmd = None
         while i < len(sys.argv):
             arg = str(sys.argv[i])
@@ -114,5 +114,8 @@ class GreaseRouter(object):
                 possible_imp = self._importTool.load(sys.argv[i])
                 if isinstance(possible_imp, Command):
                     cmd = possible_imp
+                else:
+                    other.append(arg)
             i += 1
+        context['grease_other_args'] = other
         return cmd, context

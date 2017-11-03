@@ -133,8 +133,7 @@ class Daemon(Command):
             return bool(self.stop())
         elif 'run' in context.get('grease_other_args'):
             try:
-                self.run(context.get('timing'))
-                return True
+                return self.run(context.get('timing'))
             except KeyboardInterrupt:
                 return True
         else:
@@ -255,10 +254,13 @@ class Daemon(Command):
             timing (int): Amount of seconds the daemon should run for
 
         Returns:
-            None: Should never return
+            bool: Server running state
 
         """
         daemon = DaemonProcess(self.ioc)
+        if not daemon.registered:
+            self.ioc.getLogger().critical("Node is not registered!")
+            return False
         if not timing:
             while True:
                 if daemon.server():
@@ -274,3 +276,4 @@ class Daemon(Command):
                 else:
                     daemon.log_once_per_second("Server Process Failed", ERROR)
                     continue
+        return True

@@ -9,11 +9,13 @@ class DaemonProcess(object):
     Attributes:
         ioc (GreaseContainer): The Grease IOC
         current_real_second (int): Current second in time
+        registered (bool): If the node is registered with MongoDB
 
     """
 
     ioc = None
     current_real_second = None
+    registered = True
 
     def __init__(self, ioc):
         if isinstance(ioc, GreaseContainer):
@@ -21,10 +23,23 @@ class DaemonProcess(object):
         else:
             self.ioc = GreaseContainer()
         self.current_real_second = datetime.utcnow().second
+        if self.ioc.getConfig().NodeIdentity == "Unknown" and not self.register():
+            self.registered = False
 
     def server(self):
         """Server process for ensuring prototypes & jobs are running"""
+        if not self.registered:
+            return False
         return True
+
+    def register(self):
+        """Attempt to register with MongoDB
+
+        Returns:
+            bool: Registration Success
+
+        """
+        return False
 
     def log_once_per_second(self, message, level=DEBUG, additional=None):
         """Log Message once per second

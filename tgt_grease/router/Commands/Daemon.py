@@ -1,8 +1,10 @@
-from logging import DEBUG
-from tgt_grease.core import GreaseContainer
+from logging import DEBUG, ERROR, INFO
+from tgt_grease.core import GreaseContainer, ImportTool
+from tgt_grease.core.Types import Command
 from datetime import datetime
 import platform
 from bson.objectid import ObjectId
+import threading
 
 
 class DaemonProcess(object):
@@ -12,12 +14,15 @@ class DaemonProcess(object):
         ioc (GreaseContainer): The Grease IOC
         current_real_second (int): Current second in time
         registered (bool): If the node is registered with MongoDB
+        impTool (ImportTool): Instance of Import Tool
 
     """
 
     ioc = None
     current_real_second = None
     registered = True
+    contextManager = {'jobs': {}, 'prototypes': {}}
+    impTool = None
 
     def __init__(self, ioc):
         if isinstance(ioc, GreaseContainer):
@@ -27,9 +32,15 @@ class DaemonProcess(object):
         self.current_real_second = datetime.utcnow().second
         if self.ioc.getConfig().NodeIdentity == "Unknown" and not self.register():
             self.registered = False
+        self.impTool = ImportTool(self.ioc.getLogger())
 
     def server(self):
-        """Server process for ensuring prototypes & jobs are running"""
+        """Server process for ensuring prototypes & jobs are running
+
+        Returns:
+            bool: Server Success
+
+        """
         if not self.registered:
             self.ioc.getLogger().trace("Server is not registered", trace=True)
             return False
@@ -39,7 +50,6 @@ class DaemonProcess(object):
         self.ioc.getLogger().trace("Searching for Jobs", trace=True)
         jobs = JobsCollection.find({
             'node': ObjectId(self.ioc.getConfig().NodeIdentity),
-            'inProgress': False,
             'completed': False
         })
         # Get Node Information
@@ -69,10 +79,47 @@ class DaemonProcess(object):
         return True
 
     def _run_job(self, job):
+        # TODO: Ensure Job not already in progress
         pass
 
     def _run_prototype(self, prototype):
-        pass
+        if not self.contextManager['prototypes'].get(prototype):
+            # ProtoType has not started
+            inst = self.impTool.load(prototype)
+            if not isinstance(inst, Command):
+                # invalid ProtoType
+                self.log_once_per_second("Invalid ProtoType [{0}]".format(prototype), level=ERROR)
+                return
+            inst.ioc.getLogger().foreground = self.ioc.getLogger().foreground
+            thread = threading.Thread(
+                target=inst.execute,
+                name="GREASE DAEMON PROTOTYPE [{0}]".format(prototype)
+            )
+            thread.daemon = True
+            thread.start()
+            self.contextManager['prototypes'][prototype] = thread
+            return
+        else:
+            # ensure thread is alive
+            if self.contextManager['prototypes'].get(prototype).isAlive():
+                self.ioc.getLogger().trace("ProtoType [{0}] is alive".format(prototype))
+                return
+            else:
+                # Thread died for some reason
+                self.log_once_per_second("ProtoType [{0}] Stopped".format(prototype), level=INFO)
+                inst = self.impTool.load(prototype)
+                if not isinstance(inst, Command):
+                    self.log_once_per_second("Invalid ProtoType [{0}]".format(prototype), level=ERROR)
+                    return
+                inst.ioc.getLogger().foreground = self.ioc.getLogger().foreground
+                thread = threading.Thread(
+                    target=inst.execute,
+                    name="GREASE DAEMON PROTOTYPE [{0}]".format(prototype)
+                )
+                thread.daemon = True
+                thread.start()
+                self.contextManager['prototypes'][prototype] = thread
+                return
 
     def register(self):
         """Attempt to register with MongoDB

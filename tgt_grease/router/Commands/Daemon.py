@@ -31,9 +31,12 @@ class DaemonProcess(object):
     def server(self):
         """Server process for ensuring prototypes & jobs are running"""
         if not self.registered:
+            self.ioc.getLogger().trace("Server is not registered", trace=True)
             return False
+        self.ioc.getLogger().trace("Server execution starting", trace=True)
         # establish job collection
         JobsCollection = self.ioc.getCollection("JobQueue")
+        self.ioc.getLogger().trace("Searching for Jobs", trace=True)
         jobs = JobsCollection.find({
             'node': ObjectId(self.ioc.getConfig().NodeIdentity),
             'inProgress': False,
@@ -59,11 +62,11 @@ class DaemonProcess(object):
             for job in jobs:
                 self.ioc.getLogger().trace("Passing Job [{0}] to Runner".format(job.get("_id")), trace=True)
                 self._run_job(job)
-            return True
         else:
             # Nothing to Run for Jobs
             self.ioc.getLogger().trace("No Jobs Scheduled to Server", trace=True)
-            return True
+        self.ioc.getLogger().trace("Server execution complete", trace=True)
+        return True
 
     def _run_job(self, job):
         pass

@@ -38,6 +38,10 @@ class Help(Command):
                         cmd.__class__.__name__,
                         cmd.purpose
                     ))
+                    print("Author: {0}".format(cmd.__author__))
+                    print("Current Version: {0}".format(cmd.__version__))
+                    if cmd.os_needed:
+                        print('Needs OS: {0}'.format(cmd.os_needed))
                     print(cmd.help)
                     print("<======================>")
         return True

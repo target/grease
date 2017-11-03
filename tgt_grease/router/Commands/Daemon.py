@@ -5,6 +5,7 @@ from datetime import datetime
 import platform
 from bson.objectid import ObjectId
 import threading
+from psutil import cpu_percent, virtual_memory
 
 
 class DaemonProcess(object):
@@ -41,6 +42,20 @@ class DaemonProcess(object):
             bool: Server Success
 
         """
+        # Ensure we aren't swamping the system
+        cpu = cpu_percent(interval=.1)
+        mem = virtual_memory().percent
+        if \
+                cpu >= int(self.ioc.getConfig().get('NodeInformation', 'ResourceMax')) \
+                or mem >= int(self.ioc.getConfig().get('NodeInformation', 'ResourceMax')):
+            self.ioc.getLogger().trace(
+                "Thread Maximum Reached CPU: [{0}] Memory: [{1}]".format(cpu, mem),
+                trace=True
+            )
+            # remove variables
+            del cpu
+            del mem
+            return True
         if not self.registered:
             self.ioc.getLogger().trace("Server is not registered", trace=True)
             return False

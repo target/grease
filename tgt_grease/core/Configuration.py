@@ -167,7 +167,8 @@ class Configuration(object):
             },
             "NodeInformation": {
                 "Roles": ["general"],
-                "ProtoTypes": []
+                "ProtoTypes": [],
+                "ResourceMax": 95
             },
             "Additional": {}
         }

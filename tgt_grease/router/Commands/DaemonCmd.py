@@ -3,6 +3,7 @@ import platform
 import sys
 import os
 import subprocess
+import datetime
 if platform.system().lower().startswith("win"):
     import win32serviceutil
     import win32service
@@ -108,6 +109,9 @@ class Daemon(Command):
             stop the daemon
         run
             run the daemon in the foreground    
+            
+        --timing:<int>
+            Seconds to run daemon for
     
     """
 
@@ -123,7 +127,7 @@ class Daemon(Command):
             return bool(self.stop())
         elif 'run' in context.get('grease_other_args'):
             try:
-                self.run()
+                self.run(context.get('timing'))
                 return True
             except KeyboardInterrupt:
                 return True
@@ -238,7 +242,7 @@ class Daemon(Command):
             self.ioc.getLogger().error("Unrecognized operating system [{0}]".format(platform))
             return False
 
-    def run(self):
+    def run(self, timing=None):
         """Actual running of the daemon
 
         Returns:
@@ -246,7 +250,14 @@ class Daemon(Command):
 
         """
         i = 0
-        while True:
-            if i % 100 == 0:
-                self.ioc.getLogger().debug("Test Message {0}".format(i))
-            i += 1
+        if not timing:
+            while True:
+                if i % 100 == 0:
+                    self.ioc.getLogger().debug("Test Message {0}".format(i))
+                i += 1
+        else:
+            current_second = datetime.datetime.utcnow().second
+            while current_second + 5 >= datetime.datetime.utcnow().second:
+                if i % 100 == 0:
+                    self.ioc.getLogger().debug("Test Message {0}".format(i))
+                i += 1

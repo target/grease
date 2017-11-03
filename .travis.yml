@@ -25,16 +25,12 @@ before_script:
 
 install:
   - python setup.py install
-  - sudo python setup.py install
   
 script:
   - python setup.py test
 # TODO: Redo Node Tests
   - grease help
-  - sudo grease daemon install
-  - if [[ "$TRAVIS_OS_NAME" -ne "osx" ]]; then sudo systemctl daemon-reload          ; fi
-  - grease daemon start
-  - grease daemon stop
+  - grease daemon run --timing:5
 #  - grease enterprise bridge list-pjobs
 #  - grease enterprise bridge list-jobs
 #  - grease enterprise bridge enable-detection

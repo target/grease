@@ -1,6 +1,8 @@
 from logging import DEBUG
 from tgt_grease.core import GreaseContainer
 from datetime import datetime
+import platform
+from bson.objectid import ObjectId
 
 
 class DaemonProcess(object):
@@ -40,7 +42,38 @@ class DaemonProcess(object):
 
         """
         # TODO: Make a cluster management command to utilize this in more places
-        return False
+        collection = self.ioc.getMongo()\
+            .Client()\
+            .get_database(self.ioc.getConfig().get('Connectivity', 'MongoDB').get('db', 'grease'))\
+            .get_collection("JobServer")
+        if self.ioc.getConfig().NodeIdentity == "Unknown":
+            # Actual registration
+            uid = collection.insert_one({
+                'jobs': 0,
+                'os': platform.system().lower(),
+                'roles': self.ioc.getConfig().get('NodeInformation', "Roles"),
+                'prototypes': self.ioc.getConfig().get('NodeInformation', "ProtoTypes"),
+                'active': True,
+                'activationTime': datetime.utcnow()
+            }).inserted_id
+            fil = open(self.ioc.getConfig().greaseDir + "grease.identity", "w")
+            fil.write(str(uid))
+            fil.close()
+            self.registered = True
+            self.ioc.getConfig().NodeIdentity = uid
+            del collection
+            return True
+        else:
+            # Check the Identity is actually registered
+            if collection.find({'_id': ObjectId(self.ioc.getConfig().NodeIdentity)}).count():
+                del collection
+                return True
+            else:
+                self.ioc.getLogger().error("Invalid Node Identity::Node Identity Not Found", additional={
+                    'NodeID': self.ioc.getConfig().NodeIdentity
+                })
+                del collection
+                return False
 
     def log_once_per_second(self, message, level=DEBUG, additional=None):
         """Log Message once per second

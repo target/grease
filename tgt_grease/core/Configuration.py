@@ -165,5 +165,9 @@ class Configuration(object):
                     'tgt_grease'
                 ]
             },
+            "NodeInformation": {
+                "Roles": ["general"],
+                "ProtoTypes": []
+            },
             "Additional": {}
         }

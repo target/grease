@@ -58,7 +58,7 @@ MacOSPListFile = """
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.grease.daemon</string>
+    <string>net.grease.daemon</string>
     <key>ProgramArguments</key>
     <array>
         <string>{0}</string>
@@ -66,8 +66,8 @@ MacOSPListFile = """
         <string>daemon</string>
         <string>run</string>
     </array>
-    <key>StartInterval</key>
-    <integer>60</integer>
+    <key>RunAtLoad</key>
+    <true />
 </dict>
 </plist>
 """.format(sys.executable, os.sep.join(sys.executable.split(os.sep)[:-1]))
@@ -128,16 +128,18 @@ class Daemon(Command):
             except KeyboardInterrupt:
                 return True
         else:
+            print("Invalid Sub-command here is help data:")
+            print(self.help)
             return False
 
     def install(self):
-        global MacOSPListFile, SystemdFile
         """Handle Daemon Installation based on the platform we're working with
 
         Returns:
             bool: installation success
 
         """
+        global MacOSPListFile, SystemdFile
         plat = platform.system().lower()
         if plat.startswith("win"):
             # Windows
@@ -198,6 +200,8 @@ class Daemon(Command):
             return True
         elif plat.startswith("dar"):
             # MacOS
+            if subprocess.call(["sudo", "launchctl", "load", "/Library/LaunchDaemons/net.grease.daemon.plist"]) != 0:
+                return False
             return True
         elif plat.startswith("lin"):
             # Linux
@@ -221,6 +225,8 @@ class Daemon(Command):
             win32serviceutil.HandleCommandLine(AppServerSvc, argv=['', 'stop'])
             return True
         elif plat.startswith("dar"):
+            if subprocess.call(["sudo", "launchctl", "unload", "/Library/LaunchDaemons/net.grease.daemon.plist"]) != 0:
+                return False
             # MacOS
             return True
         elif plat.startswith("lin"):

@@ -39,6 +39,7 @@ class DaemonProcess(object):
             bool: Registration Success
 
         """
+        # TODO: Make a cluster management command to utilize this in more places
         return False
 
     def log_once_per_second(self, message, level=DEBUG, additional=None):

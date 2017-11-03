@@ -38,6 +38,8 @@ class DaemonProcess(object):
     def server(self):
         """Server process for ensuring prototypes & jobs are running
 
+        By Running this method this will clear the DB of any jobs a node may have
+
         Returns:
             bool: Server Success
 
@@ -65,7 +67,8 @@ class DaemonProcess(object):
         self.ioc.getLogger().trace("Searching for Jobs", trace=True)
         jobs = JobsCollection.find({
             'node': ObjectId(self.ioc.getConfig().NodeIdentity),
-            'completed': False
+            'completed': False,
+            'failures': {'$lt': 6}
         })
         # Get Node Information
         Node = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(self.ioc.getConfig().NodeIdentity)})
@@ -86,18 +89,37 @@ class DaemonProcess(object):
             self.ioc.getLogger().trace("Total Jobs to Execute: [{0}]".format(jobs.count()))
             for job in jobs:
                 self.ioc.getLogger().trace("Passing Job [{0}] to Runner".format(job.get("_id")), trace=True)
-                self._run_job(job)
+                self._run_job(job, JobsCollection)
         else:
             # Nothing to Run for Jobs
             self.ioc.getLogger().trace("No Jobs Scheduled to Server", trace=True)
         self.ioc.getLogger().trace("Server execution complete", trace=True)
         return True
 
-    def _run_job(self, job):
+    def _run_job(self, job, JobCollection):
+        """Run a On-Demand Job
+
+        Args:
+            job (dict): Job Data to execute
+            JobCollection (pymongo.collection.Collection): JobCollection to update for telemetry
+
+        Returns:
+            None: Void Method to kickoff execution
+
+        """
         # TODO: Ensure Job not already in progress
         pass
 
     def _run_prototype(self, prototype):
+        """Startup a ProtoType
+
+        Args:
+            prototype (str): ProtoType to start
+
+        Returns:
+            None: Void method to start prototype
+
+        """
         if not self.contextManager['prototypes'].get(prototype):
             # ProtoType has not started
             inst = self.impTool.load(prototype)
@@ -135,6 +157,8 @@ class DaemonProcess(object):
                 thread.start()
                 self.contextManager['prototypes'][prototype] = thread
                 return
+
+    # TODO: Method to drain contextManager
 
     def register(self):
         """Attempt to register with MongoDB

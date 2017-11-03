@@ -1,5 +1,6 @@
 from tgt_grease.core import Configuration, Notifications
 from logging import config
+from datetime import datetime
 import logging
 import os
 import time
@@ -18,6 +19,7 @@ class Logging(object):
         _logger (logging.Logger): This is the actual logger for GREASE
         _formatter (logging.Formatter): This is the log formatter
         _notifications (Notifications): Notifications instance
+        foreground (bool): If set will override config and print all log messages
 
     """
 
@@ -25,6 +27,7 @@ class Logging(object):
     _logger = None
     _formatter = None
     _notifications = None
+    foreground = False
 
     def __init__(self, Config=None):
         if isinstance(Config, Configuration):
@@ -97,8 +100,8 @@ class Logging(object):
         else:
             message = "{0}::{1}::{2}".format(preMsg, self._conf.NodeIdentity, message)
         # Foreground mode print log messages
-        if self._conf.get('Logging', 'foreground'):
-            print(message)
+        if self._conf.get('Logging', 'foreground') or self.foreground:
+            print("{0}::{1}".format(datetime.utcnow(), message))
         # actually log the message
         if level is 0:
             self._logger.log(logging.DEBUG, message)

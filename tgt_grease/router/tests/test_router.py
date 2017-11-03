@@ -79,3 +79,40 @@ class TestRouter(TestCase):
         cmd, context = rtr.get_arguments()
         self.assertTrue(isinstance(cmd, help))
         self.assertDictEqual(context, {'grease_other_args': ['install', 'to-do-stuff']})
+
+    def test_get_cli_args_with_command_type10(self):
+        sys.argv = ['grease', 'help', 'install', 'to-do-stuff', '--foreground']
+        rtr = GreaseRouter()
+        cmd, context = rtr.get_arguments()
+        self.assertTrue(isinstance(cmd, help))
+        self.assertDictEqual(context, {'foreground': True, 'grease_other_args': ['install', 'to-do-stuff']})
+
+    def test_get_cli_args_with_command_type11(self):
+        sys.argv = ['grease', 'help', '--test=var', '--foreground', '--test1:var1', '--test2', 'var2', 'install']
+        rtr = GreaseRouter()
+        cmd, context = rtr.get_arguments()
+        self.assertTrue(isinstance(cmd, help))
+        self.assertDictEqual(
+            {'foreground': True, 'test': 'var', 'test1': 'var1', 'test2': 'var2', 'grease_other_args': ['install']},
+            context
+        )
+
+    def test_get_cli_args_with_command_type12(self):
+        sys.argv = ['grease', 'help', '--test=var', '--foreground', '--test1:var1', '--test2', 'var2']
+        rtr = GreaseRouter()
+        cmd, context = rtr.get_arguments()
+        self.assertTrue(isinstance(cmd, help))
+        self.assertTrue(
+            context,
+            {'foreground': True, 'test': 'var', 'test1': 'var1', 'test2': 'var2', 'grease_other_args': []}
+        )
+
+    def test_get_cli_args_with_command_type13(self):
+        sys.argv = ['grease', '--foreground', 'help', '--test=var', '--test1:var1', '--test2', 'var2']
+        rtr = GreaseRouter()
+        cmd, context = rtr.get_arguments()
+        self.assertTrue(isinstance(cmd, help))
+        self.assertTrue(
+            context,
+            {'foreground': True, 'test': 'var', 'test1': 'var1', 'test2': 'var2', 'grease_other_args': []}
+        )

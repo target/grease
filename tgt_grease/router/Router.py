@@ -103,13 +103,24 @@ class GreaseRouter(object):
                     # was colon separated
                     context[arg.split(":")[0].strip("--")] = arg.split(":")[1]
                 else:
-                    # space separated
-                    possible_imp = self._importTool.load(sys.argv[i + 1])
-                    if not isinstance(possible_imp, Command):
-                        context[arg.strip("--")] = sys.argv[i + 1]
+                    if len(sys.argv) < i + 1:
+                        # we have a flag rather than an arg
+                        context[arg.strip("--")] = True
+                        i += 1
+                    elif len(sys.argv) - 1 == i or sys.argv[i + 1].startswith("--"):
+                        # we have a flag rather than an arg
+                        context[arg.strip("--")] = True
+                    elif sys.argv[i + 1].startswith("--"):
+                        # we have a flag rather than an arg
+                        context[arg.strip("--")] = True
                     else:
-                        cmd = possible_imp
-                    i += 1
+                        # space separated
+                        possible_imp = self._importTool.load(sys.argv[i + 1])
+                        if not isinstance(possible_imp, Command):
+                            context[arg.strip("--")] = sys.argv[i + 1]
+                        else:
+                            cmd = possible_imp
+                        i += 1
             else:
                 possible_imp = self._importTool.load(sys.argv[i])
                 if isinstance(possible_imp, Command):

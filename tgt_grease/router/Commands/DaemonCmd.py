@@ -112,6 +112,8 @@ class Daemon(Command):
             
         --timing:<int>
             Seconds to run daemon for
+        --foreground
+            If provided this will print log messages into the foreground
     
     """
 
@@ -119,6 +121,8 @@ class Daemon(Command):
         super(Daemon, self).__init__()
 
     def execute(self, context):
+        if context.get('foreground'):
+            self.ioc.getLogger().foreground = True
         if 'install' in context.get('grease_other_args'):
             return bool(self.install())
         elif 'start' in context.get('grease_other_args'):
@@ -244,6 +248,9 @@ class Daemon(Command):
 
     def run(self, timing=None):
         """Actual running of the daemon
+
+        Args:
+            timing (int): Amount of seconds the daemon should run for
 
         Returns:
             None: Should never return

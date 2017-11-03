@@ -22,6 +22,8 @@ services:
 
 before_script:
   - pip install pymongo requests
+  - sudo mkdir /opt/grease/
+  - sudo chmod 777 /opt/grease/
 
 install:
   - python setup.py install

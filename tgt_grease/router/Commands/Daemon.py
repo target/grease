@@ -18,18 +18,19 @@ class DaemonProcess(object):
         else:
             self.ioc = GreaseContainer()
 
-    def log_once_per_second(self, message, level=DEBUG):
+    def log_once_per_second(self, message, level=DEBUG, additional=None):
         """Log Message once per second
 
         Args:
             message (str): Message to log
             level (int): Log Level
+            additional (object): Additional information that is able to be str'd
 
         Returns:
             None: Void Method to fire log message
 
         """
-        self.ioc.getLogger().TriageMessage(message=message, level=level)
+        self.ioc.getLogger().TriageMessage(message=message, level=level, additional=additional)
 
     def server(self):
         """Server process for ensuring prototypes & jobs are running"""

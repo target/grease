@@ -30,7 +30,8 @@ script:
   - python setup.py test
 # TODO: Redo Node Tests
   - grease help
-  - grease daemon install
+  - sudo grease daemon install
+  - if [[ "$TRAVIS_OS_NAME" -ne "osx" ]]; then sudo systemctl daemon-reload          ; fi
   - grease daemon start
   - grease daemon stop
 #  - grease enterprise bridge list-pjobs

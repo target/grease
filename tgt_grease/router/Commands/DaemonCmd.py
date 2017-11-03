@@ -172,7 +172,7 @@ class Daemon(Command):
                 return True
             except IOError:
                 self.ioc.getLogger().error("Failed to install Daemon, Permission Denied")
-                print("Failed! Permission denied creating Plist entry!")
+                print("Failed! Permission denied creating Systemd entry!")
                 print("=============")
                 print("To Solve this put the file below in /etc/systemd/system/ as grease.service")
                 print("<=============================>")

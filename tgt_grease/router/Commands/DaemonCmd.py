@@ -1,9 +1,11 @@
 from tgt_grease.core.Types import Command
+from logging import ERROR
 import platform
 import sys
 import os
 import subprocess
 import datetime
+from .Daemon import DaemonProcess
 if platform.system().lower().startswith("win"):
     import win32serviceutil
     import win32service
@@ -256,15 +258,19 @@ class Daemon(Command):
             None: Should never return
 
         """
-        i = 0
+        daemon = DaemonProcess(self.ioc)
         if not timing:
             while True:
-                if i % 100 == 0:
-                    self.ioc.getLogger().debug("Test Message {0}".format(i))
-                i += 1
+                if daemon.server():
+                    continue
+                else:
+                    daemon.log_once_per_second("Server Process Failed", ERROR)
+                    continue
         else:
             current_second = datetime.datetime.utcnow().second
-            while current_second + 5 >= datetime.datetime.utcnow().second:
-                if i % 100 == 0:
-                    self.ioc.getLogger().debug("Test Message {0}".format(i))
-                i += 1
+            while current_second + int(timing) >= datetime.datetime.utcnow().second:
+                if daemon.server():
+                    continue
+                else:
+                    daemon.log_once_per_second("Server Process Failed", ERROR)
+                    continue

@@ -32,7 +32,44 @@ class DaemonProcess(object):
         """Server process for ensuring prototypes & jobs are running"""
         if not self.registered:
             return False
-        return True
+        # establish job collection
+        JobsCollection = self.ioc.getCollection("JobQueue")
+        jobs = JobsCollection.find({
+            'node': ObjectId(self.ioc.getConfig().NodeIdentity),
+            'inProgress': False,
+            'completed': False
+        })
+        # Get Node Information
+        Node = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(self.ioc.getConfig().NodeIdentity)})
+        if not Node:
+            # If for some reason we couldn't find it
+            self.ioc.getLogger().error("Failed To Load Node Information")
+            return False
+        # Get Prototypes
+        prototypes = list(Node.get('prototypes'))
+        # Del node instance
+        del Node
+        if prototypes:
+            # We have prototypes to spin up
+            for prototype in prototypes:
+                self.ioc.getLogger().trace("Passing ProtoType [{0}] to Runner".format(prototype), trace=True)
+                self._run_prototype(prototype)
+        if jobs.count():
+            self.ioc.getLogger().trace("Total Jobs to Execute: [{0}]".format(jobs.count()))
+            for job in jobs:
+                self.ioc.getLogger().trace("Passing Job [{0}] to Runner".format(job.get("_id")), trace=True)
+                self._run_job(job)
+            return True
+        else:
+            # Nothing to Run for Jobs
+            self.ioc.getLogger().trace("No Jobs Scheduled to Server", trace=True)
+            return True
+
+    def _run_job(self, job):
+        pass
+
+    def _run_prototype(self, prototype):
+        pass
 
     def register(self):
         """Attempt to register with MongoDB
@@ -42,10 +79,7 @@ class DaemonProcess(object):
 
         """
         # TODO: Make a cluster management command to utilize this in more places
-        collection = self.ioc.getMongo()\
-            .Client()\
-            .get_database(self.ioc.getConfig().get('Connectivity', 'MongoDB').get('db', 'grease'))\
-            .get_collection("JobServer")
+        collection = self.ioc.getCollection("JobServer")
         if self.ioc.getConfig().NodeIdentity == "Unknown":
             # Actual registration
             uid = collection.insert_one({

@@ -48,6 +48,8 @@ class GreaseRouter(object):
             if cmd:
                 # Parse long args to command context
                 if cmd.execute(context):
+                    cmd.__del__()
+                    del cmd
                     return 0
                 else:
                     return 3

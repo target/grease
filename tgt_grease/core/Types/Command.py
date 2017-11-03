@@ -89,7 +89,6 @@ class Command(object):
     def __del__(self):
         # close mongo connection
         self.ioc.getMongo().Close()
-        del self.variable_storage
 
     def safe_execute(self, context):
         """Attempt execution and prevent MOST exceptions

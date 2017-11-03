@@ -1,5 +1,6 @@
 from logging import DEBUG
 from tgt_grease.core import GreaseContainer
+from datetime import datetime
 
 
 class DaemonProcess(object):
@@ -7,16 +8,23 @@ class DaemonProcess(object):
 
     Attributes:
         ioc (GreaseContainer): The Grease IOC
+        current_real_second (int): Current second in time
 
     """
 
     ioc = None
+    current_real_second = None
 
     def __init__(self, ioc):
         if isinstance(ioc, GreaseContainer):
             self.ioc = ioc
         else:
             self.ioc = GreaseContainer()
+        self.current_real_second = datetime.utcnow().second
+
+    def server(self):
+        """Server process for ensuring prototypes & jobs are running"""
+        return True
 
     def log_once_per_second(self, message, level=DEBUG, additional=None):
         """Log Message once per second
@@ -30,8 +38,18 @@ class DaemonProcess(object):
             None: Void Method to fire log message
 
         """
-        self.ioc.getLogger().TriageMessage(message=message, level=level, additional=additional)
+        if self._has_time_progressed():
+            self.ioc.getLogger().TriageMessage(message=message, level=level, additional=additional)
 
-    def server(self):
-        """Server process for ensuring prototypes & jobs are running"""
-        return True
+    def _has_time_progressed(self):
+        """Determines if the current second and the real second are not the same
+
+        Returns:
+            bool: if true then time has passed in a meaningful way
+
+        """
+        if self.current_real_second != datetime.utcnow().second:
+            self.current_real_second = datetime.utcnow().second
+            return True
+        else:
+            return False

@@ -44,7 +44,6 @@ setup(
     zip_safe=False,
     scripts=[
         'bin/grease',
-        'bin/greasectl.py',
-        'bin/greasectl.ps1'
+        'bin/grease.ps1'
     ]
 )

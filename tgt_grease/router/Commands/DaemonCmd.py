@@ -1,4 +1,93 @@
 from tgt_grease.core.Types import Command
+import platform
+import sys
+import os
+import subprocess
+if platform.system().lower().startswith("win"):
+    import win32serviceutil
+    import win32service
+    import win32event
+    import servicemanager
+    import socket
+
+
+    class AppServerSvc (win32serviceutil.ServiceFramework):
+        """Windows Service Configuration"""
+        _svc_name_ = "GreaseDaemon"
+        _svc_display_name_ = "GREASE Daemon Server"
+        _svc_description_ = "GREASE Async Daemon Server for Automation Work"
+
+        def __init__(self, args):
+            win32serviceutil.ServiceFramework.__init__(self, args)
+            self.hWaitStop = win32event.CreateEvent(None, 0, 0, None)
+            socket.setdefaulttimeout(60)
+
+        def SvcStop(self):
+            self.ReportServiceStatus(win32service.SERVICE_STOP_PENDING)
+            win32event.SetEvent(self.hWaitStop)
+
+        def SvcDoRun(self):
+            servicemanager.LogMsg(
+                servicemanager.EVENTLOG_INFORMATION_TYPE,
+                servicemanager.PYS_SERVICE_STARTED,
+                (self._svc_name_, '')
+            )
+            self.main()
+
+        def main(self):
+            if 'install' not in sys.argv:
+                inst = Daemon()
+                inst.run()
+            else:
+                return
+
+        def start(self):
+            self.SvcDoRun()
+
+        def stop(self):
+            self.SvcStop()
+
+        def restart(self):
+            self.SvcStop()
+            self.SvcDoRun()
+
+
+MacOSPListFile = """
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.grease.daemon</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>{0}</string>
+        <string>{1}/grease</string>
+        <string>daemon</string>
+        <string>run</string>
+    </array>
+    <key>StartInterval</key>
+    <integer>60</integer>
+</dict>
+</plist>
+""".format(sys.executable, os.sep.join(sys.executable.split(os.sep)[:-1]))
+
+SystemdFile = """
+[Unit]
+Description=GREASE Daemon Service
+After=syslog.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/grease
+PIDFile=/var/run/grease.pid
+ExecStart={0} {1}/grease daemon run
+StandardOutput=syslog
+StandardError=syslog
+
+[Install]
+WantedBy=multi-user.target
+""".format(sys.executable, os.sep.join(sys.executable.split(os.sep)[:-1]))
 
 
 class Daemon(Command):
@@ -42,22 +131,58 @@ class Daemon(Command):
             return False
 
     def install(self):
+        global MacOSPListFile, SystemdFile
         """Handle Daemon Installation based on the platform we're working with
 
         Returns:
             bool: installation success
 
         """
-        pass
-
-    def run(self):
-        """Actual running of the daemon
-
-        Returns:
-            None: Should never return
-
-        """
-        pass
+        plat = platform.system().lower()
+        if plat.startswith("win"):
+            # Windows
+            win32serviceutil.HandleCommandLine(AppServerSvc)
+            return True
+        elif plat.startswith("dar"):
+            # MacOS
+            try:
+                fil = open("/Library/LaunchDaemons/net.grease.daemon.plist", 'w')
+                fil.write(MacOSPListFile)
+                fil.close()
+                return True
+            except IOError:
+                self.ioc.getLogger().error("Failed to install Daemon, Permission Denied")
+                print("Failed! Permission denied creating Plist entry!")
+                print("=============")
+                print("To Solve this put the file below in /Library/LaunchDaemons/ as net.grease.daemon.plist")
+                print("<=============================>")
+                print(MacOSPListFile)
+                print("<=============================>")
+                print("Make sure you have the right permissions set on the file!!")
+                return False
+        elif plat.startswith("lin"):
+            # Linux
+            try:
+                fil = open("/etc/systemd/system/grease.service", 'w')
+                fil.write(SystemdFile)
+                fil.close()
+                print("Please ensure you run `systemctl daemon-reload` to effect change!")
+                return True
+            except IOError:
+                self.ioc.getLogger().error("Failed to install Daemon, Permission Denied")
+                print("Failed! Permission denied creating Plist entry!")
+                print("=============")
+                print("To Solve this put the file below in /etc/systemd/system/ as grease.service")
+                print("<=============================>")
+                print(SystemdFile)
+                print("<=============================>")
+                print("Make sure you have the right permissions set on the file!!")
+                print("Please ensure you run `systemctl daemon-reload` to effect change!")
+                return False
+        else:
+            self.ioc.getLogger().error("Unrecognized operating system [{0}]".format(platform))
+            print("Unrecognized operating system [{0}]".format(platform))
+            return False
 
     def start(self):
         """Starting the daemon based on platform
@@ -66,7 +191,22 @@ class Daemon(Command):
             bool: start success
 
         """
-        pass
+        plat = platform.system().lower()
+        if plat.startswith("win"):
+            # Windows
+            win32serviceutil.HandleCommandLine(AppServerSvc, argv=['', 'start'])
+            return True
+        elif plat.startswith("dar"):
+            # MacOS
+            return True
+        elif plat.startswith("lin"):
+            # Linux
+            if subprocess.call(["sudo", "systemctl", "start", "grease"]) != 0:
+                return False
+            return True
+        else:
+            self.ioc.getLogger().error("Unrecognized operating system [{0}]".format(platform))
+            return False
 
     def stop(self):
         """Stopping the daemon based on the platform
@@ -75,4 +215,32 @@ class Daemon(Command):
             bool: stop success
 
         """
-        pass
+        plat = platform.system().lower()
+        if plat.startswith("win"):
+            # Windows
+            win32serviceutil.HandleCommandLine(AppServerSvc, argv=['', 'stop'])
+            return True
+        elif plat.startswith("dar"):
+            # MacOS
+            return True
+        elif plat.startswith("lin"):
+            # Linux
+            if subprocess.call(["sudo", "systemctl", "stop", "grease"]) != 0:
+                return False
+            return True
+        else:
+            self.ioc.getLogger().error("Unrecognized operating system [{0}]".format(platform))
+            return False
+
+    def run(self):
+        """Actual running of the daemon
+
+        Returns:
+            None: Should never return
+
+        """
+        i = 0
+        while True:
+            if i % 100 == 0:
+                self.ioc.getLogger().debug("Test Message {0}".format(i))
+            i += 1

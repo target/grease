@@ -1,20 +1,21 @@
 language: python
 
-os:
-  - linux
-  - osx
-
 matrix:
   include:
     - os: linux
-      dist: trusty
       sudo: required
+      dist: trusty
+      python: "2.7"
+    - os: linux
+      sudo: required
+      dist: trusty
+      python: "nightly"
     - os: osx
       sudo: required
-
-python:
-  - "2.7" #what we built it for originally
-  - "nightly" #whatever 3.x is hemorrhaging-edge
+      python: "2.7"
+    - os: osx
+      sudo: required
+      python: "nightly"
 
 services:
   - mongodb

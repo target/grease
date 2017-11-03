@@ -117,8 +117,8 @@ class Configuration(object):
         if not os.path.isdir(self.greaseDir):
             os.mkdir(self.greaseDir)
         for elem in self.FileSystem:
-            if not os.path.isdir(self.greaseDir + os.sep + elem):
-                os.mkdir(self.greaseDir + os.sep + elem)
+            if not os.path.isdir(self.greaseDir + elem):
+                os.mkdir(self.greaseDir + elem)
         return True
 
     @staticmethod

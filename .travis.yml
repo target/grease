@@ -24,7 +24,7 @@ before_script:
   - pip install pymongo requests
   - sudo mkdir /opt/grease/
   - sudo chmod 777 /opt/grease/
-  - if [ $TRAVIS_OS_NAME = osx ]; then brew install mongo fi
+  - if [ $TRAVIS_OS_NAME = linux ]; then true; else brew install mongo; fi
 
 install:
   - python setup.py install

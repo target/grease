@@ -1,6 +1,9 @@
 language: python
 
 matrix:
+  fast_finish: true
+  allowed_failures:
+  - osx_image: xcode9.1
   include:
     - os: linux
       sudo: required

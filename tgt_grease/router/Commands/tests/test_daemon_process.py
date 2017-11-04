@@ -1,7 +1,7 @@
 from unittest import TestCase
 from tgt_grease.core import GreaseContainer
 from tgt_grease.router.Commands.Daemon import DaemonProcess
-import time
+from bson import ObjectId
 
 
 class TestRegistration(TestCase):
@@ -19,7 +19,7 @@ class TestRegistration(TestCase):
         ioc = GreaseContainer()
         cmd = DaemonProcess(ioc)
         jobid = ioc.getCollection('JobQueue').insert_one({
-            'node': ioc.getConfig().NodeIdentity,
+            'node': ObjectId(ioc.getConfig().NodeIdentity),
             'inProgress': False,
             'completed': False,
             'failures': 0,
@@ -27,10 +27,8 @@ class TestRegistration(TestCase):
             'context': {}
         }).inserted_id
         # Run for a bit
-        for r in range(0, 10):
-            self.assertTrue(cmd.server())
-            print ioc.getConfig().NodeIdentity
-            time.sleep(.5)
+        self.assertTrue(cmd.server())
+        self.assertTrue(cmd.drain_jobs(ioc.getCollection('JobQueue')))
         result = ioc.getCollection('JobQueue').find_one({'_id': jobid})
         self.assertTrue(result)
         self.assertTrue(result['completed'])

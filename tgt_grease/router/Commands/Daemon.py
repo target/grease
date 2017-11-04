@@ -124,7 +124,7 @@ class DaemonProcess(object):
                     'command': inst
                 }
                 JobCollection.update_one(
-                    {'_id': job.get('_id')},
+                    {'_id': ObjectId(job.get('_id'))},
                     {
                         '$set': {
                             'inProgress': True,
@@ -138,7 +138,7 @@ class DaemonProcess(object):
                 del inst
                 self.ioc.getLogger().warning("Invalid Job", additional=job)
                 JobCollection.update_one(
-                    {'_id': job['_id']},
+                    {'_id': ObjectId(job['_id'])},
                     {
                         '$set': {
                             'inProgress': False,
@@ -161,7 +161,7 @@ class DaemonProcess(object):
                 if finishedJob.getRetVal():
                     # job completed successfully
                     JobCollection.update_one(
-                        {'_id': job.get('_id')},
+                        {'_id': ObjectId(job.get('_id'))},
                         {
                             '$set': {
                                 'inProgress': False,
@@ -177,7 +177,7 @@ class DaemonProcess(object):
                         "Job Failed [{0}]".format(job.get('_id')), additional=finishedJob.getData()
                     )
                     JobCollection.update_one(
-                        {'_id': job['_id']},
+                        {'_id': ObjectId(job['_id'])},
                         {
                             '$set': {
                                 'inProgress': False,
@@ -243,7 +243,66 @@ class DaemonProcess(object):
                 self.contextManager['prototypes'][prototype] = thread
                 return
 
-    # TODO: Method to drain contextManager
+    def drain_jobs(self, JobCollection):
+        """Will drain jobs from the current context
+
+        This method is used to prevent abnormal ending of executions
+
+        Args:
+            JobCollection (pymongo.collection.Collection): Job Collection Object
+
+        Returns:
+            bool: When job queue is emptied
+
+        """
+        Threads = True
+        while Threads:
+            if self.contextManager['jobs']:
+                jobs = {}
+                for key, val in self.contextManager['jobs'].items():
+                    if val['thread'].isAlive():
+                        jobs[key] = val
+                        continue
+                    else:
+                        # Execution has ended
+                        finishedJob = self.contextManager['jobs'].get(key).get('command')  # type: Command
+                        if finishedJob.getRetVal():
+                            # job completed successfully
+                            JobCollection.update_one(
+                                {'_id': ObjectId(key)},
+                                {
+                                    '$set': {
+                                        'inProgress': False,
+                                        'completed': True,
+                                        'completedTime': datetime.utcnow(),
+                                        'returnData': finishedJob.getData()
+                                    }
+                                }
+                            )
+                        else:
+                            # Job Failure
+                            self.ioc.getLogger().warning(
+                                "Job Failed [{0}]".format(key), additional=finishedJob.getData()
+                            )
+                            JobCollection.update_one(
+                                {'_id': ObjectId(key)},
+                                {
+                                    '$set': {
+                                        'inProgress': False,
+                                        'completed': True,
+                                        'completedTime': datetime.utcnow(),
+                                        'returnData': {'drained': True},
+                                        'failures': val.get('failures', 0) + 1
+                                    }
+                                }
+                            )
+                        # close out job
+                        finishedJob.__del__()
+                        del finishedJob
+                self.contextManager['jobs'] = jobs
+            else:
+                Threads = False
+        return True
 
     def register(self):
         """Attempt to register with MongoDB

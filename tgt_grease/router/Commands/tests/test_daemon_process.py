@@ -5,6 +5,7 @@ from tgt_grease.router.Commands.Daemon import DaemonProcess
 from bson import ObjectId
 from tgt_grease.core import Configuration
 import json
+import time
 
 
 class TestProtoType(Command):
@@ -58,6 +59,7 @@ class TestRegistration(TestCase):
         data['NodeInformation']['ProtoTypes'] = ['TestProtoType']
         data['Import']['searchPath'].append('tgt_grease.router.Commands.tests')
         fil.write(json.dumps(data, sort_keys=True, indent=4))
+        fil.close()
         Configuration.ReloadConfig()
         # Update Node to run it
         ioc.getCollection('JobServer')\
@@ -71,16 +73,23 @@ class TestRegistration(TestCase):
         )
         self.assertTrue(cmd.server())
         self.assertTrue(cmd.drain_jobs(ioc.getCollection('JobQueue')))
+        # ensure jobs drain out
+        time.sleep(1.5)
         self.assertEqual(
             ioc.getCollection('TestProtoType').find({'runs': {'$exists': True}}).count(),
             10
         )
         # clean up
+        fil = open(ioc.getConfig().greaseConfigFile, 'r')
         data = json.loads(fil.read())
+        fil.close()
+        # remove collection
+        ioc.getCollection('TestProtoType').drop()
         # remove prototypes
         data['NodeInformation']['ProtoTypes'] = []
         # pop search path
         trash = data['Import']['searchPath'].pop()
         # close out
+        fil = open(ioc.getConfig().greaseConfigFile, 'w')
         fil.write(json.dumps(data, sort_keys=True, indent=4))
         fil.close()

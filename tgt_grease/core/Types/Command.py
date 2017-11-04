@@ -28,12 +28,7 @@ class Command(object):
     __author__ = "Jimmy The Programmer"
     __version__ = "1.0.0"
     os_needed = None
-
     __metaclass__ = ABCMeta
-    ioc = None
-    variable_storage = None
-    start_time = None
-    exec_data = {'execVal': False, 'retVal': False, 'data': {}}
 
     def __init__(self, Logger=None):
         if Logging and isinstance(Logger, Logging):
@@ -45,6 +40,7 @@ class Command(object):
             .get_database(self.ioc.getConfig().get('Connectivity', 'MongoDB').get('db', 'grease'))\
             .get_collection(self.__class__.__name__)
         self.start_time = datetime.utcnow()
+        self.exec_data = {'execVal': False, 'retVal': False, 'data': {}}
 
     def getExecVal(self):
         """Get the execution attempt success
@@ -90,13 +86,15 @@ class Command(object):
         # close mongo connection
         self.ioc.getMongo().Close()
 
-    def safe_execute(self, context):
+    def safe_execute(self, context=None):
         """Attempt execution and prevent MOST exceptions
 
         Returns:
             None: Void method to attempt exceptions
 
         """
+        if not context:
+            context = {}
         try:
             self.exec_data['execVal'] = True
             self.exec_data['retVal'] = bool(self.execute(context))

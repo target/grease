@@ -107,8 +107,93 @@ class DaemonProcess(object):
             None: Void Method to kickoff execution
 
         """
-        # TODO: Ensure Job not already in progress
-        pass
+        if not self.contextManager['jobs'].get(job.get('_id')):
+            # New Job to run
+            inst = self.impTool.load(job.get('command'))
+            if inst and isinstance(inst, Command):
+                inst.ioc.getLogger().foreground = self.ioc.getLogger().foreground
+                thread = threading.Thread(
+                    target=inst.safe_execute,
+                    args=(job.get('context', {})),
+                    name="GREASE DAEMON COMMAND EXECUTION [{0}]".format(job.get('_id'))
+                )
+                thread.daemon = True
+                thread.start()
+                self.contextManager['jobs'][job.get("_id")] = {
+                    'thread': thread,
+                    'command': inst
+                }
+                JobCollection.update_one(
+                    {'_id': job.get('_id')},
+                    {
+                        '$set': {
+                            'inProgress': True,
+                            'completed': False,
+                            'executionStart': datetime.utcnow()
+                        }
+                    }
+                )
+            else:
+                # Invalid Job
+                del inst
+                self.ioc.getLogger().warning("Invalid Job", additional=job)
+                JobCollection.update_one(
+                    {'_id': job['_id']},
+                    {
+                        '$set': {
+                            'inProgress': False,
+                            'completed': False,
+                            'completedTime': None,
+                            'returnData': None,
+                            'failures': job.get('failures', 0) + 1
+                        }
+                    }
+                )
+            return
+        else:
+            # Job already executing
+            if self.contextManager['jobs'].get(job.get('_id')).get('thread').isAlive():
+                # thread still executing
+                return
+            else:
+                # Execution has ended
+                finishedJob = self.contextManager['jobs'].get(job.get('_id')).get('command')  # type: Command
+                if finishedJob.getRetVal():
+                    # job completed successfully
+                    JobCollection.update_one(
+                        {'_id': job.get('_id')},
+                        {
+                            '$set': {
+                                'inProgress': False,
+                                'completed': True,
+                                'completedTime': datetime.utcnow(),
+                                'returnData': finishedJob.getData()
+                            }
+                        }
+                    )
+                else:
+                    # Job Failure
+                    self.ioc.getLogger().warning(
+                        "Job Failed [{0}]".format(job.get('_id')), additional=finishedJob.getData()
+                    )
+                    JobCollection.update_one(
+                        {'_id': job['_id']},
+                        {
+                            '$set': {
+                                'inProgress': False,
+                                'completed': False,
+                                'completedTime': None,
+                                'returnData': None,
+                                'failures': job.get('failures', 0) + 1
+                            }
+                        }
+                    )
+                # close out job
+                finishedJob.__del__()
+                del finishedJob
+                # remove from contextManager
+                del self.contextManager['jobs'][job.get('_id')]
+                return
 
     def _run_prototype(self, prototype):
         """Startup a ProtoType

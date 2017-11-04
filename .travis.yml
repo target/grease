@@ -18,11 +18,23 @@ matrix:
       osx_image: xcode9.1
       rvm: 2.3
       python: "2.7"
+      env:
+        - HOMEBREW_DEVELOPER="Not really, but let's pretend I am until this travis bug gets fixed, ok?"
+      before_install:
+        - rvm install "ruby-2.3.4"
+        - export HOMEBREW_RUBY_PATH="/Users/travis/.rvm/rubies/ruby-2.3.4/bin/ruby"
+        - rvm use 2.3
     - os: osx
       sudo: required
       osx_image: xcode9.1
       rvm: 2.3
       python: "nightly"
+      env:
+        - HOMEBREW_DEVELOPER="Not really, but let's pretend I am until this travis bug gets fixed, ok?"
+      before_install:
+        - rvm install "ruby-2.3.4"
+        - export HOMEBREW_RUBY_PATH="/Users/travis/.rvm/rubies/ruby-2.3.4/bin/ruby"
+        - rvm use 2.3
 
 services:
   - mongodb
@@ -31,9 +43,8 @@ before_script:
   - pip install pymongo requests
   - sudo mkdir /opt/grease/
   - sudo chmod 777 /opt/grease/
-  - if [ $TRAVIS_OS_NAME = linux ]; then true; else brew update; fi
-  - if [ $TRAVIS_OS_NAME = linux ]; then true; else brew upgrade; fi
   - if [ $TRAVIS_OS_NAME = linux ]; then true; else brew install mongo; fi
+  - if [ $TRAVIS_OS_NAME = linux ]; then true; else brew services start mongodb; fi
 
 install:
   - python setup.py install

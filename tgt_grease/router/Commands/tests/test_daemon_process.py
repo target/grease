@@ -44,7 +44,7 @@ class TestRegistration(TestCase):
         # Run for a bit
         self.assertTrue(cmd.server())
         self.assertTrue(cmd.drain_jobs(ioc.getCollection('JobQueue')))
-        result = ioc.getCollection('JobQueue').find_one({'_id': jobid})
+        result = ioc.getCollection('JobQueue').find_one({'_id': ObjectId(jobid)})
         self.assertTrue(result)
         self.assertTrue(result['completed'])
 

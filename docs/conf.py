@@ -59,7 +59,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'GREASE'
-copyright = u'2017, James E. Bell Jr.'
+copyright = u'2017, Target Brands'
 author = u'James E. Bell Jr.'
 
 # The version info for the project you're documenting, acts as replacement for

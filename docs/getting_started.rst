@@ -1,5 +1,11 @@
 Getting Started With GREASE
-==================================
+*******************************
 
-Welcome to the GREASE project!
+GREASE is installable as a stand-alone package *or* used as a dependency in your own solutions!
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Contents:
+
+
 

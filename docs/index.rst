@@ -6,6 +6,9 @@
 Welcome to GREASE's documentation!
 ******************************************
 
+Welcome to GREASE. Target's operations automation platform! Here lies all the documentation on the project! Make sure
+to checkout :doc:`getting_started` for more information!
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
@@ -13,15 +16,12 @@ Welcome to GREASE's documentation!
    getting_started
    tgt_grease
 
-Welcome to GREASE. Target's operations automation platform! Here lies all the documentation on the project! Make sure
-to checkout :doc:`getting_started` for more information!
-
 What is GREASE?
 ======================
 
 GREASE is the automation platform for L2+ Operations at Target. It is designed for all levels of operations staff to
 enable rapid development of automation tools from simple CLI based apps for daily ops work all the way to auto-recovery
-software
+software.
 
 What Does GREASE Stands For?
 ++++++++++++++++++++++++++++++
@@ -36,7 +36,9 @@ What Does GREASE Stands For?
 What is Guest Reliability Engineering?
 +++++++++++++++++++++++++++++++++++++++
 
-GRE is the newest generation of operations at Target.
+GRE is the newest generation of operations at Target. We utilize `Google's SRE <https://landing.google.com/sre/>`_ as
+inspiration for our new vision to bring joy to our guests. We help provide support to product groups across Target
+as well as help build more reliable & scalable systems.
 
 Indices and tables
 ==================

@@ -30,7 +30,7 @@ Mongo Class
 Importer Class
 ----------------------------------
 
-.. autoclass:: tgt_grease.core.Importer
+.. autoclass:: tgt_grease.core.ImportTool
     :members:
     :undoc-members:
     :show-inheritance:
@@ -54,7 +54,7 @@ Logging Class
 Notifier Class
 ----------------------------------
 
-.. autoclass:: tgt_grease.core.Notifier
+.. autoclass:: tgt_grease.core.Notifications
     :members:
     :undoc-members:
     :show-inheritance:

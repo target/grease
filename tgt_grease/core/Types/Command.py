@@ -108,6 +108,9 @@ class Command(object):
     def execute(self, context):
         """Base Execute Method
 
+        This method should *always* be overridden in child classes. This is the code that will run when your command
+        is called. If this method is not implemented then the class will fail loading.
+
         Args:
             context (dict): context for the command to use
 

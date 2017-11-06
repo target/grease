@@ -38,6 +38,9 @@ class ImportTool(object):
                 self._log.error("Failed to import module [{0}]".format(path), verbose=True)
                 continue
             if className in dir(SearchModule):
+                if className.startswith("__"):
+                    # No need to try magic methods
+                    continue
                 req = getattr(SearchModule, str(className))
                 try:
                     instance = req()

@@ -52,7 +52,10 @@ script:
   - python setup.py test
 # TODO: Redo Node Tests
   - grease help
-  - grease daemon run --timing:5
+  - grease daemon run --timing:5 --foreground
+  - grease daemon install
+  - grease daemon start
+  - grease daemon stop
 #  - grease enterprise bridge list-pjobs
 #  - grease enterprise bridge list-jobs
 #  - grease enterprise bridge enable-detection

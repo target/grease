@@ -156,40 +156,60 @@ class Daemon(Command):
             return True
         elif plat.startswith("dar"):
             # MacOS
-            try:
-                fil = open("/Library/LaunchDaemons/net.grease.daemon.plist", 'w')
+            if not os.path.isfile(self.ioc.getConfig().greaseDir + "/etc/grease.daemon"):
+                fil = open(self.ioc.getConfig().greaseDir + "/etc/grease.daemon", "w")
                 fil.write(MacOSPListFile)
                 fil.close()
-                return True
-            except IOError:
-                self.ioc.getLogger().error("Failed to install Daemon, Permission Denied")
-                print("Failed! Permission denied creating Plist entry!")
-                print("=============")
-                print("To Solve this put the file below in /Library/LaunchDaemons/ as net.grease.daemon.plist")
-                print("<=============================>")
-                print(MacOSPListFile)
-                print("<=============================>")
-                print("Make sure you have the right permissions set on the file!!")
+            if subprocess.call(
+                    [
+                        "sudo",
+                        "cp",
+                        self.ioc.getConfig().greaseDir + "/etc/grease.daemon",
+                        "/Library/LaunchDaemons/net.grease.daemon.plist"
+                    ]
+            ) != 0:
+                print("Failed to install LaunchCtl Daemon!")
+                print("""
+                Please manually install! Do this by placing the file: 
+                {0}
+                Under the name:
+                {1}
+                !! Ensure you have the correct permissions setup !!
+                """.format(
+                        self.ioc.getConfig().greaseDir + "/etc/grease.daemon",
+                        "/Library/LaunchDaemons/net.grease.daemon.plist"
+                    )
+                )
                 return False
+            return True
         elif plat.startswith("lin"):
             # Linux
-            try:
-                fil = open("/etc/systemd/system/grease.service", 'w')
+            if not os.path.isfile(self.ioc.getConfig().greaseDir + "/etc/grease.daemon"):
+                fil = open(self.ioc.getConfig().greaseDir + "/etc/grease.daemon", "w")
                 fil.write(SystemdFile)
                 fil.close()
-                print("Please ensure you run `systemctl daemon-reload` to effect change!")
-                return True
-            except IOError:
-                self.ioc.getLogger().error("Failed to install Daemon, Permission Denied")
-                print("Failed! Permission denied creating Systemd entry!")
-                print("=============")
-                print("To Solve this put the file below in /etc/systemd/system/ as grease.service")
-                print("<=============================>")
-                print(SystemdFile)
-                print("<=============================>")
-                print("Make sure you have the right permissions set on the file!!")
-                print("Please ensure you run `systemctl daemon-reload` to effect change!")
+            if subprocess.call(
+                    [
+                        "sudo",
+                        "cp",
+                        self.ioc.getConfig().greaseDir + "/etc/grease.daemon",
+                        "/etc/systemd/system/grease.service"
+                    ]
+            ) != 0:
+                print("Failed to install Systemd Service!")
+                print("""
+                Please manually install! Do this by placing the file: 
+                {0}
+                Under the name:
+                {1}
+                !! Ensure you have the correct permissions setup !!
+                """.format(
+                        self.ioc.getConfig().greaseDir + "/etc/grease.daemon",
+                        "/etc/systemd/system/grease.service"
+                    )
+                )
                 return False
+            return True
         else:
             self.ioc.getLogger().error("Unrecognized operating system [{0}]".format(platform))
             print("Unrecognized operating system [{0}]".format(platform))

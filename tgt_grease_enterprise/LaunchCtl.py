@@ -174,7 +174,7 @@ class LaunchCtl(GreaseDaemonCommand):
                         job.JobConfig.command_module,
                         job.JobConfig.command_name,
                         job.JobConfig.tick,
-                        job.PersistentJob.additional
+                        job.PersistentJobs.additional
                     )
                 )
         return True

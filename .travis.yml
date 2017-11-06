@@ -23,6 +23,12 @@ script:
   - grease enterprise bridge list-jobs
   - grease enterprise bridge enable-detection
   - grease enterprise bridge enable-scheduling
+  - grease enterprise bridge assign-task system_heartbeat
+  - grease enterprise bridge assign-task engage_sensor_array
+  - grease enterprise bridge assign-task engage_lcars
+  - grease enterprise bridge assign-task engage_warp
+  - grease enterprise bridge list-pjobs
+  - grease enterprise bridge list-jobs
   - grease enterprise bridge disable-detection
   - grease enterprise bridge disable-scheduling
   - grease enterprise bridge kill-server

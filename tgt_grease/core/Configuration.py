@@ -162,6 +162,7 @@ class Configuration(object):
                 'searchPath': [
                     'tgt_grease.core',
                     'tgt_grease.router.Commands',
+                    'tgt_grease.enterprise.Prototype',
                     'tgt_grease'
                 ]
             },

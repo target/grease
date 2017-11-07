@@ -1,4 +1,5 @@
 from tgt_grease.core import GreaseContainer
+from .Configuration import PrototypeConfig
 
 
 class Scan(object):
@@ -8,6 +9,7 @@ class Scan(object):
 
     Attributes:
         ioc (GreaseContainer): IOC for scanning
+        conf (PrototypeConfig): Prototype configuration instance
 
     """
 
@@ -16,6 +18,7 @@ class Scan(object):
             self.ioc = ioc
         else:
             self.ioc = GreaseContainer()
+        self.conf = PrototypeConfig(self.ioc)
 
     def Parse(self, source=None, config=None):
         """This will read all configurations and attempt to scan the environment
@@ -31,4 +34,5 @@ class Scan(object):
             bool: True unless error
 
         """
+        self.ioc.getLogger().trace("Starting Parse of Environment", trace=True)
         return True

@@ -42,6 +42,21 @@ class GreaseContainer(object):
         """
         return self._mongo
 
+    def getCollection(self, collectionName):
+        """Get a collection object from MongoDB
+
+        Args:
+            collectionName (str): Collection to get
+
+        Returns:
+            pymongo.collection.Collection: Collection instance
+
+        """
+        return self.getMongo()\
+            .Client()\
+            .get_database(self.getConfig().get('Connectivity', 'MongoDB').get('db', 'grease'))\
+            .get_collection(collectionName)
+
     def getConfig(self):
         """Gets the Configuration Instance
 

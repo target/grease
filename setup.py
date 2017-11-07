@@ -34,11 +34,8 @@ setup(
     test_suite='nose.collector',
     tests_require=['nose', 'nose-cover3'],
     install_requires=[
-        'psycopg2',
         'requests',
         'pymongo',
-        'sqlalchemy',
-        'python-dotenv',
         'psutil'
     ] + (
          ["pypiwin32"] if "nt" == os.name else []
@@ -47,7 +44,6 @@ setup(
     zip_safe=False,
     scripts=[
         'bin/grease',
-        'bin/greasectl.py',
-        'bin/greasectl.ps1'
+        'bin/grease.ps1'
     ]
 )

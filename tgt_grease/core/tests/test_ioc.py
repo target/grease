@@ -1,6 +1,7 @@
 from unittest import TestCase
 from tgt_grease.core import GreaseContainer, Logging, Configuration, Notifications
 from tgt_grease.core.Connectivity import Mongo
+from pymongo.collection import Collection
 
 
 class TestIOC(TestCase):
@@ -19,3 +20,10 @@ class TestIOC(TestCase):
     def test_mongo(self):
         ioc = GreaseContainer()
         self.assertTrue(isinstance(ioc.getMongo(), Mongo))
+
+    def test_get_collection(self):
+        ioc = GreaseContainer()
+        self.assertTrue(isinstance(ioc.getMongo(), Mongo))
+        coll = ioc.getCollection('TestCollection')
+        self.assertTrue(isinstance(coll, Collection))
+        self.assertEqual(coll.name, "TestCollection")

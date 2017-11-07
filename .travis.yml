@@ -1,20 +1,49 @@
 language: python
 
-sudo: required
-
-python:
-  - "2.7" #what we built it for originally
-  - "nightly" #whatever 3.x is hemorrhaging-edge
+matrix:
+  include:
+    - os: linux
+      sudo: required
+      dist: trusty
+      python: "2.7"
+    - os: linux
+      sudo: required
+      dist: trusty
+      python: "nightly"
+#      Removed Until Travis Fixes Their Image
+#    - os: osx
+#      sudo: required
+#      osx_image: xcode9.1
+#      rvm: 2.3
+#      python: "2.7"
+#      env:
+#        - HOMEBREW_DEVELOPER="Not really, but let's pretend I am until this travis bug gets fixed, ok?"
+#      before_install:
+#        - rvm install "ruby-2.3.4"
+#        - export HOMEBREW_RUBY_PATH="/Users/travis/.rvm/rubies/ruby-2.3.4/bin/ruby"
+#        - rvm use 2.3
+    - os: osx
+      sudo: required
+      osx_image: xcode9.1
+      rvm: 2.3
+      python: "nightly"
+      env:
+#      Literally taken from the travis folks https://github.com/travis-ci/travis-ci/issues/8552
+        - HOMEBREW_DEVELOPER="Not really, but let's pretend I am until this travis bug gets fixed, ok?"
+      before_install:
+        - rvm install "ruby-2.3.4"
+        - export HOMEBREW_RUBY_PATH="/Users/travis/.rvm/rubies/ruby-2.3.4/bin/ruby"
+        - rvm use 2.3
 
 services:
   - mongodb
 
 before_script:
-  - pip install psycopg2 pymongo requests sqlalchemy
-  - export GREASE_DB_USER="postgres"
-  - export GREASE_DB_PASSWORD=""
-  - export GREASE_PKG_LOADER="tgt_grease_"
-  - export GREASE_VERBOSE_LOGGING=1
+  - pip install pymongo requests
+  - sudo mkdir /opt/grease/
+  - sudo chmod 777 /opt/grease/
+  - if [ $TRAVIS_OS_NAME = linux ]; then true; else brew install mongo; fi
+  - if [ $TRAVIS_OS_NAME = linux ]; then true; else brew services start mongodb; fi
 
 install:
   - python setup.py install
@@ -22,7 +51,8 @@ install:
 script:
   - python setup.py test
 # TODO: Redo Node Tests
-#  - grease enterprise bridge load-db
+  - grease help
+  - grease daemon run --timing:5 --foreground
 #  - grease enterprise bridge list-pjobs
 #  - grease enterprise bridge list-jobs
 #  - grease enterprise bridge enable-detection

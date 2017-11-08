@@ -561,7 +561,7 @@ class TestPrototypeConfig(TestCase):
         self.assertEqual(len(conf.getConfiguration().get('source').get('swapi')), 1)
         self.assertEqual(len(conf.getConfiguration().get('source').get('stackOverflow')), 1)
         self.assertEqual(len(conf.getConfiguration().get('source').get('Google')), 1)
-        self.assertListEqual(['swapi', 'stackOverflow', 'Google'], conf.get_sources())
+        self.assertEqual(3, len(conf.get_sources()))
         # clean up
         for root, dirnames, filenames in os.walk(ioc.getConfig().get('Configuration', 'dir')):
             for filename in fnmatch.filter(filenames, '*.config.json'):
@@ -669,7 +669,7 @@ class TestPrototypeConfig(TestCase):
         self.assertEqual(len(conf.getConfiguration().get('raw')), len(GoodConfigList))
         self.assertEqual(len(conf.getConfiguration().get('source').get('swapi')), 1)
         self.assertEqual(len(conf.getConfiguration().get('source').get('Google')), 1)
-        self.assertEqual(['swapi', 'Google'], conf.get_sources())
+        self.assertEqual(2, len(conf.get_sources()))
         # clean up
         for root, dirnames, filenames in os.walk(ioc.getConfig().get('Configuration', 'dir')):
             for filename in fnmatch.filter(filenames, '*.config.json'):

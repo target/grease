@@ -495,6 +495,7 @@ class TestPrototypeConfig(TestCase):
         conf.load(reloadConf=True)
 
     def test_fs_load_good(self):
+        self.maxDiff = None
         ioc = GreaseContainer()
         # clean up
         for root, dirnames, filenames in os.walk(ioc.getConfig().get('Configuration', 'dir')):
@@ -632,6 +633,7 @@ class TestPrototypeConfig(TestCase):
         conf.load(reloadConf=True)
 
     def test_fs_load_bad(self):
+        self.maxDiff = None
         ioc = GreaseContainer()
         # clean up
         for root, dirnames, filenames in os.walk(ioc.getConfig().get('Configuration', 'dir')):

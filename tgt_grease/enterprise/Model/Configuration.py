@@ -12,7 +12,6 @@ class PrototypeConfig(object):
 
     Attributes:
         ioc (GreaseContainer): IOC access
-        Configuration (dict): the raw configuration loaded
 
     """
 
@@ -34,10 +33,10 @@ class PrototypeConfig(object):
         """
         global GREASE_PROTOTYPE_CONFIGURATION
         if not GREASE_PROTOTYPE_CONFIGURATION:
-            self.load(returnVal=False)
+            self.load(reloadConf=True)
         return GREASE_PROTOTYPE_CONFIGURATION
 
-    def load(self, returnVal=True):
+    def load(self, reloadConf=False):
         """[Re]loads configuration data about the current execution node
 
         Configuration data loads from 3 places in GREASE. The first is internal to the package, if one were to manually
@@ -45,8 +44,12 @@ class PrototypeConfig(object):
         the same pattern but loaded from `<GREASE_DIR>/etc/`. The final place GREASE looks for configuration data is
         from the `configuration` collection in MongoDB
 
+        Args:
+            reloadConf (bool): If True this will reload the global object. False will return the object
+
         Returns:
             dict: Configuration information
+            bool: Always true. Global Config has been written
 
         """
         # fill out raw results
@@ -70,11 +73,12 @@ class PrototypeConfig(object):
         conf['configuration']['mongo'] = mongo
         del mongo
         # split by source & detector
-        if returnVal:
+        if not reloadConf:
             return conf
         else:
             global GREASE_PROTOTYPE_CONFIGURATION
             GREASE_PROTOTYPE_CONFIGURATION = conf
+            return True
 
     def load_from_fs(self, directory):
         """Returns all configurations from tgt_grease.enterprise.Model/config/*.config.json

@@ -55,23 +55,25 @@ class PrototypeConfig(object):
         conf = dict()
         conf['configuration'] = dict()
         conf['raw'] = []
-        pkg = self.load_from_fs(
+        pkg = self.validate_config_list(self.load_from_fs(
             pkg_resources.resource_filename('tgt_grease.enterprise.Model', 'config/')
-        )
+        ))
         conf['raw'].append(pkg)
         conf['configuration']['pkg'] = pkg
         del pkg
-        fs = self.load_from_fs(
+        fs = self.validate_config_list(self.load_from_fs(
             self.ioc.getConfig().get('Configuration', 'dir')
-        )
+        ))
         conf['raw'].append(fs)
         conf['configuration']['fs'] = fs
         del fs
-        mongo = self.load_from_mongo()
+        mongo = self.validate_config_list(self.load_from_mongo())
         conf['raw'].append(mongo)
         conf['configuration']['mongo'] = mongo
         del mongo
         # split by source & detector
+
+        # return block
         if not reloadConf:
             return conf
         else:
@@ -122,3 +124,53 @@ class PrototypeConfig(object):
             mConf.append(dict(conf))
         self.ioc.getLogger().trace("total documents returned from mongo [{0}]".format(len(mConf)), trace=True)
         return mConf
+
+    def validate_config_list(self, configs):
+        """Validates a configuration List
+
+        Args:
+            configs (list[dict]): Configuration List
+
+        Returns:
+            list: The Valid configurations
+
+        """
+        final = []
+        self.ioc.getLogger().trace("Total configurations to validate [{0}]".format(len(configs)))
+        for conf in configs:
+            if self.validate_config(conf):
+                final.append(conf)
+        return final
+
+    def validate_config(self, config):
+        """Validates a configuration
+
+        The default JSON Schema is this::
+
+            {
+                "name": String,
+                "job": String,
+                "exe_env": String,
+                "source": String,
+                "logic": [
+
+                ]
+            }
+
+        Args:
+            config (dict): Configuration to validate
+
+        Returns:
+            bool: If it is a valid configuration
+
+        """
+        if not isinstance(config, dict):
+            self.ioc.getLogger().error(
+                "Configuration Validation Failed! Not of Type Dict::Got [{0}]".format(str(type(config))),
+                trace=True,
+                notify=False
+            )
+        if not config.get('job'):
+            self.ioc.getLogger().error("Configuration does not have valid job field", trace=True, notify=False)
+            return False
+        return True

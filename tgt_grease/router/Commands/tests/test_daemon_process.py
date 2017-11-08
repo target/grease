@@ -56,7 +56,6 @@ class TestRegistration(TestCase):
         data = json.loads(fil.read())
         fil.close()
         fil = open(ioc.getConfig().greaseConfigFile, 'w')
-        data['NodeInformation']['ProtoTypes'] = ['TestProtoType']
         data['Import']['searchPath'].append('tgt_grease.router.Commands.tests')
         fil.write(json.dumps(data, sort_keys=True, indent=4))
         fil.close()
@@ -71,6 +70,7 @@ class TestRegistration(TestCase):
                 }
             }
         )
+        time.sleep(1.5)
         self.assertTrue(cmd.server())
         self.assertTrue(cmd.drain_jobs(ioc.getCollection('JobQueue')))
         # ensure jobs drain out

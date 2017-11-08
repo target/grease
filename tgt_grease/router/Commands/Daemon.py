@@ -320,8 +320,8 @@ class DaemonProcess(object):
             uid = collection.insert_one({
                 'jobs': 0,
                 'os': platform.system().lower(),
-                'roles': self.ioc.getConfig().get('NodeInformation', "Roles"),
-                'prototypes': self.ioc.getConfig().get('NodeInformation', "ProtoTypes"),
+                'roles': ["general"],
+                'prototypes': [],
                 'active': True,
                 'activationTime': datetime.utcnow()
             }).inserted_id

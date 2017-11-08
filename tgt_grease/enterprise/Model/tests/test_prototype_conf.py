@@ -8,6 +8,12 @@ import os
 
 class TestPrototypeConfig(TestCase):
 
+    def __init__(self):
+        super(TestPrototypeConfig, self).__init__()
+        c = GreaseContainer()
+        c.getConfig().set('trace', True, 'Logging')
+        del c
+
     def test_type(self):
         conf = PrototypeConfig()
         self.assertTrue(isinstance(conf, object))

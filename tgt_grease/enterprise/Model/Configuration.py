@@ -57,7 +57,22 @@ class PrototypeConfig(object):
         """
         global GREASE_PROTOTYPE_CONFIGURATION
         if ConfigurationList:
-            conf = self.validate_config_list(ConfigurationList)
+            conf = dict()
+            conf['configuration'] = dict()
+            conf['configuration']['ConfigurationList'] = self.validate_config_list(ConfigurationList)
+            conf['raw'] = conf['configuration']['ConfigurationList']
+            # split by configuration sets
+            # the list of configured sources
+            conf['sources'] = list()
+            # the actual configurations for each source
+            conf['source'] = dict()
+            for config in conf.get('raw'):  # type: dict
+                if config.get('source') in conf['sources']:
+                    conf['source'][config.get('source')].append(config)
+                else:
+                    conf['sources'].append(config.get('source'))
+                    conf['source'][config.get('source')] = list()
+                    conf['source'][config.get('source')].append(config)
             GREASE_PROTOTYPE_CONFIGURATION = conf
             return conf
         # fill out raw results
@@ -67,17 +82,20 @@ class PrototypeConfig(object):
         pkg = self.validate_config_list(self.load_from_fs(
             pkg_resources.resource_filename('tgt_grease.enterprise.Model', 'config/')
         ))
-        conf['raw'] = list(set(conf['raw'] + pkg))
+        for newConfig in pkg:
+            conf['raw'].append(newConfig)
         conf['configuration']['pkg'] = pkg
         del pkg
         fs = self.validate_config_list(self.load_from_fs(
             self.ioc.getConfig().get('Configuration', 'dir')
         ))
-        conf['raw'] = list(set(conf['raw'] + fs))
+        for newConfig in fs:
+            conf['raw'].append(newConfig)
         conf['configuration']['fs'] = fs
         del fs
         mongo = self.validate_config_list(self.load_from_mongo())
-        conf['raw'] = list(set(conf['raw'] + mongo))
+        for newConfig in mongo:
+            conf['raw'].append(newConfig)
         conf['configuration']['mongo'] = mongo
         del mongo
         # split by configuration sets
@@ -87,17 +105,31 @@ class PrototypeConfig(object):
         conf['source'] = dict()
         for config in conf.get('raw'):  # type: dict
             if config.get('source') in conf['sources']:
-                conf[config.get('source')].append(config)
+                conf['source'][config.get('source')].append(config)
             else:
                 conf['sources'].append(config.get('source'))
-                conf[config.get('source')] = list()
-                conf[config.get('source')].append(config)
+                conf['source'][config.get('source')] = list()
+                conf['source'][config.get('source')].append(config)
         # return block
         if not reloadConf:
             return conf
         else:
             GREASE_PROTOTYPE_CONFIGURATION = conf
             return conf
+
+    def get_sources(self):
+        """Returns the list of sources to be scanned
+
+        Returns:
+            list: List of sources
+
+        """
+        global GREASE_PROTOTYPE_CONFIGURATION  # type: dict
+        if GREASE_PROTOTYPE_CONFIGURATION:
+            return GREASE_PROTOTYPE_CONFIGURATION.get('sources', [])
+        else:
+            self.ioc.getLogger().error("GREASE Prototype configuration is not loaded", trace=True, notify=False)
+            return []
 
     def load_from_fs(self, directory):
         """Loads configurations from provided directory
@@ -118,13 +150,15 @@ class PrototypeConfig(object):
         for root, dirnames, filenames in os.walk(directory):
             for filename in fnmatch.filter(filenames, '*.config.json'):
                 matches.append(os.path.join(root, filename))
-        result = matches
-        for doc in result:
+        for doc in matches:
+            self.ioc.getLogger().trace("Attempting to load [{0}]".format(doc), trace=True)
             with open(doc) as current_file:
                 content = current_file.read().replace('\r\n', '')
             try:
                 intermediate.append(json.loads(content))
+                self.ioc.getLogger().trace("Successfully loaded [{0}]".format(doc), trace=True)
             except ValueError:
+                self.ioc.getLogger().error("Failed to load [{0}]".format(doc), trace=True, notify=False)
                 continue
         self.ioc.getLogger().trace("total documents returned from fs [{0}]".format(len(intermediate)), trace=True)
         return intermediate
@@ -192,15 +226,24 @@ class PrototypeConfig(object):
                 trace=True,
                 notify=False
             )
-        if not config.get('name') or not isinstance(config.get('name'), str):
-            self.ioc.getLogger().error("Configuration does not have valid name field", trace=True, notify=False)
-            return False
-        if not config.get('job') or not isinstance(config.get('job'), str):
-            self.ioc.getLogger().error("Configuration does not have valid job field", trace=True, notify=False)
-            return False
-        if not config.get('source') or not isinstance(config.get('source'), str):
-            self.ioc.getLogger().error("Configuration does not have valid source field", trace=True, notify=False)
-            return False
+        if not config.get('name'):
+            if config.get('name'):
+                config['name'] = str(config.get('name'))
+            else:
+                self.ioc.getLogger().error("Configuration does not have valid name field", trace=True, notify=False)
+                return False
+        if not config.get('job'):
+            if config.get('job'):
+                config['job'] = str(config.get('job'))
+            else:
+                self.ioc.getLogger().error("Configuration does not have valid job field", trace=True, notify=False)
+                return False
+        if not config.get('source'):
+            if config.get('source'):
+                config['source'] = str(config.get('source'))
+            else:
+                self.ioc.getLogger().error("Configuration does not have valid source field", trace=True, notify=False)
+                return False
         if not isinstance(config.get('logic'), dict):
             self.ioc.getLogger().error("Configuration does not have valid logic field", trace=True, notify=False)
             return False

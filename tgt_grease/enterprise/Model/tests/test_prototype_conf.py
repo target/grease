@@ -1,5 +1,9 @@
 from tgt_grease.enterprise.Model import PrototypeConfig
+from tgt_grease.core import GreaseContainer
 from unittest import TestCase
+import json
+import fnmatch
+import os
 
 
 class TestPrototypeConfig(TestCase):
@@ -254,7 +258,19 @@ class TestPrototypeConfig(TestCase):
                 }
             }
         ]
-        self.assertEqual(configList, conf.load(ConfigurationList=configList))
+        self.assertDictEqual(
+            {
+                'raw': configList,
+                'configuration': {
+                    'ConfigurationList': configList
+                },
+                'source': {
+                    'swapi': configList,
+                },
+                'sources': ['swapi']
+            },
+            conf.load(ConfigurationList=configList)
+        )
 
     def test_load_bad(self):
         conf = PrototypeConfig()
@@ -330,4 +346,197 @@ class TestPrototypeConfig(TestCase):
                 }
             }
         ]
-        self.assertEqual(CompareList, conf.load(ConfigurationList=configList))
+        self.assertDictEqual(
+            {
+                'raw': CompareList,
+                'configuration': {
+                    'ConfigurationList': CompareList
+                },
+                'source': {
+                    'swapi': CompareList
+                },
+                'sources': ['swapi']
+            },
+            conf.load(ConfigurationList=configList)
+        )
+
+    def test_get_sources_all_good(self):
+        conf = PrototypeConfig()
+        configList = [
+            {
+                "name": "test1",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "swapi",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "test2",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "stackOverflow",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "test3",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "Google",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ],
+                    "exists": [
+                        {
+                            "field": "var"
+                        }
+                    ]
+                }
+            }
+        ]
+        conf.load(ConfigurationList=configList)
+        self.assertEqual(['swapi', 'stackOverflow', 'Google'], conf.get_sources())
+
+    def test_get_sources_partial_good(self):
+        conf = PrototypeConfig()
+        configList = [
+            {
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "swapi",
+                "logic": {}
+            },
+            {
+                "name": "test1",
+                "exe_env": "windows",
+                "source": "stackOverflow",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "test2",
+                "job": "fakeJob",
+                "exe_env": "windows",
+            },
+            {
+                "name": "test3",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "Google",
+                "logic": []
+            },
+            {
+                "name": "test4",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "CarlBurger",
+                "logic": {
+
+                }
+            },
+            {
+                "name": "test5",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "slack",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "var",
+                            "pattern": "ver.*"
+                        }
+                    ]
+                }
+            }
+        ]
+        conf.load(ConfigurationList=configList)
+        self.assertEqual(['slack'], conf.get_sources())
+
+    def test_fs_load_good(self):
+        configList = [
+            {
+                "name": "test1",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "swapi",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "test2",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "stackOverflow",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "test3",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "Google",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ],
+                    "exists": [
+                        {
+                            "field": "var"
+                        }
+                    ]
+                }
+            }
+        ]
+        ioc = GreaseContainer()
+        i = 0
+        for conf in configList:
+            with open(ioc.getConfig().get('Configuration', 'dir') + 'conf{0}.config.json'.format(i), 'w') as fil:
+                fil.write(json.dumps(conf, indent=4))
+            i += 1
+        conf = PrototypeConfig(ioc)
+        conf.load(reloadConf=True)
+        self.assertEqual(['swapi', 'stackOverflow', 'Google'], conf.get_sources())
+        # clean up
+        for root, dirnames, filenames in os.walk(ioc.getConfig().get('Configuration', 'dir')):
+            for filename in fnmatch.filter(filenames, '*.config.json'):
+                self.assertIsNone(os.remove(os.path.join(root, filename)))
+        # clear the config
+        conf.load(reloadConf=True)

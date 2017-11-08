@@ -50,6 +50,8 @@ install:
   
 script:
   - python setup.py test
+# Run twice to ensure state management is successful
+  - python setup.py test
 # TODO: Redo Node Tests
   - grease help
   - grease daemon run --timing:5 --foreground

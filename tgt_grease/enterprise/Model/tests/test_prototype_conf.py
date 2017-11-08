@@ -414,7 +414,7 @@ class TestPrototypeConfig(TestCase):
         conf.load(ConfigurationList=configList)
         self.assertEqual(['swapi', 'stackOverflow', 'Google'], conf.get_sources())
 
-    def test_get_sources_partial_good(self):
+    def test_get_sources_bad(self):
         conf = PrototypeConfig()
         configList = [
             {
@@ -533,7 +533,225 @@ class TestPrototypeConfig(TestCase):
             i += 1
         conf = PrototypeConfig(ioc)
         conf.load(reloadConf=True)
+        self.assertDictEqual(
+            {
+                'raw': configList,
+                'configuration': {
+                    'fs': configList,
+                    'mongo': [],
+                    'pkg': []
+                },
+                'source': {
+                    'swapi': [
+                        {
+                            "name": "test1",
+                            "job": "fakeJob",
+                            "exe_env": "windows",
+                            "source": "swapi",
+                            "logic": {
+                                "regex": [
+                                    {
+                                        "field": "character",
+                                        "pattern": ".*skywalker.*"
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    'Google': [
+                        {
+                            "name": "test3",
+                            "job": "fakeJob",
+                            "exe_env": "windows",
+                            "source": "Google",
+                            "logic": {
+                                "regex": [
+                                    {
+                                        "field": "character",
+                                        "pattern": ".*skywalker.*"
+                                    }
+                                ],
+                                "exists": [
+                                    {
+                                        "field": "var"
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    'stackOverflow': [
+                        {
+                            "name": "test2",
+                            "job": "fakeJob",
+                            "exe_env": "windows",
+                            "source": "stackOverflow",
+                            "logic": {
+                                "regex": [
+                                    {
+                                        "field": "character",
+                                        "pattern": ".*skywalker.*"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                'sources': ['swapi', 'stackOverflow', 'Google']
+            },
+            conf.getConfiguration()
+        )
         self.assertEqual(['swapi', 'stackOverflow', 'Google'], conf.get_sources())
+        # clean up
+        for root, dirnames, filenames in os.walk(ioc.getConfig().get('Configuration', 'dir')):
+            for filename in fnmatch.filter(filenames, '*.config.json'):
+                self.assertIsNone(os.remove(os.path.join(root, filename)))
+        # clear the config
+        conf.load(reloadConf=True)
+
+    def test_fs_load_bad(self):
+        configList = [
+            {
+                "name": "test1",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "swapi",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "badtest1",
+                "exe_env": "windows",
+                "source": "stackOverflow",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "test3",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "Google",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ],
+                    "exists": [
+                        {
+                            "field": "var"
+                        }
+                    ]
+                }
+            }
+        ]
+        GoodConfigList = [
+            {
+                "name": "test1",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "swapi",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "test3",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "Google",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ],
+                    "exists": [
+                        {
+                            "field": "var"
+                        }
+                    ]
+                }
+            }
+        ]
+        ioc = GreaseContainer()
+        i = 0
+        for conf in configList:
+            with open(ioc.getConfig().get('Configuration', 'dir') + 'conf{0}.config.json'.format(i), 'w') as fil:
+                fil.write(json.dumps(conf, indent=4))
+            i += 1
+        conf = PrototypeConfig(ioc)
+        conf.load(reloadConf=True)
+        self.assertDictEqual(
+            {
+                'raw': GoodConfigList,
+                'configuration': {
+                    'fs': GoodConfigList,
+                    'mongo': [],
+                    'pkg': []
+                },
+                'source': {
+                    'swapi': [
+                        {
+                            "name": "test1",
+                            "job": "fakeJob",
+                            "exe_env": "windows",
+                            "source": "swapi",
+                            "logic": {
+                                "regex": [
+                                    {
+                                        "field": "character",
+                                        "pattern": ".*skywalker.*"
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    'Google': [
+                        {
+                            "name": "test3",
+                            "job": "fakeJob",
+                            "exe_env": "windows",
+                            "source": "Google",
+                            "logic": {
+                                "regex": [
+                                    {
+                                        "field": "character",
+                                        "pattern": ".*skywalker.*"
+                                    }
+                                ],
+                                "exists": [
+                                    {
+                                        "field": "var"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                'sources': ['swapi', 'Google']
+            },
+            conf.getConfiguration()
+        )
+        self.assertEqual(['swapi', 'Google'], conf.get_sources())
         # clean up
         for root, dirnames, filenames in os.walk(ioc.getConfig().get('Configuration', 'dir')):
             for filename in fnmatch.filter(filenames, '*.config.json'):

@@ -28,7 +28,7 @@ class PrototypeConfig(object):
         """Returns the Configuration Object loaded into memory
 
         Returns:
-            list[dict]: Configuration object
+            dict: Configuration object
 
         """
         global GREASE_PROTOTYPE_CONFIGURATION

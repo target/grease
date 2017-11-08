@@ -495,7 +495,6 @@ class TestPrototypeConfig(TestCase):
         conf.load(reloadConf=True)
 
     def test_fs_load_good(self):
-        self.maxDiff = None
         ioc = GreaseContainer()
         # clean up
         for root, dirnames, filenames in os.walk(ioc.getConfig().get('Configuration', 'dir')):
@@ -557,7 +556,7 @@ class TestPrototypeConfig(TestCase):
             i += 1
         conf = PrototypeConfig(ioc)
         conf.load(reloadConf=True)
-        self.assertDictEqual(
+        self.assertTrue(
             {
                 'raw': configList,
                 'configuration': {
@@ -621,7 +620,7 @@ class TestPrototypeConfig(TestCase):
                     ]
                 },
                 'sources': ['swapi', 'stackOverflow', 'Google']
-            },
+            } ==
             conf.getConfiguration()
         )
         self.assertEqual(['swapi', 'stackOverflow', 'Google'], conf.get_sources())
@@ -633,7 +632,6 @@ class TestPrototypeConfig(TestCase):
         conf.load(reloadConf=True)
 
     def test_fs_load_bad(self):
-        self.maxDiff = None
         ioc = GreaseContainer()
         # clean up
         for root, dirnames, filenames in os.walk(ioc.getConfig().get('Configuration', 'dir')):

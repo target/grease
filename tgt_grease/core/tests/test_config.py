@@ -39,7 +39,5 @@ class TestConfiguration(TestCase):
         self.assertEqual(conf.get('Logging', 'mode'), 'filesystem')
         self.assertEqual(conf.get('Logging', 'verbose'), False)
         self.assertEqual(conf.get('Logging', 'file'), conf.greaseDir + 'log' + conf.fs_sep + 'grease.log')
-        self.assertEqual(conf.get('Configuration', 'mode'), 'filesystem')
         self.assertEqual(conf.get('Configuration', 'dir'), conf.greaseDir + 'etc' + conf.fs_sep)
-        self.assertEqual(conf.get('Sourcing', 'mode'), 'filesystem')
         self.assertEqual(conf.get('Sourcing', 'dir'), conf.greaseDir + 'etc' + conf.fs_sep)

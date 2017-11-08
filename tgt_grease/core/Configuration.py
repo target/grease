@@ -151,12 +151,13 @@ class Configuration(object):
                 }
             },
             'Configuration': {
-                'mode': 'filesystem',
                 'dir': Configuration.greaseDir + 'etc' + os.sep
             },
             'Sourcing': {
-                'mode': 'filesystem',
-                'dir': Configuration.greaseDir + 'etc' + os.sep
+                'dir': Configuration.greaseDir + 'etc' + os.sep,
+                'source': None,
+                'config': None,
+                'mock': False
             },
             'Import': {
                 'searchPath': [

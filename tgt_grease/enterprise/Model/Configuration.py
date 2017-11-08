@@ -226,24 +226,24 @@ class PrototypeConfig(object):
                 trace=True,
                 notify=False
             )
-        if not config.get('name'):
-            if config.get('name'):
+        if config.get('name'):
+            if not isinstance(config.get('name'), str):
                 config['name'] = str(config.get('name'))
-            else:
-                self.ioc.getLogger().error("Configuration does not have valid name field", trace=True, notify=False)
-                return False
-        if not config.get('job'):
-            if config.get('job'):
+        else:
+            self.ioc.getLogger().error("Configuration does not have valid name field", trace=True, notify=False)
+            return False
+        if config.get('job'):
+            if not isinstance(config.get('job'), str):
                 config['job'] = str(config.get('job'))
-            else:
-                self.ioc.getLogger().error("Configuration does not have valid job field", trace=True, notify=False)
-                return False
-        if not config.get('source'):
-            if config.get('source'):
+        else:
+            self.ioc.getLogger().error("Configuration does not have valid job field", trace=True, notify=False)
+            return False
+        if config.get('source'):
+            if not isinstance(config.get('source'), str):
                 config['source'] = str(config.get('source'))
-            else:
-                self.ioc.getLogger().error("Configuration does not have valid source field", trace=True, notify=False)
-                return False
+        else:
+            self.ioc.getLogger().error("Configuration does not have valid source field", trace=True, notify=False)
+            return False
         if not isinstance(config.get('logic'), dict):
             self.ioc.getLogger().error("Configuration does not have valid logic field", trace=True, notify=False)
             return False

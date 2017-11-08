@@ -176,6 +176,7 @@ class DaemonProcess(object):
                     self.ioc.getLogger().warning(
                         "Job Failed [{0}]".format(job.get('_id')), additional=finishedJob.getData()
                     )
+                    # TODO: Job Execution cooldown timing
                     JobCollection.update_one(
                         {'_id': ObjectId(job['_id'])},
                         {

@@ -82,7 +82,10 @@ class PrototypeConfig(object):
             return conf
 
     def load_from_fs(self, directory):
-        """Returns all configurations from tgt_grease.enterprise.Model/config/*.config.json
+        """Loads configurations from provided directory
+
+        Note:
+            Pattern is `*.config.json`
 
         Args:
             directory (str): Directory to load from
@@ -150,11 +153,11 @@ class PrototypeConfig(object):
             {
                 "name": String,
                 "job": String,
-                "exe_env": String,
+                "exe_env": String, # <-- If not provided will be default as 'general'
                 "source": String,
-                "logic": [
-
-                ]
+                "logic": {
+                    # I need to be the logical blocks for Detection
+                }
             }
 
         Args:
@@ -164,13 +167,34 @@ class PrototypeConfig(object):
             bool: If it is a valid configuration
 
         """
+        self.ioc.getLogger().trace("Configuration to be validated: [{0}]".format(config), trace=True)
         if not isinstance(config, dict):
             self.ioc.getLogger().error(
                 "Configuration Validation Failed! Not of Type Dict::Got [{0}]".format(str(type(config))),
                 trace=True,
                 notify=False
             )
-        if not config.get('job'):
+        if not config.get('name') or not isinstance(config.get('name'), str):
+            self.ioc.getLogger().error("Configuration does not have valid name field", trace=True, notify=False)
+            return False
+        if not config.get('job') or not isinstance(config.get('job'), str):
             self.ioc.getLogger().error("Configuration does not have valid job field", trace=True, notify=False)
             return False
+        if not config.get('source') or not isinstance(config.get('source'), str):
+            self.ioc.getLogger().error("Configuration does not have valid source field", trace=True, notify=False)
+            return False
+        if not isinstance(config.get('logic'), dict):
+            self.ioc.getLogger().error("Configuration does not have valid logic field", trace=True, notify=False)
+            return False
+        if not config.get('logic'):
+            # empty dictionary check AKA no logical blocks
+            return False
+        for key, params in config.get('logic').items():
+            if not isinstance(params, list):
+                self.ioc.getLogger().error("Configuration logic field was not list!", trace=True, notify=False)
+                return False
+            for block in params:
+                if not isinstance(block, dict):
+                    self.ioc.getLogger().error("Configuration logical block was not dict", trace=True, notify=False)
+                    return False
         return True

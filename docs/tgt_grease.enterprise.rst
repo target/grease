@@ -1,20 +1,11 @@
-GREASE Router
-===========================
+GREASE Prototypes
+======================================
 
 Subpackages
 -----------
 
 .. toctree::
 
-    tgt_grease.enterprise.
-
-Classes
-----------
-
-Router Class
-----------------------------------
-
-.. autoclass:: tgt_grease.router.GreaseRouter
-    :members:
-    :undoc-members:
-    :show-inheritance:
+    tgt_grease.enterprise.Model
+    tgt_grease.enterprise.Prototype
+    tgt_grease.enterprise.Sources

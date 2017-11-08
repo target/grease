@@ -5,4 +5,5 @@ Code Documentation
 
     tgt_grease.core
     tgt_grease.router
+    tgt_grease.enterprise
 

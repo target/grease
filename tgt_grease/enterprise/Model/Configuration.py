@@ -10,6 +10,19 @@ GREASE_PROTOTYPE_CONFIGURATION = None
 class PrototypeConfig(object):
     """Responsible for Scanning/Detection/Scheduling configuration
 
+    Structure of Configuration::
+
+        {
+            'configuration': {
+                'pkg': [], # <-- Loaded from pkg_resources.resource_filename('tgt_grease.enterprise.Model', 'config/')
+                'fs': [], # <-- Loaded from `<GREASE_DIR>/etc/*.config.json`
+                'mongo': [] # <-- Loaded from the Configuration Mongo Collection
+            },
+            'raw': [], # <-- All loaded configurations
+            'sources': [], # <-- list of sources found in configurations
+            'source': {} # <-- keys will be source values list of configs for that source
+        }
+
     Attributes:
         ioc (GreaseContainer): IOC access
 

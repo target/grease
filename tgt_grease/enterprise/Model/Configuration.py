@@ -4,6 +4,8 @@ import os
 import fnmatch
 import json
 
+GREASE_PROTOTYPE_CONFIGURATION = None
+
 
 class PrototypeConfig(object):
     """Responsible for Scanning/Detection/Scheduling configuration
@@ -15,13 +17,27 @@ class PrototypeConfig(object):
     """
 
     def __init__(self, ioc=None):
+        global GREASE_PROTOTYPE_CONFIGURATION
         if ioc and isinstance(ioc, GreaseContainer):
             self.ioc = ioc
         else:
             self.ioc = GreaseContainer()
-        self.Configuration = self.load()
+        if not GREASE_PROTOTYPE_CONFIGURATION:
+            GREASE_PROTOTYPE_CONFIGURATION = self.load()
 
-    def load(self):
+    def getConfiguration(self):
+        """Returns the Configuration Object loaded into memory
+
+        Returns:
+            list of dict: Configuration object
+
+        """
+        global GREASE_PROTOTYPE_CONFIGURATION
+        if not GREASE_PROTOTYPE_CONFIGURATION:
+            self.load(returnVal=False)
+        return GREASE_PROTOTYPE_CONFIGURATION
+
+    def load(self, returnVal=True):
         """[Re]loads configuration data about the current execution node
 
         Configuration data loads from 3 places in GREASE. The first is internal to the package, if one were to manually
@@ -54,7 +70,11 @@ class PrototypeConfig(object):
         conf['configuration']['mongo'] = mongo
         del mongo
         # split by source & detector
-        return conf
+        if returnVal:
+            return conf
+        else:
+            global GREASE_PROTOTYPE_CONFIGURATION
+            GREASE_PROTOTYPE_CONFIGURATION = conf
 
     def load_from_fs(self, directory):
         """Returns all configurations from tgt_grease.enterprise.Model/config/*.config.json

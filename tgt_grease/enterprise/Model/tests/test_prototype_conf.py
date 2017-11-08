@@ -10,7 +10,7 @@ class TestPrototypeConfig(TestCase):
 
     def test_empty_conf(self):
         conf = PrototypeConfig()
-        self.assertTrue(conf.Configuration)
-        self.assertListEqual(conf.Configuration.get('configuration').get('pkg'), [])
-        self.assertListEqual(conf.Configuration.get('configuration').get('fs'), [])
-        self.assertListEqual(conf.Configuration.get('configuration').get('mongo'), [])
+        self.assertTrue(conf.getConfiguration())
+        self.assertListEqual(conf.getConfiguration().get('configuration').get('pkg'), [])
+        self.assertListEqual(conf.getConfiguration().get('configuration').get('fs'), [])
+        self.assertListEqual(conf.getConfiguration().get('configuration').get('mongo'), [])

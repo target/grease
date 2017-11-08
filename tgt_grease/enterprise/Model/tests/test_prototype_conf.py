@@ -14,13 +14,16 @@ class TestPrototypeConfig(TestCase):
 
     def test_empty_conf(self):
         conf = PrototypeConfig()
+        conf.load(reloadConf=True)
         self.assertTrue(conf.getConfiguration())
         self.assertListEqual(conf.getConfiguration().get('configuration').get('pkg'), [])
         self.assertListEqual(conf.getConfiguration().get('configuration').get('fs'), [])
         self.assertListEqual(conf.getConfiguration().get('configuration').get('mongo'), [])
+        conf.load(reloadConf=True)
 
     def test_validation_list_good(self):
         conf = PrototypeConfig()
+        conf.load(reloadConf=True)
         configList = [
             {
                 "name": "test1",
@@ -71,9 +74,11 @@ class TestPrototypeConfig(TestCase):
             }
         ]
         self.assertEqual(configList, conf.validate_config_list(configList))
+        conf.load(reloadConf=True)
 
     def test_validation_list_bad(self):
         conf = PrototypeConfig()
+        conf.load(reloadConf=True)
         configList = [
             {
                 "job": "fakeJob",
@@ -147,6 +152,7 @@ class TestPrototypeConfig(TestCase):
             }
         ]
         self.assertEqual(CompareList, conf.validate_config_list(configList))
+        conf.load(reloadConf=True)
 
     def test_validation_good(self):
         test = {
@@ -209,6 +215,7 @@ class TestPrototypeConfig(TestCase):
 
     def test_load_good(self):
         conf = PrototypeConfig()
+        conf.load(reloadConf=True)
         configList = [
             {
                 "name": "test1",
@@ -271,9 +278,11 @@ class TestPrototypeConfig(TestCase):
             },
             conf.load(ConfigurationList=configList)
         )
+        conf.load(reloadConf=True)
 
     def test_load_bad(self):
         conf = PrototypeConfig()
+        conf.load(reloadConf=True)
         configList = [
             {
                 "job": "fakeJob",
@@ -359,9 +368,11 @@ class TestPrototypeConfig(TestCase):
             },
             conf.load(ConfigurationList=configList)
         )
+        conf.load(reloadConf=True)
 
     def test_get_sources_all_good(self):
         conf = PrototypeConfig()
+        conf.load(reloadConf=True)
         configList = [
             {
                 "name": "test1",
@@ -413,9 +424,11 @@ class TestPrototypeConfig(TestCase):
         ]
         conf.load(ConfigurationList=configList)
         self.assertEqual(['swapi', 'stackOverflow', 'Google'], conf.get_sources())
+        conf.load(reloadConf=True)
 
     def test_get_sources_bad(self):
         conf = PrototypeConfig()
+        conf.load(reloadConf=True)
         configList = [
             {
                 "job": "fakeJob",
@@ -474,6 +487,7 @@ class TestPrototypeConfig(TestCase):
         ]
         conf.load(ConfigurationList=configList)
         self.assertEqual(['slack'], conf.get_sources())
+        conf.load(reloadConf=True)
 
     def test_fs_load_good(self):
         ioc = GreaseContainer()

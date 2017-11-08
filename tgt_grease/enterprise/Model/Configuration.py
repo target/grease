@@ -36,13 +36,23 @@ class PrototypeConfig(object):
         # fill out raw results
         conf = dict()
         conf['configuration'] = dict()
-        conf['configuration']['pkg'] = self.load_from_fs(
+        conf['raw'] = []
+        pkg = self.load_from_fs(
             pkg_resources.resource_filename('tgt_grease.enterprise.Model', 'config/')
         )
-        conf['configuration']['fs'] = self.load_from_fs(
+        conf['raw'].append(pkg)
+        conf['configuration']['pkg'] = pkg
+        del pkg
+        fs = self.load_from_fs(
             self.ioc.getConfig().get('Configuration', 'dir')
         )
-        conf['configuration']['mongo'] = self.load_from_mongo()
+        conf['raw'].append(fs)
+        conf['configuration']['fs'] = fs
+        del fs
+        mongo = self.load_from_mongo()
+        conf['raw'].append(mongo)
+        conf['configuration']['mongo'] = mongo
+        del mongo
         # split by source & detector
         return conf
 

@@ -202,3 +202,132 @@ class TestPrototypeConfig(TestCase):
             }
         }
         self.assertFalse(conf.validate_config(test3))
+
+    def test_load_good(self):
+        conf = PrototypeConfig()
+        configList = [
+            {
+                "name": "test1",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "swapi",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "test2",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "swapi",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "test3",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "swapi",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ],
+                    "exists": [
+                        {
+                            "field": "var"
+                        }
+                    ]
+                }
+            }
+        ]
+        self.assertEqual(configList, conf.load(ConfigurationList=configList))
+
+    def test_load_bad(self):
+        conf = PrototypeConfig()
+        configList = [
+            {
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "swapi",
+                "logic": {}
+            },
+            {
+                "name": "test1",
+                "exe_env": "windows",
+                "source": "swapi",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "test2",
+                "job": "fakeJob",
+                "exe_env": "windows",
+            },
+            {
+                "name": "test3",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "swapi",
+                "logic": []
+            },
+            {
+                "name": "test4",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "swapi",
+                "logic": {
+
+                }
+            },
+            {
+                "name": "test5",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "swapi",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "var",
+                            "pattern": "ver.*"
+                        }
+                    ]
+                }
+            }
+        ]
+        CompareList = [
+            {
+                "name": "test5",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "swapi",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "var",
+                            "pattern": "ver.*"
+                        }
+                    ]
+                }
+            }
+        ]
+        self.assertEqual(CompareList, conf.load(ConfigurationList=configList))

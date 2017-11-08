@@ -36,7 +36,7 @@ class PrototypeConfig(object):
             self.load(reloadConf=True)
         return GREASE_PROTOTYPE_CONFIGURATION
 
-    def load(self, reloadConf=False):
+    def load(self, reloadConf=False, ConfigurationList=None):
         """[Re]loads configuration data about the current execution node
 
         Configuration data loads from 3 places in GREASE. The first is internal to the package, if one were to manually
@@ -46,11 +46,20 @@ class PrototypeConfig(object):
 
         Args:
             reloadConf (bool): If True this will reload the global object. False will return the object
+            ConfigurationList (list of dict): If provided will load the list of dict for config after validation
+
+        Note:
+            Providing a configuration *automatically* reloads the memory structure of prototype configuration
 
         Returns:
             dict: Current Configuration information
 
         """
+        global GREASE_PROTOTYPE_CONFIGURATION
+        if ConfigurationList:
+            conf = self.validate_config_list(ConfigurationList)
+            GREASE_PROTOTYPE_CONFIGURATION = conf
+            return conf
         # fill out raw results
         conf = dict()
         conf['configuration'] = dict()
@@ -58,26 +67,35 @@ class PrototypeConfig(object):
         pkg = self.validate_config_list(self.load_from_fs(
             pkg_resources.resource_filename('tgt_grease.enterprise.Model', 'config/')
         ))
-        conf['raw'].append(pkg)
+        conf['raw'] = list(set(conf['raw'] + pkg))
         conf['configuration']['pkg'] = pkg
         del pkg
         fs = self.validate_config_list(self.load_from_fs(
             self.ioc.getConfig().get('Configuration', 'dir')
         ))
-        conf['raw'].append(fs)
+        conf['raw'] = list(set(conf['raw'] + fs))
         conf['configuration']['fs'] = fs
         del fs
         mongo = self.validate_config_list(self.load_from_mongo())
-        conf['raw'].append(mongo)
+        conf['raw'] = list(set(conf['raw'] + mongo))
         conf['configuration']['mongo'] = mongo
         del mongo
-        # split by source & detector
-
+        # split by configuration sets
+        # the list of configured sources
+        conf['sources'] = list()
+        # the actual configurations for each source
+        conf['source'] = dict()
+        for config in conf.get('raw'):  # type: dict
+            if config.get('source') in conf['sources']:
+                conf[config.get('source')].append(config)
+            else:
+                conf['sources'].append(config.get('source'))
+                conf[config.get('source')] = list()
+                conf[config.get('source')].append(config)
         # return block
         if not reloadConf:
             return conf
         else:
-            global GREASE_PROTOTYPE_CONFIGURATION
             GREASE_PROTOTYPE_CONFIGURATION = conf
             return conf
 

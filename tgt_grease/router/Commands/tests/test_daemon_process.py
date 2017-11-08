@@ -70,6 +70,7 @@ class TestRegistration(TestCase):
                 }
             }
         )
+        # Sleeps are because mongo in Travis is slow sometimes to persist data
         time.sleep(1.5)
         self.assertTrue(cmd.server())
         self.assertTrue(cmd.drain_jobs(ioc.getCollection('JobQueue')))

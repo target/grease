@@ -476,6 +476,11 @@ class TestPrototypeConfig(TestCase):
         self.assertEqual(['slack'], conf.get_sources())
 
     def test_fs_load_good(self):
+        ioc = GreaseContainer()
+        # clean up
+        for root, dirnames, filenames in os.walk(ioc.getConfig().get('Configuration', 'dir')):
+            for filename in fnmatch.filter(filenames, '*.config.json'):
+                self.assertIsNone(os.remove(os.path.join(root, filename)))
         configList = [
             {
                 "name": "test1",
@@ -525,7 +530,6 @@ class TestPrototypeConfig(TestCase):
                 }
             }
         ]
-        ioc = GreaseContainer()
         i = 0
         for conf in configList:
             with open(ioc.getConfig().get('Configuration', 'dir') + 'conf{0}.config.json'.format(i), 'w') as fil:
@@ -609,6 +613,11 @@ class TestPrototypeConfig(TestCase):
         conf.load(reloadConf=True)
 
     def test_fs_load_bad(self):
+        ioc = GreaseContainer()
+        # clean up
+        for root, dirnames, filenames in os.walk(ioc.getConfig().get('Configuration', 'dir')):
+            for filename in fnmatch.filter(filenames, '*.config.json'):
+                self.assertIsNone(os.remove(os.path.join(root, filename)))
         configList = [
             {
                 "name": "test1",
@@ -692,7 +701,6 @@ class TestPrototypeConfig(TestCase):
                 }
             }
         ]
-        ioc = GreaseContainer()
         i = 0
         for conf in configList:
             with open(ioc.getConfig().get('Configuration', 'dir') + 'conf{0}.config.json'.format(i), 'w') as fil:

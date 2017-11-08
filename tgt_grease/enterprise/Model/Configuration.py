@@ -48,8 +48,7 @@ class PrototypeConfig(object):
             reloadConf (bool): If True this will reload the global object. False will return the object
 
         Returns:
-            dict: Configuration information
-            bool: Always true. Global Config has been written
+            dict: Current Configuration information
 
         """
         # fill out raw results
@@ -78,7 +77,7 @@ class PrototypeConfig(object):
         else:
             global GREASE_PROTOTYPE_CONFIGURATION
             GREASE_PROTOTYPE_CONFIGURATION = conf
-            return True
+            return conf
 
     def load_from_fs(self, directory):
         """Returns all configurations from tgt_grease.enterprise.Model/config/*.config.json

@@ -8,15 +8,16 @@ import os
 
 class TestPrototypeConfig(TestCase):
 
-    def setUp(self):
-        v = GreaseContainer()
-        v.getConfig().set('trace', True, 'Logging')
-
     def test_type(self):
         conf = PrototypeConfig()
         self.assertTrue(isinstance(conf, object))
 
     def test_empty_conf(self):
+        ioc = GreaseContainer()
+        # clean up
+        for root, dirnames, filenames in os.walk(ioc.getConfig().get('Configuration', 'dir')):
+            for filename in fnmatch.filter(filenames, '*.config.json'):
+                self.assertIsNone(os.remove(os.path.join(root, filename)))
         conf = PrototypeConfig()
         conf.load(reloadConf=True)
         self.assertTrue(conf.getConfiguration())

@@ -94,3 +94,12 @@ class TestRegistration(TestCase):
         fil = open(ioc.getConfig().greaseConfigFile, 'w')
         fil.write(json.dumps(data, sort_keys=True, indent=4))
         fil.close()
+        ioc.getCollection('JobServer') \
+            .update_one(
+            {'_id': ObjectId(ioc.getConfig().NodeIdentity)},
+            {
+                '$set': {
+                    'prototypes': []
+                }
+            }
+        )

@@ -41,3 +41,11 @@ class TestConfiguration(TestCase):
         self.assertEqual(conf.get('Logging', 'file'), conf.greaseDir + 'log' + conf.fs_sep + 'grease.log')
         self.assertEqual(conf.get('Configuration', 'dir'), conf.greaseDir + 'etc' + conf.fs_sep)
         self.assertEqual(conf.get('Sourcing', 'dir'), conf.greaseDir + 'etc' + conf.fs_sep)
+
+    def test_set(self):
+        conf = Configuration()
+        self.assertFalse(conf.get('Logging', 'trace'))
+        conf.set('trace', True, 'Logging')
+        self.assertTrue(conf.get('Logging', 'trace'))
+        conf.set('trace', False, 'Logging')
+        self.assertFalse(conf.get('Logging', 'trace'))

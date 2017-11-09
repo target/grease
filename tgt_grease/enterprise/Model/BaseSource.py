@@ -14,6 +14,8 @@ class BaseSourceClass(object):
     def __init__(self):
         self._data = []
 
+    # TODO: Mocking Method
+
     @abstractmethod
     def parse_source(self, configuration):
         """Parse the source for data

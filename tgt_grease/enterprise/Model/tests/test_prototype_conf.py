@@ -5,6 +5,7 @@ import json
 import fnmatch
 import os
 import time
+import pkg_resources
 
 
 class TestPrototypeConfig(TestCase):
@@ -673,6 +674,189 @@ class TestPrototypeConfig(TestCase):
         self.assertEqual(2, len(conf.get_sources()))
         # clean up
         for root, dirnames, filenames in os.walk(ioc.getConfig().get('Configuration', 'dir')):
+            for filename in fnmatch.filter(filenames, '*.config.json'):
+                self.assertIsNone(os.remove(os.path.join(root, filename)))
+        # clear the config
+        conf.load(reloadConf=True)
+
+    def test_pkg_load_good(self):
+        ioc = GreaseContainer()
+        # clean up
+        for root, dirnames, filenames in os.walk(pkg_resources.resource_filename('tgt_grease.enterprise.Model', 'config/')):
+            for filename in fnmatch.filter(filenames, '*.config.json'):
+                self.assertIsNone(os.remove(os.path.join(root, filename)))
+        configList = [
+            {
+                "name": "test1",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "swapi",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "test2",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "stackOverflow",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "test3",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "Google",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ],
+                    "exists": [
+                        {
+                            "field": "var"
+                        }
+                    ]
+                }
+            }
+        ]
+        i = 0
+        for conf in configList:
+            with open(pkg_resources.resource_filename('tgt_grease.enterprise.Model', 'config/') + 'conf{0}.config.json'.format(i), 'w') as fil:
+                fil.write(json.dumps(conf, indent=4))
+            i += 1
+        conf = PrototypeConfig(ioc)
+        conf.load(reloadConf=True)
+        self.assertEqual(len(conf.getConfiguration().get('configuration').get('pkg')), len(configList))
+        self.assertEqual(len(conf.getConfiguration().get('raw')), len(configList))
+        self.assertEqual(len(conf.getConfiguration().get('source').get('swapi')), 1)
+        self.assertEqual(len(conf.getConfiguration().get('source').get('stackOverflow')), 1)
+        self.assertEqual(len(conf.getConfiguration().get('source').get('Google')), 1)
+        self.assertEqual(3, len(conf.get_sources()))
+        # clean up
+        for root, dirnames, filenames in os.walk(pkg_resources.resource_filename('tgt_grease.enterprise.Model', 'config/')):
+            for filename in fnmatch.filter(filenames, '*.config.json'):
+                self.assertIsNone(os.remove(os.path.join(root, filename)))
+        # clear the config
+        conf.load(reloadConf=True)
+
+    def test_pkg_load_bad(self):
+        ioc = GreaseContainer()
+        # clean up
+        for root, dirnames, filenames in os.walk(pkg_resources.resource_filename('tgt_grease.enterprise.Model', 'config/')):
+            for filename in fnmatch.filter(filenames, '*.config.json'):
+                self.assertIsNone(os.remove(os.path.join(root, filename)))
+        configList = [
+            {
+                "name": "test1",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "swapi",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "badtest1",
+                "exe_env": "windows",
+                "source": "stackOverflow",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "test3",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "Google",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ],
+                    "exists": [
+                        {
+                            "field": "var"
+                        }
+                    ]
+                }
+            }
+        ]
+        GoodConfigList = [
+            {
+                "name": "test1",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "swapi",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "test3",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "Google",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ],
+                    "exists": [
+                        {
+                            "field": "var"
+                        }
+                    ]
+                }
+            }
+        ]
+        i = 0
+        for conf in configList:
+            with open(pkg_resources.resource_filename('tgt_grease.enterprise.Model', 'config/') + 'conf{0}.config.json'.format(i), 'w') as fil:
+                fil.write(json.dumps(conf, indent=4))
+            i += 1
+        conf = PrototypeConfig(ioc)
+        conf.load(reloadConf=True)
+        self.assertEqual(len(conf.getConfiguration().get('configuration').get('pkg')), len(GoodConfigList))
+        self.assertEqual(len(conf.getConfiguration().get('raw')), len(GoodConfigList))
+        self.assertEqual(len(conf.getConfiguration().get('source').get('swapi')), 1)
+        self.assertEqual(len(conf.getConfiguration().get('source').get('Google')), 1)
+        self.assertEqual(2, len(conf.get_sources()))
+        # clean up
+        for root, dirnames, filenames in os.walk(pkg_resources.resource_filename('tgt_grease.enterprise.Model', 'config/')):
             for filename in fnmatch.filter(filenames, '*.config.json'):
                 self.assertIsNone(os.remove(os.path.join(root, filename)))
         # clear the config

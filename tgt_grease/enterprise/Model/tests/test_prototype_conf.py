@@ -4,6 +4,7 @@ from unittest import TestCase
 import json
 import fnmatch
 import os
+import time
 
 
 class TestPrototypeConfig(TestCase):
@@ -677,4 +678,181 @@ class TestPrototypeConfig(TestCase):
         # clear the config
         conf.load(reloadConf=True)
 
-    # TODO: MongoDB Loading Tests
+    def test_mongo_load_good(self):
+        ioc = GreaseContainer()
+        # clean up
+        for root, dirnames, filenames in os.walk(ioc.getConfig().get('Configuration', 'dir')):
+            for filename in fnmatch.filter(filenames, '*.config.json'):
+                self.assertIsNone(os.remove(os.path.join(root, filename)))
+        configList = [
+            {
+                "name": "test1",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "swapi",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "test2",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "stackOverflow",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "test3",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "Google",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ],
+                    "exists": [
+                        {
+                            "field": "var"
+                        }
+                    ]
+                }
+            }
+        ]
+        for conf in configList:
+            ioc.getCollection('Configuration').insert_one(conf)
+        ioc.getCollection('Configuration').update_many({}, {'$set': {'active': True, 'type': 'prototype_config'}})
+        # sleep because travis is slow
+        time.sleep(1.5)
+        conf = PrototypeConfig(ioc)
+        conf.load(reloadConf=True)
+        self.assertEqual(len(conf.getConfiguration().get('configuration').get('mongo')), len(configList))
+        self.assertEqual(len(conf.getConfiguration().get('raw')), len(configList))
+        self.assertEqual(len(conf.getConfiguration().get('source').get('swapi')), 1)
+        self.assertEqual(len(conf.getConfiguration().get('source').get('stackOverflow')), 1)
+        self.assertEqual(len(conf.getConfiguration().get('source').get('Google')), 1)
+        self.assertEqual(3, len(conf.get_sources()))
+        # clean up
+        ioc.getCollection('Configuration').drop()
+        # clear the config
+        conf.load(reloadConf=True)
+
+    def test_mongo_load_bad(self):
+        ioc = GreaseContainer()
+        # clean up
+        for root, dirnames, filenames in os.walk(ioc.getConfig().get('Configuration', 'dir')):
+            for filename in fnmatch.filter(filenames, '*.config.json'):
+                self.assertIsNone(os.remove(os.path.join(root, filename)))
+        configList = [
+            {
+                "name": "test1",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "swapi",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "badtest1",
+                "exe_env": "windows",
+                "source": "stackOverflow",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "test3",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "Google",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ],
+                    "exists": [
+                        {
+                            "field": "var"
+                        }
+                    ]
+                }
+            }
+        ]
+        GoodConfigList = [
+            {
+                "name": "test1",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "swapi",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "test3",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "Google",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ],
+                    "exists": [
+                        {
+                            "field": "var"
+                        }
+                    ]
+                }
+            }
+        ]
+        for conf in configList:
+            ioc.getCollection('Configuration').insert_one(conf)
+        ioc.getCollection('Configuration').update_many({}, {'$set': {'active': True, 'type': 'prototype_config'}})
+        # sleep because travis is slow sometimes
+        time.sleep(1.5)
+        conf = PrototypeConfig(ioc)
+        conf.load(reloadConf=True)
+        self.assertEqual(len(conf.getConfiguration().get('configuration').get('mongo')), len(GoodConfigList))
+        self.assertEqual(len(conf.getConfiguration().get('raw')), len(GoodConfigList))
+        self.assertEqual(len(conf.getConfiguration().get('source').get('swapi')), 1)
+        self.assertEqual(len(conf.getConfiguration().get('source').get('Google')), 1)
+        self.assertEqual(2, len(conf.get_sources()))
+        # clean up
+        ioc.getCollection('Configuration').drop()
+        # clear the config
+        conf.load(reloadConf=True)

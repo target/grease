@@ -3,6 +3,7 @@ from tgt_grease.core import ImportTool
 from .Configuration import PrototypeConfig
 from .BaseSource import BaseSourceClass
 from .DeDuplication import Deduplication
+from .CentralScheduling import Scheduling
 from uuid import uuid4
 
 
@@ -27,6 +28,7 @@ class Scan(object):
         self.conf = PrototypeConfig(self.ioc)
         self.impTool = ImportTool(self.ioc.getLogger())
         self.dedup = Deduplication(self.ioc)
+        self.scheduler = Scheduling(self.ioc)
 
     def Parse(self, source=None, config=None):
         """This will read all configurations and attempt to scan the environment
@@ -57,9 +59,16 @@ class Scan(object):
                 if inst.parse_source(conf):
                     # send to scheduling after deduplication
                     # TODO: Mocking
-                    data = self.dedup.Deduplicate(inst.get_data(), 'DeDup_Sourcing')
-                    del inst
-                    continue
+                    if self.scheduler.ScheduleSource(self.dedup.Deduplicate(inst.get_data(), 'DeDup_Sourcing')):
+                        del inst
+                        continue
+                    else:
+                        self.ioc.getLogger().error(
+                            "Failed to schedule source [{0}] for detection".format(conf.get('source')),
+                            notify=False
+                        )
+                        del inst
+                        continue
                 else:
                     self.ioc.getLogger().warning("Source [{0}] parsing failed".format(conf.get('source')), notify=False)
                     del inst

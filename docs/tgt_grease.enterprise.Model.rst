@@ -25,6 +25,14 @@ The DeDuplication Engine
     :undoc-members:
     :show-inheritance:
 
+The Scheduling Engine
+-----------------------------------------------
+
+.. autoclass:: tgt_grease.enterprise.Model.Scheduling
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 The Scanning Processor
 -----------------------------------------------
 

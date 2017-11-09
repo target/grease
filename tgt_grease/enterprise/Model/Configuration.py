@@ -182,7 +182,7 @@ class PrototypeConfig(object):
         """
         global GREASE_PROTOTYPE_CONFIGURATION
         if GREASE_PROTOTYPE_CONFIGURATION:
-            return GREASE_PROTOTYPE_CONFIGURATION.get('source').get(name, {})
+            return GREASE_PROTOTYPE_CONFIGURATION.get('source').get(name, [])
         else:
             self.ioc.getLogger().error("GREASE Prototype configuration not loaded", notify=False, trace=True)
             return []

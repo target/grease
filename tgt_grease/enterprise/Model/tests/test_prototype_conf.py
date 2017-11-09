@@ -281,7 +281,13 @@ class TestPrototypeConfig(TestCase):
                 'source': {
                     'swapi': configList,
                 },
-                'sources': ['swapi']
+                'sources': ['swapi'],
+                'names': ['test1', 'test2', 'test3'],
+                'name': {
+                    'test1': configList[0],
+                    'test2': configList[1],
+                    'test3': configList[2]
+                }
             },
             conf.load(ConfigurationList=configList)
         )
@@ -371,7 +377,11 @@ class TestPrototypeConfig(TestCase):
                 'source': {
                     'swapi': CompareList
                 },
-                'sources': ['swapi']
+                'sources': ['swapi'],
+                'names': ['test5'],
+                'name': {
+                    'test5': CompareList[0]
+                }
             },
             conf.load(ConfigurationList=configList)
         )

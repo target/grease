@@ -29,6 +29,11 @@ class Scan(object):
         This is the primary business logic for scanning in GREASE. This method will use configurations to parse
         the environment and attempt to schedule
 
+        Note:
+            If a Source is specified then *only* that source is parsed. If a configuration is set then *only* that
+            configuration is parsed. If both are provided then the configuration will *only* be parsed if it is of
+            the source provided
+
         Args:
             source (str): If set will only parse for the source listed
             config (str): If set will only parse the specified config
@@ -39,3 +44,55 @@ class Scan(object):
         """
         self.ioc.getLogger().trace("Starting Parse of Environment", trace=True)
         return True
+
+    def generate_config_set(self, source=None, config=None):
+        """Examines configuration and returns list of configs to parse
+
+        Note:
+            If a Source is specified then *only* that source is parsed. If a configuration is set then *only* that
+            configuration is parsed. If both are provided then the configuration will *only* be parsed if it is of
+            the source provided
+
+        Args:
+            source (str): If set will only parse for the source listed
+            config (str): If set will only parse the specified config
+
+        Returns:
+            list[dict]: Returns Configurations to Parse for data
+
+        """
+        ConfigList = []
+        if source and config:
+            if self.conf.get_config(config).get('source') == source:
+                ConfigList.append(self.conf.get_config(config))
+                return ConfigList
+            else:
+                self.ioc.getLogger().warning(
+                    "Configuration [{0}] Not Found With Correct Source [{1}]".format(config, source),
+                    trace=True,
+                    notify=False
+                )
+        elif source and not config:
+            if source in self.conf.get_sources():
+                for configuration in self.conf.get_source(source):
+                    ConfigList.append(configuration)
+                return ConfigList
+            else:
+                self.ioc.getLogger().warning(
+                    "Source not found in Configuration [{0}]".format(source),
+                    trace=True,
+                    notify=False
+                )
+        elif not source and config:
+            if self.conf.get_config(config):
+                ConfigList.append(self.conf.get_config(config))
+                return ConfigList
+            else:
+                self.ioc.getLogger().warning(
+                    "Config not found in Configuration [{0}]".format(config),
+                    trace=True,
+                    notify=False
+                )
+        else:
+            ConfigList = self.conf.getConfiguration().get('raw')
+        return ConfigList

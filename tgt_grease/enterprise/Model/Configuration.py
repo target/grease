@@ -93,6 +93,10 @@ class PrototypeConfig(object):
             conf['sources'] = list()
             # the actual configurations for each source
             conf['source'] = dict()
+            # configurations to get via name
+            conf['names'] = list()
+            # the actual configurations for each config name
+            conf['name'] = dict()
             for config in conf.get('raw'):  # type: dict
                 if config.get('source') in conf['sources']:
                     conf['source'][config.get('source')].append(config)
@@ -100,6 +104,14 @@ class PrototypeConfig(object):
                     conf['sources'].append(config.get('source'))
                     conf['source'][config.get('source')] = list()
                     conf['source'][config.get('source')].append(config)
+                if config.get('name') in conf['names']:
+                    self.ioc.getLogger().error(
+                        "Prototype Configuration [{0}] already found! Overwriting".format(config.get('name'))
+                    )
+                    conf['name'][config.get('name')] = config
+                else:
+                    conf['names'].append(config.get('name'))
+                    conf['name'][config.get('name')] = config
             GREASE_PROTOTYPE_CONFIGURATION = conf
             return conf
         # fill out raw results
@@ -213,7 +225,11 @@ class PrototypeConfig(object):
         """
         global GREASE_PROTOTYPE_CONFIGURATION
         if GREASE_PROTOTYPE_CONFIGURATION:
-            return GREASE_PROTOTYPE_CONFIGURATION.get('name').get(name, {})
+            if GREASE_PROTOTYPE_CONFIGURATION.get('name'):
+                return GREASE_PROTOTYPE_CONFIGURATION.get('name').get(name, {})
+            else:
+                self.ioc.getLogger().error("GREASE Configuration Not Found", notify=False, trace=True)
+                return {}
         else:
             self.ioc.getLogger().error("GREASE Prototype configuration not loaded", notify=False, trace=True)
             return {}

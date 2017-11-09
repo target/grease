@@ -289,11 +289,14 @@ class Daemon(Command):
                     daemon.log_once_per_second("Server Process Failed", ERROR)
                     continue
         else:
-            current_second = datetime.datetime.utcnow().second
-            while current_second + int(timing) >= datetime.datetime.utcnow().second:
+            current_second = int(datetime.datetime.utcnow().second)
+            real_second = int(datetime.datetime.utcnow().second)
+            while current_second + int(timing) >= real_second:
                 if daemon.server():
+                    real_second = int(datetime.datetime.utcnow().second)
                     continue
                 else:
                     daemon.log_once_per_second("Server Process Failed", ERROR)
+                    real_second = int(datetime.datetime.utcnow().second)
                     continue
         return True

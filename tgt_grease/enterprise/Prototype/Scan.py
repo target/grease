@@ -50,8 +50,8 @@ class Scanner(Command):
         scanner = Scan(self.ioc)
         # create Parse Args
         args = {
-            'source': context.get('source'),
-            'config': context.get('config')
+            'source': context.get('source', self.ioc.getConfig().get('Sourcing', 'source', None)),
+            'config': context.get('config', self.ioc.getConfig().get('Sourcing', 'config', None))
         }
         if 'scans' in context:
             # scan only a certain amount of times

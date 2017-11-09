@@ -565,6 +565,9 @@ class TestPrototypeConfig(TestCase):
         self.assertEqual(len(conf.getConfiguration().get('source').get('Google')), 1)
         self.assertEqual(3, len(conf.get_sources()))
         self.assertEqual(3, len(conf.get_names()))
+        self.assertEqual(len(conf.get_source('stackOverflow')), 1)
+        self.assertTrue(isinstance(conf.get_config('test2'), dict))
+        self.assertTrue(conf.get_config('test2'))
         # clean up
         for root, dirnames, filenames in os.walk(ioc.getConfig().get('Configuration', 'dir')):
             for filename in fnmatch.filter(filenames, '*.config.json'):
@@ -674,6 +677,9 @@ class TestPrototypeConfig(TestCase):
         self.assertEqual(len(conf.getConfiguration().get('source').get('Google')), 1)
         self.assertEqual(2, len(conf.get_sources()))
         self.assertEqual(2, len(conf.get_names()))
+        self.assertEqual(len(conf.get_source('Google')), 1)
+        self.assertTrue(isinstance(conf.get_config('test1'), dict))
+        self.assertTrue(conf.get_config('test1'))
         # clean up
         for root, dirnames, filenames in os.walk(ioc.getConfig().get('Configuration', 'dir')):
             for filename in fnmatch.filter(filenames, '*.config.json'):
@@ -750,6 +756,9 @@ class TestPrototypeConfig(TestCase):
         self.assertEqual(len(conf.getConfiguration().get('source').get('Google')), 1)
         self.assertEqual(3, len(conf.get_sources()))
         self.assertEqual(3, len(conf.get_names()))
+        self.assertEqual(len(conf.get_source('stackOverflow')), 1)
+        self.assertTrue(isinstance(conf.get_config('test2'), dict))
+        self.assertTrue(conf.get_config('test2'))
         # clean up
         for root, dirnames, filenames in os.walk(pkg_resources.resource_filename('tgt_grease.enterprise.Model', 'config/')):
             for filename in fnmatch.filter(filenames, '*.config.json'):
@@ -859,6 +868,9 @@ class TestPrototypeConfig(TestCase):
         self.assertEqual(len(conf.getConfiguration().get('source').get('Google')), 1)
         self.assertEqual(2, len(conf.get_sources()))
         self.assertEqual(2, len(conf.get_names()))
+        self.assertEqual(len(conf.get_source('Google')), 1)
+        self.assertTrue(isinstance(conf.get_config('test1'), dict))
+        self.assertTrue(conf.get_config('test1'))
         # clean up
         for root, dirnames, filenames in os.walk(pkg_resources.resource_filename('tgt_grease.enterprise.Model', 'config/')):
             for filename in fnmatch.filter(filenames, '*.config.json'):
@@ -934,6 +946,9 @@ class TestPrototypeConfig(TestCase):
         self.assertEqual(len(conf.getConfiguration().get('source').get('stackOverflow')), 1)
         self.assertEqual(len(conf.getConfiguration().get('source').get('Google')), 1)
         self.assertEqual(3, len(conf.get_names()))
+        self.assertEqual(len(conf.get_source('stackOverflow')), 1)
+        self.assertTrue(isinstance(conf.get_config('test2'), dict))
+        self.assertTrue(conf.get_config('test2'))
         # clean up
         ioc.getCollection('Configuration').drop()
         # clear the config
@@ -1041,6 +1056,9 @@ class TestPrototypeConfig(TestCase):
         self.assertEqual(len(conf.getConfiguration().get('source').get('Google')), 1)
         self.assertEqual(2, len(conf.get_sources()))
         self.assertEqual(2, len(conf.get_names()))
+        self.assertEqual(len(conf.get_source('Google')), 1)
+        self.assertTrue(isinstance(conf.get_config('test1'), dict))
+        self.assertTrue(conf.get_config('test1'))
         # clean up
         ioc.getCollection('Configuration').drop()
         # clear the config

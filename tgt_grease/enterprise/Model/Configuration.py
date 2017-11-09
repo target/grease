@@ -170,6 +170,23 @@ class PrototypeConfig(object):
             self.ioc.getLogger().error("GREASE Prototype configuration is not loaded", trace=True, notify=False)
             return []
 
+    def get_source(self, name):
+        """Get all configuration by source by name
+
+        Args:
+            name (str): Source name to get
+
+        Returns:
+            list[dict]: Configuration if found else empty dict
+
+        """
+        global GREASE_PROTOTYPE_CONFIGURATION
+        if GREASE_PROTOTYPE_CONFIGURATION:
+            return GREASE_PROTOTYPE_CONFIGURATION.get('source').get(name, {})
+        else:
+            self.ioc.getLogger().error("GREASE Prototype configuration not loaded", notify=False, trace=True)
+            return []
+
     def get_names(self):
         """Returns the list of names of configs
 
@@ -183,6 +200,23 @@ class PrototypeConfig(object):
         else:
             self.ioc.getLogger().error("GREASE Prototype configuration is not loaded", trace=True, notify=False)
             return []
+
+    def get_config(self, name):
+        """Get Configuration by name
+
+        Args:
+            name (str): Configuration name to get
+
+        Returns:
+            dict: Configuration if found else empty dict
+
+        """
+        global GREASE_PROTOTYPE_CONFIGURATION
+        if GREASE_PROTOTYPE_CONFIGURATION:
+            return GREASE_PROTOTYPE_CONFIGURATION.get('name').get(name, {})
+        else:
+            self.ioc.getLogger().error("GREASE Prototype configuration not loaded", notify=False, trace=True)
+            return {}
 
     def load_from_fs(self, directory):
         """Loads configurations from provided directory

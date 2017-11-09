@@ -1,4 +1,5 @@
 from tgt_grease.core import GreaseContainer
+from tgt_grease.core import ImportTool
 from .Configuration import PrototypeConfig
 
 
@@ -10,6 +11,7 @@ class Scan(object):
     Attributes:
         ioc (GreaseContainer): IOC for scanning
         conf (PrototypeConfig): Prototype configuration instance
+        impTool (ImportTool): Import Utility Instance
 
     """
 
@@ -19,6 +21,7 @@ class Scan(object):
         else:
             self.ioc = GreaseContainer()
         self.conf = PrototypeConfig(self.ioc)
+        self.impTool = ImportTool(self.ioc.getLogger())
 
     def Parse(self, source=None, config=None):
         """This will read all configurations and attempt to scan the environment

@@ -56,6 +56,7 @@ class Scan(object):
             else:
                 if inst.parse_source(conf):
                     # send to scheduling after deduplication
+                    # TODO: Mocking
                     data = self.dedup.Deduplicate(inst.get_data(), 'DeDup_Sourcing')
                     del inst
                     continue

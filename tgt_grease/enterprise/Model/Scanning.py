@@ -1,6 +1,9 @@
 from tgt_grease.core import GreaseContainer
 from tgt_grease.core import ImportTool
 from .Configuration import PrototypeConfig
+from .BaseSource import BaseSourceClass
+from .DeDuplication import Deduplication
+from uuid import uuid4
 
 
 class Scan(object):
@@ -12,6 +15,7 @@ class Scan(object):
         ioc (GreaseContainer): IOC for scanning
         conf (PrototypeConfig): Prototype configuration instance
         impTool (ImportTool): Import Utility Instance
+        dedup (Deduplication): Deduplication instance to be used
 
     """
 
@@ -22,6 +26,7 @@ class Scan(object):
             self.ioc = GreaseContainer()
         self.conf = PrototypeConfig(self.ioc)
         self.impTool = ImportTool(self.ioc.getLogger())
+        self.dedup = Deduplication(self.ioc)
 
     def Parse(self, source=None, config=None):
         """This will read all configurations and attempt to scan the environment
@@ -43,6 +48,20 @@ class Scan(object):
 
         """
         self.ioc.getLogger().trace("Starting Parse of Environment", trace=True)
+        Configuration = self.generate_config_set(source=source, config=config)
+        for conf in Configuration:
+            inst = self.impTool.load(conf.get('source', str(uuid4())))
+            if not isinstance(inst, BaseSourceClass):
+                self.ioc.getLogger().error("Invalid Source [{0}]".format(conf.get('source')), notify=False)
+            else:
+                if inst.parse_source(conf):
+                    # send to scheduling after deduplication
+                    data = self.dedup.Deduplicate(inst.get_data(), 'DeDup_Sourcing')
+                    del inst
+                    continue
+                else:
+                    self.ioc.getLogger().warning("Source [{0}] parsing failed".format(conf.get('source')), notify=False)
+                    del inst
         return True
 
     def generate_config_set(self, source=None, config=None):

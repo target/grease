@@ -1063,3 +1063,236 @@ class TestPrototypeConfig(TestCase):
         ioc.getCollection('Configuration').drop()
         # clear the config
         conf.load(reloadConf=True)
+
+    def test_all_load_good(self):
+        ioc = GreaseContainer()
+        # clean up
+        for root, dirnames, filenames in os.walk(ioc.getConfig().get('Configuration', 'dir')):
+            for filename in fnmatch.filter(filenames, '*.config.json'):
+                self.assertIsNone(os.remove(os.path.join(root, filename)))
+        # clean up
+        for root, dirnames, filenames in os.walk(pkg_resources.resource_filename('tgt_grease.enterprise.Model', 'config/')):
+            for filename in fnmatch.filter(filenames, '*.config.json'):
+                self.assertIsNone(os.remove(os.path.join(root, filename)))
+        configList = [
+            {
+                "name": "test1",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "swapi",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "test2",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "stackOverflow",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "test3",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "Google",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ],
+                    "exists": [
+                        {
+                            "field": "var"
+                        }
+                    ]
+                }
+            }
+        ]
+        i = 0
+        length = len(configList) - 1
+        while i <= length:
+            if i == 0:
+                with open(ioc.getConfig().get('Configuration', 'dir') + 'conf{0}.config.json'.format(i), 'w') as fil:
+                    fil.write(json.dumps(configList[i], indent=4))
+            if i == 1:
+                with open(pkg_resources.resource_filename('tgt_grease.enterprise.Model',
+                                                          'config/') + 'conf{0}.config.json'.format(i), 'w') as fil:
+                    fil.write(json.dumps(configList[i], indent=4))
+            if i == 2:
+                ioc.getCollection('Configuration').insert_one(configList[i])
+            i += 1
+        ioc.getCollection('Configuration').update_many({}, {'$set': {'active': True, 'type': 'prototype_config'}})
+        # sleep because travis is slow
+        time.sleep(1.5)
+        conf = PrototypeConfig(ioc)
+        conf.load(reloadConf=True)
+        self.assertEqual(len(conf.getConfiguration().get('configuration').get('mongo')), 1)
+        self.assertEqual(len(conf.getConfiguration().get('configuration').get('pkg')), 1)
+        self.assertEqual(len(conf.getConfiguration().get('configuration').get('fs')), 1)
+        self.assertEqual(len(conf.getConfiguration().get('raw')), len(configList))
+        self.assertEqual(len(conf.getConfiguration().get('source').get('swapi')), 1)
+        self.assertEqual(len(conf.getConfiguration().get('source').get('stackOverflow')), 1)
+        self.assertEqual(len(conf.getConfiguration().get('source').get('Google')), 1)
+        self.assertEqual(3, len(conf.get_names()))
+        self.assertEqual(len(conf.get_source('stackOverflow')), 1)
+        self.assertTrue(isinstance(conf.get_config('test2'), dict))
+        self.assertTrue(conf.get_config('test2'))
+        # clean up
+        ioc.getCollection('Configuration').drop()
+        for root, dirnames, filenames in os.walk(ioc.getConfig().get('Configuration', 'dir')):
+            for filename in fnmatch.filter(filenames, '*.config.json'):
+                self.assertIsNone(os.remove(os.path.join(root, filename)))
+        # clean up
+        for root, dirnames, filenames in os.walk(pkg_resources.resource_filename('tgt_grease.enterprise.Model', 'config/')):
+            for filename in fnmatch.filter(filenames, '*.config.json'):
+                self.assertIsNone(os.remove(os.path.join(root, filename)))
+        # clear the config
+        conf.load(reloadConf=True)
+
+    def test_all_load_bad(self):
+        ioc = GreaseContainer()
+        # clean up
+        for root, dirnames, filenames in os.walk(ioc.getConfig().get('Configuration', 'dir')):
+            for filename in fnmatch.filter(filenames, '*.config.json'):
+                self.assertIsNone(os.remove(os.path.join(root, filename)))
+        # clean up
+        for root, dirnames, filenames in os.walk(pkg_resources.resource_filename('tgt_grease.enterprise.Model', 'config/')):
+            for filename in fnmatch.filter(filenames, '*.config.json'):
+                self.assertIsNone(os.remove(os.path.join(root, filename)))
+        configList = [
+            {
+                "name": "test1",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "swapi",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "badtest1",
+                "exe_env": "windows",
+                "source": "stackOverflow",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "test3",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "Google",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ],
+                    "exists": [
+                        {
+                            "field": "var"
+                        }
+                    ]
+                }
+            }
+        ]
+        GoodConfigList = [
+            {
+                "name": "test1",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "swapi",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            },
+            {
+                "name": "test3",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "Google",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ],
+                    "exists": [
+                        {
+                            "field": "var"
+                        }
+                    ]
+                }
+            }
+        ]
+        i = 0
+        length = len(configList) - 1
+        while i <= length:
+            if i == 0:
+                with open(ioc.getConfig().get('Configuration', 'dir') + 'conf{0}.config.json'.format(i), 'w') as fil:
+                    fil.write(json.dumps(configList[i], indent=4))
+            if i == 1:
+                with open(pkg_resources.resource_filename('tgt_grease.enterprise.Model',
+                                                          'config/') + 'conf{0}.config.json'.format(i), 'w') as fil:
+                    fil.write(json.dumps(configList[i], indent=4))
+            if i == 2:
+                ioc.getCollection('Configuration').insert_one(configList[i])
+            i += 1
+        ioc.getCollection('Configuration').update_many({}, {'$set': {'active': True, 'type': 'prototype_config'}})
+        # sleep because travis is slow
+        time.sleep(1.5)
+        conf = PrototypeConfig(ioc)
+        conf.load(reloadConf=True)
+        self.assertEqual(len(conf.getConfiguration().get('configuration').get('mongo')), 1)
+        self.assertEqual(len(conf.getConfiguration().get('configuration').get('pkg')), 0)
+        self.assertEqual(len(conf.getConfiguration().get('configuration').get('fs')), 1)
+        self.assertEqual(len(conf.getConfiguration().get('raw')), len(GoodConfigList))
+        self.assertEqual(len(conf.getConfiguration().get('source').get('swapi')), 1)
+        self.assertEqual(len(conf.getConfiguration().get('source').get('Google')), 1)
+        self.assertEqual(2, len(conf.get_names()))
+        self.assertEqual(len(conf.get_source('Google')), 1)
+        self.assertTrue(isinstance(conf.get_config('test1'), dict))
+        self.assertTrue(conf.get_config('test1'))
+        # clean up
+        ioc.getCollection('Configuration').drop()
+        for root, dirnames, filenames in os.walk(ioc.getConfig().get('Configuration', 'dir')):
+            for filename in fnmatch.filter(filenames, '*.config.json'):
+                self.assertIsNone(os.remove(os.path.join(root, filename)))
+        # clean up
+        for root, dirnames, filenames in os.walk(pkg_resources.resource_filename('tgt_grease.enterprise.Model', 'config/')):
+            for filename in fnmatch.filter(filenames, '*.config.json'):
+                self.assertIsNone(os.remove(os.path.join(root, filename)))
+        # clear the config
+        conf.load(reloadConf=True)

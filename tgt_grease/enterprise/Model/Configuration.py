@@ -23,6 +23,18 @@ class PrototypeConfig(object):
             'source': {} # <-- keys will be source values list of configs for that source
         }
 
+    Structure of a configuration file::
+
+        {
+            "name": String,
+            "job": String,
+            "exe_env": String, # <-- If not provided will be default as 'general'
+            "source": String,
+            "logic": {
+                # I need to be the logical blocks for Detection
+            }
+        }
+
     Attributes:
         ioc (GreaseContainer): IOC access
 
@@ -178,6 +190,20 @@ class PrototypeConfig(object):
 
     def load_from_mongo(self):
         """Returns all active configurations from the mongo collection Configuration
+
+        Structure of Configuration expected in Mongo::
+
+            {
+                "name": String,
+                "job": String,
+                "exe_env": String, # <-- If not provided will be default as 'general'
+                "active": Boolean, # <-- set to true to load configuration
+                "type": "prototype_config", # <-- MUST BE THIS VALUE; For it is the config type :)
+                "source": String,
+                "logic": {
+                    # I need to be the logical blocks for Detection
+                }
+            }
 
         Returns:
             list of dict: Configurations

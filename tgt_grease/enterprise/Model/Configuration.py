@@ -21,6 +21,8 @@ class PrototypeConfig(object):
             'raw': [], # <-- All loaded configurations
             'sources': [], # <-- list of sources found in configurations
             'source': {} # <-- keys will be source values list of configs for that source
+            'names': [], # <-- all configs via their name so to allow dialing
+            'name': {} # <-- all configs via their name so to allow being dialing
         }
 
     Structure of a configuration file::
@@ -128,6 +130,10 @@ class PrototypeConfig(object):
         conf['sources'] = list()
         # the actual configurations for each source
         conf['source'] = dict()
+        # configurations to get via name
+        conf['names'] = list()
+        # the actual configurations for each config name
+        conf['name'] = dict()
         for config in conf.get('raw'):  # type: dict
             if config.get('source') in conf['sources']:
                 conf['source'][config.get('source')].append(config)
@@ -135,6 +141,14 @@ class PrototypeConfig(object):
                 conf['sources'].append(config.get('source'))
                 conf['source'][config.get('source')] = list()
                 conf['source'][config.get('source')].append(config)
+            if config.get('name') in conf['names']:
+                self.ioc.getLogger().error(
+                    "Prototype Configuration [{0}] already found! Overwriting".format(config.get('name'))
+                )
+                conf['name'][config.get('name')] = config
+            else:
+                conf['names'].append(config.get('name'))
+                conf['name'][config.get('name')] = config
         # return block
         if not reloadConf:
             return conf
@@ -152,6 +166,20 @@ class PrototypeConfig(object):
         global GREASE_PROTOTYPE_CONFIGURATION  # type: dict
         if GREASE_PROTOTYPE_CONFIGURATION:
             return GREASE_PROTOTYPE_CONFIGURATION.get('sources', [])
+        else:
+            self.ioc.getLogger().error("GREASE Prototype configuration is not loaded", trace=True, notify=False)
+            return []
+
+    def get_names(self):
+        """Returns the list of names of configs
+
+        Returns:
+            list: List of config names
+
+        """
+        global GREASE_PROTOTYPE_CONFIGURATION  # type: dict
+        if GREASE_PROTOTYPE_CONFIGURATION:
+            return GREASE_PROTOTYPE_CONFIGURATION.get('names', [])
         else:
             self.ioc.getLogger().error("GREASE Prototype configuration is not loaded", trace=True, notify=False)
             return []

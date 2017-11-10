@@ -17,7 +17,7 @@ class Deduplication(object):
         else:
             self.ioc = GreaseContainer()
 
-    def Deduplicate(self, data, source, strength, expiry_hours, collection, field_set=None):
+    def Deduplicate(self, data, source, strength, expiry_hours, expiry_max, collection, field_set=None):
         """Deduplicate data
 
         This method will deduplicate the `data` object to allow for only unique objects to be returned. The collection
@@ -28,6 +28,7 @@ class Deduplication(object):
             source (str): Source of data being deduplicated
             strength (float): Strength of deduplication (higher is more unique)
             expiry_hours (int): Hours to retain deduplication data
+            expiry_max (int): Maximum days to retain deduplication data
             collection (str): Deduplication collection to use
             field_set (list, optional): Fields to deduplicate on
 
@@ -111,6 +112,7 @@ class Deduplication(object):
                     self.ioc,
                     data[data_pointer],
                     expiry_hours,
+                    expiry_max,
                     strength,
                     source,
                     final,
@@ -142,7 +144,7 @@ class Deduplication(object):
         return final
 
     @staticmethod
-    def deduplicate_object(ioc, obj, expiry, strength, source_name, final, collection, data_pointer=None, data_max=None, field_set=None):
+    def deduplicate_object(ioc, obj, expiry, expiry_max, strength, source_name, final, collection, data_pointer=None, data_max=None, field_set=None):
         """DeDuplicate Object
 
         This is the method to actually deduplicate an object. The `final` argument is appended to with the obj if it
@@ -152,12 +154,15 @@ class Deduplication(object):
             ioc (GreaseContainer): IoC for the instance
             obj (dict): Object to be deduplicated
             expiry (int): Hours to deduplicate for
+            expiry_max (int): Maximum days to deduplicate for
             strength (float): Uniqueness Measurement
             source_name (str): Source of data being deduplicated
             final (list): List to append `obj` to if unique
             collection (str): Name of deduplication collection
-            data_pointer (int): If provided will provide log information relating to thread (Typically used via `Deduplicate`
-            data_max (int): If provided will provide log information relating to thread (Typically used via `Deduplicate`
+            data_pointer (int): If provided will provide log information relating to thread
+                (Typically used via `Deduplicate`)
+            data_max (int): If provided will provide log information relating to thread
+                (Typically used via `Deduplicate`)
             field_set (list): If provided will only deduplicate on list of fields provided
 
         Returns:

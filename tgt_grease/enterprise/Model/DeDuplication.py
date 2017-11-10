@@ -1,10 +1,44 @@
 from tgt_grease.core import GreaseContainer
 from psutil import virtual_memory, cpu_percent
 import threading
+import hashlib
+import datetime
+import difflib
 
 
 class Deduplication(object):
     """Responsible for Deduplication Operations
+
+    Deduplication in GREASE is a multi-step process to ensure performance and accuracy of deduplication. The overview of
+    this process is this:
+        - Step 1: Identify a Object Type 1 Hash Match. A Type 1 Object is a SHA256 hash of a dictionary in a data list. If we can hash the entire object and find a match then the object is 100% duplicate.
+        - Step 2: Object Type 2 Matching. If a Type 1 (T1) object cannot be found T2 deduplication occurs. This will introspect the dictionary for each field and map them against other likely objects of the same type. If a hash match is found (source + field + value as a SHA256) then the field is 100% duplicate. The aggregate score of all fields or the specified subset is above the provided strength then the object is duplicate. This prevents similar objects from passing through when they are most likely updates to an original object that does not need to be computed on. If a field updates that you will need always then exclude it will need to be passed into the `Deduplicate` function.
+
+    Object examples::
+
+        # Type 1 Object
+
+        {
+            '_id': ObjectId, # <-- MongoDB ObjectID
+            'type: Int, # <-- Always Type 1
+            'hash': String, # <-- SHA256 hash of entire object
+            'expiry': DateTime, # <-- Expiration time if no objects are found to be duplicate after which object will be deleted
+            'max_expiry': DateTime, # <-- Expiration time for object to be deleted when reached
+            'score': Int, # <-- Amount of times this object has been found
+            'source': String # <-- Source of the object
+        }
+        # Type 2 Object
+        {
+            '_id': ObjectId, # <-- MongoDB ObjectID
+            'type: Int, # <-- Always Type 2
+            'source': String, # <-- Source of data
+            'field': String, # <-- Field in Object
+            'value': String, # <-- Value of Object's field
+            'hash': String, # <-- SHA256 of source + field + value
+            'expiry': DateTime, # <-- Expiration time if no objects are found to be duplicate after which object will be deleted
+            'max_expiry': DateTime, # <-- Expiration time for object to be deleted when reached
+            'score': Int # <-- Amount of times this object has been found
+        }
 
     Attributes:
         ioc (GreaseContainer): IoC access for DeDuplication
@@ -169,3 +203,78 @@ class Deduplication(object):
             None: Nothing returned. Updates `final` object
 
         """
+        # first determine if this object has been seen before
+        DeDupCollection = ioc.getCollection(collection)
+        T1Hash = DeDupCollection.find_one({'hash': Deduplication.generate_hash_from_obj(obj)})
+        if T1Hash:
+            # T1 Found Protocol: We have found a fully duplicate object
+            # we have a duplicate source document
+            # increase the counter and expiry and move on (DROP)
+            ioc.getLogger().debug("Type1 Match Found for Object", verbose=True)
+            # bump the expiry time and move on
+            DeDupCollection.update_one(
+                {'_id': T1Hash['_id']},
+                {
+                    "$set": {
+                        'score': int(T1Hash['score']) + 1,
+                        'expiry': Deduplication.generate_expiry_time(expiry)
+                    }
+                }
+            )
+            return
+        else:
+            # T1 Not Found Protocol: We have a possibly unique object
+            pass
+
+    @staticmethod
+    def generate_hash_from_obj(obj):
+        """Takes an object and generates a SHA256 Hash of it
+
+        Args:
+            obj (object): Hashable object ot generate a SHA256
+
+        Returns:
+            str: Object Hash
+
+        """
+        return hashlib.sha256(str(obj)).hexdigest()
+
+    @staticmethod
+    def generate_expiry_time(hours):
+        """Generates UTC Timestamp for hours in the future
+
+        Args:
+            hours (int): How many hours in the future to expire on
+
+        Returns:
+            datetime: Datetime object for hours in the future
+
+        """
+        return datetime.datetime.utcnow() + datetime.timedelta(hours=int(hours))
+
+    @staticmethod
+    def generate_max_expiry_time(days):
+        """Generates UTC Timestamp for hours in the future
+
+        Args:
+            days (int): How many days in the future to expire on
+
+        Returns:
+            datetime: Datetime object for days in the future
+
+        """
+        return datetime.datetime.utcnow() + datetime.timedelta(days=int(days))
+
+    @staticmethod
+    def string_match_percentage(constant, new_value):
+        """Returns the percentage likelihood two strings are identical
+
+        Args:
+            constant (str): Value to use as base standard
+            new_value (str): Value to compare `constant` against
+
+        Returns:
+            float: Percentage likelihood of duplicate value
+
+        """
+        return difflib.SequenceMatcher(constant, new_value).ratio()

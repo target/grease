@@ -6,6 +6,8 @@ class BaseSourceClass(object):
 
     Attributes:
         _data (list[dict]): List of data to be returned to GREASE
+        deduplication_strength (float): Level of deduplication strength to use *higher is stronger uniqueness*
+        field_set (None or list): If none all fields found will be duplicated otherwise only fields listed will be
 
     """
 
@@ -13,6 +15,8 @@ class BaseSourceClass(object):
 
     def __init__(self):
         self._data = []
+        self.deduplication_strength = 85.0
+        self.field_set = None
 
     @abstractmethod
     def mock_data(self, configuration):

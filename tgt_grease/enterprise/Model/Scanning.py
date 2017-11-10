@@ -68,7 +68,13 @@ class Scan(object):
                 else:
                     if inst.parse_source(conf):
                         # deduplicate data
-                        data = self.dedup.Deduplicate(inst.get_data(), 'DeDup_Sourcing')
+                        data = self.dedup.Deduplicate(
+                            data=inst.get_data(),
+                            source=conf.get('source'),
+                            strength=inst.deduplication_strength,
+                            collection='Dedup_Sourcing',
+                            field_set=inst.field_set
+                        )
                     else:
                         self.ioc.getLogger().warning(
                             "Source [{0}] parsing failed".format(conf.get('source')),

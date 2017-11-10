@@ -15,7 +15,7 @@ class Deduplication(object):
         else:
             self.ioc = GreaseContainer()
 
-    def Deduplicate(self, data, collection):
+    def Deduplicate(self, data, source, strength, collection, field_set=None):
         """Deduplicate data
 
         This method will deduplicate the `data` object to allow for only unique objects to be returned. The collection
@@ -23,12 +23,16 @@ class Deduplication(object):
 
         Args:
             data (list[dict]): **list or single dimensional dictionaries** to deduplicate
+            source (str): Source of data being deduplicated
+            strength (float): Strength of deduplication (higher is more unique)
             collection (str): Deduplication collection to use
+            field_set (list, optional): Fields to deduplicate on
 
         Returns:
             list[dict]: Deduplicated data
 
         """
+        # ensure we got a list
         if not isinstance(data, list):
             self.ioc.getLogger().error(
                 "Data was not of type list for Deduplication got type [{0}]".format(str(type(data))),
@@ -36,4 +40,9 @@ class Deduplication(object):
                 verbose=True
             )
             return []
+        # ensure there is data to parse
+        if len(data) <= 0:
+            # empty list return empty lists
+            return []
+
         return data

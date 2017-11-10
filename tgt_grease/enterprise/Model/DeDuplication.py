@@ -31,6 +31,9 @@ class Deduplication(object):
             collection (str): Deduplication collection to use
             field_set (list, optional): Fields to deduplicate on
 
+        Note:
+            expiry_hours is specific to how many hours objects will be persisted for if they are not seen again
+
         Returns:
             list[dict]: Deduplicated data
 
@@ -75,11 +78,14 @@ class Deduplication(object):
                 continue
             # Resources are available lets start cooking down this list
             # Poll the active threads to ensure we are cleaning up
+            self.ioc.getLogger().trace("Thread Pool polling Starting", verbose=True)
             threads_final = []
             for thread in threads:
                 if thread.isAlive():
                     threads_final.append(thread)
             threads = threads_final
+            self.ioc.getLogger().trace("Thread polling complete", verbose=True)
+            self.ioc.getLogger().trace("Total current deduplication threads [{0}]".format(len(threads)), verbose=True)
             # ensure we do not breach the thread limit for the server
             if len(threads) >= int(self.ioc.getConfig().get('NodeInformation', 'DeduplicationThreads')):
                 self.ioc.getLogger().trace(
@@ -87,7 +93,6 @@ class Deduplication(object):
                     verbose=True
                 )
                 continue
-            self.ioc.getLogger().trace("Total current deduplication threads [{0}]".format(len(threads)), verbose=True)
             # Ensure each object is a dictionary
             if not isinstance(source[data_pointer], dict):
                 self.ioc.getLogger().warning(
@@ -101,18 +106,18 @@ class Deduplication(object):
                 continue
             # create thread for deduplication
             proc = threading.Thread(
-                target=self.process_obj,
+                target=self.deduplicate_object,
                 args=(
-                    collection,
-                    self.ioc.getLogger(),
-                    source,
-                    data_max,
-                    data_pointer,
-                    field_set,
+                    self.ioc,
                     data[data_pointer],
-                    final,
-                    strength,
                     expiry_hours,
+                    strength,
+                    source,
+                    final,
+                    collection,
+                    data_pointer,
+                    data_max,
+                    field_set,
                 ),
                 name="GREASE DEDUPLICATION THREAD [{0}/{1}]".format(data_pointer, data_max)
             )
@@ -120,6 +125,42 @@ class Deduplication(object):
             proc.start()
             threads.append(proc)
             data_pointer += 1
+            self.ioc.getLogger().trace("Total current deduplication threads [{0}]".format(len(threads)), verbose=True)
+        self.ioc.getLogger().info("All data objects have been threaded for processing", verbose=True)
+        # wait for threads to finish out
+        while len(threads) > 0:
+            self.ioc.getLogger().trace("Total current deduplication threads [{0}]".format(len(threads)), verbose=True)
+            threads_final = []
+            for thread in threads:
+                if thread.isAlive():
+                    threads_final.append(thread)
+            threads = threads_final
+            self.ioc.getLogger().trace("Total current deduplication threads [{0}]".format(len(threads)), verbose=True)
+        # ensure collections expiry timers are in place
         self.ioc.getCollection(collection).create_index([('expiry', 1), ('expireAfterSeconds', 1)])
         self.ioc.getCollection(collection).create_index([('max_expiry', 1), ('expireAfterSeconds', 1)])
         return final
+
+    @staticmethod
+    def deduplicate_object(ioc, obj, expiry, strength, source_name, final, collection, data_pointer=None, data_max=None, field_set=None):
+        """DeDuplicate Object
+
+        This is the method to actually deduplicate an object. The `final` argument is appended to with the obj if it
+        was successfully deduplicated.
+
+        Args:
+            ioc (GreaseContainer): IoC for the instance
+            obj (dict): Object to be deduplicated
+            expiry (int): Hours to deduplicate for
+            strength (float): Uniqueness Measurement
+            source_name (str): Source of data being deduplicated
+            final (list): List to append `obj` to if unique
+            collection (str): Name of deduplication collection
+            data_pointer (int): If provided will provide log information relating to thread (Typically used via `Deduplicate`
+            data_max (int): If provided will provide log information relating to thread (Typically used via `Deduplicate`
+            field_set (list): If provided will only deduplicate on list of fields provided
+
+        Returns:
+            None: Nothing returned. Updates `final` object
+
+        """

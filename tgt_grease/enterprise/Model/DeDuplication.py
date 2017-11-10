@@ -12,8 +12,8 @@ class Deduplication(object):
 
     Deduplication in GREASE is a multi-step process to ensure performance and accuracy of deduplication. The overview of
     this process is this:
-        - Step 1: Identify a Object Type 1 Hash Match. A Type 1 Object is a SHA256 hash of a dictionary in a data list. If we can hash the entire object and find a match then the object is 100% duplicate.
-        - Step 2: Object Type 2 Matching. If a Type 1 (T1) object cannot be found T2 deduplication occurs. This will introspect the dictionary for each field and map them against other likely objects of the same type. If a hash match is found (source + field + value as a SHA256) then the field is 100% duplicate. The aggregate score of all fields or the specified subset is above the provided threshold then the object is duplicate. This prevents similar objects from passing through when they are most likely updates to an original object that does not need to be computed on. If a field updates that you will need always then exclude it will need to be passed into the `Deduplicate` function.
+        - Step 1: Identify a Object Type 1 Hash Match. A Type 1 Object (T1) is a SHA256 hash of a dictionary in a data list. If we can hash the entire object and find a match then the object is 100% duplicate.
+        - Step 2: Object Type 2 Matching. If a Type 1 (T1) object cannot be found Type 2 Object (T2) deduplication occurs. This will introspect the dictionary for each field and map them against other likely objects of the same type. If a hash match is found (source + field + value as a SHA256) then the field is 100% duplicate. The aggregate score of all fields or the specified subset is above the provided threshold then the object is duplicate. This prevents similar objects from passing through when they are most likely updates to an original object that does not need to be computed on. If a field updates that you will need always then exclude it will need to be passed into the `Deduplicate` function.
 
     Object examples::
 
@@ -237,7 +237,7 @@ class Deduplication(object):
             }).inserted_id
             # Begin T2 Deduplication
             compositeScore = Deduplication.object_field_score(
-                DeDupCollection, ioc, source_name, obj, T1ObjectId, field_set
+                collection, ioc, source_name, obj, str(T1ObjectId), field_set
             )
             if compositeScore < threshold:
                 # unique obj
@@ -246,7 +246,7 @@ class Deduplication(object):
                     verbose=True
                 )
                 final.append(obj)
-                returnprep
+                return
             else:
                 # likely duplicate value
                 ioc.getLogger().trace(
@@ -258,7 +258,22 @@ class Deduplication(object):
 
     @staticmethod
     def object_field_score(collection, ioc, source_name, obj, ObjectId, field_set=None):
-        """Returns T2 average uniqueness"""
+        """Returns T2 average uniqueness
+
+        Takes a dictionary and returns the likelihood of that object being unique based on data in the collection
+
+        Args:
+            collection (str): Deduplication collection name
+            ioc (GreaseContainer): IoC Access
+            source_name (str): source of data to be deduplicated
+            obj (dict): Single dimensional list to be compared against collection
+            ObjectId (str): T1 Hash Mongo ObjectId to be used to associate fields to a T1
+            field_set (list, optional): List of fields to deduplicate with if provided. Else will use all keys
+
+        Returns:
+            float: Duplication Probability
+
+        """
         return 0.0
 
     @staticmethod

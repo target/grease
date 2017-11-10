@@ -72,6 +72,7 @@ class Scan(object):
                             data=inst.get_data(),
                             source=conf.get('source'),
                             strength=inst.deduplication_strength,
+                            expiry_hours=inst.deduplication_expiry,
                             collection='Dedup_Sourcing',
                             field_set=inst.field_set
                         )

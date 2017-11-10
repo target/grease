@@ -193,7 +193,8 @@ class Configuration(object):
                 ]
             },
             "NodeInformation": {
-                "ResourceMax": 95
+                "ResourceMax": 95,
+                "DeduplicationThreads": 150
             },
             "Additional": {}
         }

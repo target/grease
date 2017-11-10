@@ -1,5 +1,6 @@
 from tgt_grease.core import GreaseContainer
 from psutil import virtual_memory, cpu_percent
+from uuid import uuid1
 import threading
 import hashlib
 import datetime
@@ -12,7 +13,7 @@ class Deduplication(object):
     Deduplication in GREASE is a multi-step process to ensure performance and accuracy of deduplication. The overview of
     this process is this:
         - Step 1: Identify a Object Type 1 Hash Match. A Type 1 Object is a SHA256 hash of a dictionary in a data list. If we can hash the entire object and find a match then the object is 100% duplicate.
-        - Step 2: Object Type 2 Matching. If a Type 1 (T1) object cannot be found T2 deduplication occurs. This will introspect the dictionary for each field and map them against other likely objects of the same type. If a hash match is found (source + field + value as a SHA256) then the field is 100% duplicate. The aggregate score of all fields or the specified subset is above the provided strength then the object is duplicate. This prevents similar objects from passing through when they are most likely updates to an original object that does not need to be computed on. If a field updates that you will need always then exclude it will need to be passed into the `Deduplicate` function.
+        - Step 2: Object Type 2 Matching. If a Type 1 (T1) object cannot be found T2 deduplication occurs. This will introspect the dictionary for each field and map them against other likely objects of the same type. If a hash match is found (source + field + value as a SHA256) then the field is 100% duplicate. The aggregate score of all fields or the specified subset is above the provided threshold then the object is duplicate. This prevents similar objects from passing through when they are most likely updates to an original object that does not need to be computed on. If a field updates that you will need always then exclude it will need to be passed into the `Deduplicate` function.
 
     Object examples::
 
@@ -51,7 +52,7 @@ class Deduplication(object):
         else:
             self.ioc = GreaseContainer()
 
-    def Deduplicate(self, data, source, strength, expiry_hours, expiry_max, collection, field_set=None):
+    def Deduplicate(self, data, source, threshold, expiry_hours, expiry_max, collection, field_set=None):
         """Deduplicate data
 
         This method will deduplicate the `data` object to allow for only unique objects to be returned. The collection
@@ -60,7 +61,7 @@ class Deduplication(object):
         Args:
             data (list[dict]): **list or single dimensional dictionaries** to deduplicate
             source (str): Source of data being deduplicated
-            strength (float): Strength of deduplication (higher is more unique)
+            threshold (float): level of duplication allowed in an object (the lower the threshold the more uniqueness is required)
             expiry_hours (int): Hours to retain deduplication data
             expiry_max (int): Maximum days to retain deduplication data
             collection (str): Deduplication collection to use
@@ -147,7 +148,7 @@ class Deduplication(object):
                     data[data_pointer],
                     expiry_hours,
                     expiry_max,
-                    strength,
+                    threshold,
                     source,
                     final,
                     collection,
@@ -178,7 +179,7 @@ class Deduplication(object):
         return final
 
     @staticmethod
-    def deduplicate_object(ioc, obj, expiry, expiry_max, strength, source_name, final, collection, data_pointer=None, data_max=None, field_set=None):
+    def deduplicate_object(ioc, obj, expiry, expiry_max, threshold, source_name, final, collection, data_pointer=None, data_max=None, field_set=None):
         """DeDuplicate Object
 
         This is the method to actually deduplicate an object. The `final` argument is appended to with the obj if it
@@ -189,7 +190,7 @@ class Deduplication(object):
             obj (dict): Object to be deduplicated
             expiry (int): Hours to deduplicate for
             expiry_max (int): Maximum days to deduplicate for
-            strength (float): Uniqueness Measurement
+            threshold (float): level of duplication allowed in an object (the lower the threshold the more uniqueness is required)
             source_name (str): Source of data being deduplicated
             final (list): List to append `obj` to if unique
             collection (str): Name of deduplication collection
@@ -210,7 +211,7 @@ class Deduplication(object):
             # T1 Found Protocol: We have found a fully duplicate object
             # we have a duplicate source document
             # increase the counter and expiry and move on (DROP)
-            ioc.getLogger().debug("Type1 Match Found for Object", verbose=True)
+            ioc.getLogger().debug("Type1 Match found for object", verbose=True)
             # bump the expiry time and move on
             DeDupCollection.update_one(
                 {'_id': T1Hash['_id']},
@@ -224,7 +225,41 @@ class Deduplication(object):
             return
         else:
             # T1 Not Found Protocol: We have a possibly unique object
-            pass
+            ioc.getLogger().debug("Type1 Match not found; Beginning type 2 processing")
+            # Create a T1
+            T1ObjectId = DeDupCollection.insert_one({
+                'expiry': Deduplication.generate_expiry_time(int(expiry)),
+                'max_expiry': Deduplication.generate_max_expiry_time(int(expiry_max)),
+                'type': 1,
+                'score': 1,
+                'source': str(source_name),
+                'hash': Deduplication.generate_hash_from_obj(obj)
+            }).inserted_id
+            # Begin T2 Deduplication
+            compositeScore = Deduplication.object_field_score(
+                DeDupCollection, ioc, source_name, obj, T1ObjectId, field_set
+            )
+            if compositeScore < threshold:
+                # unique obj
+                ioc.getLogger().trace(
+                    "Unique object! Composite score was: [{0}] threashold: [{1}]".format(compositeScore, threshold),
+                    verbose=True
+                )
+                final.append(obj)
+                returnprep
+            else:
+                # likely duplicate value
+                ioc.getLogger().trace(
+                    "Object surpassed threshold, suspected to be duplicate! "
+                    "Composite score was: [{0}] threashold: [{1}]".format(compositeScore, threshold),
+                    verbose=True
+                )
+                return
+
+    @staticmethod
+    def object_field_score(collection, ioc, source_name, obj, ObjectId, field_set=None):
+        """Returns T2 average uniqueness"""
+        return 0.0
 
     @staticmethod
     def generate_hash_from_obj(obj):

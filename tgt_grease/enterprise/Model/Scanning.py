@@ -58,36 +58,39 @@ class Scan(object):
             inst = self.impTool.load(conf.get('source', str(uuid4())))
             if not isinstance(inst, BaseSourceClass):
                 self.ioc.getLogger().error("Invalid Source [{0}]".format(conf.get('source')), notify=False)
+                del inst
+                continue
             else:
                 # If mock mode enabled
                 if self.ioc.getConfig().get('Sourcing', 'mock'):
-                    if self.scheduler.ScheduleSource(inst.mock_data(config)):
-                        del inst
-                        continue
-                    else:
-                        self.ioc.getLogger().error(
-                            "Failed to schedule source [{0}] for detection".format(conf.get('source')),
-                            notify=False
-                        )
-                        del inst
-                        continue
+                    data = inst.mock_data(config)
                 # else actually do sourcing
                 else:
                     if inst.parse_source(conf):
-                        # send to scheduling after deduplication
-                        if self.scheduler.ScheduleSource(self.dedup.Deduplicate(inst.get_data(), 'DeDup_Sourcing')):
-                            del inst
-                            continue
-                        else:
-                            self.ioc.getLogger().error(
-                                "Failed to schedule source [{0}] for detection".format(conf.get('source')),
-                                notify=False
-                            )
-                            del inst
-                            continue
+                        # deduplicate data
+                        data = self.dedup.Deduplicate(inst.get_data(), 'DeDup_Sourcing')
                     else:
-                        self.ioc.getLogger().warning("Source [{0}] parsing failed".format(conf.get('source')), notify=False)
+                        self.ioc.getLogger().warning(
+                            "Source [{0}] parsing failed".format(conf.get('source')),
+                            notify=False
+                        )
+                        data = []
+                if len(data) > 0:
+                    if self.scheduler.ScheduleSource(data):
+                        self.ioc.getLogger().info(
+                            "Data scheduled for detection from source [{0}]".format(conf.get('source')),
+                            trace=True
+                        )
                         del inst
+                        continue
+                    else:
+                        self.ioc.getLogger().error("Scheduling failed for source document!", notify=False)
+                        del inst
+                        continue
+                else:
+                    self.ioc.getLogger().trace("Length of data was empty; was not scheduled", trace=True)
+                    del inst
+                    continue
         return True
 
     def generate_config_set(self, source=None, config=None):

@@ -29,5 +29,11 @@ class Deduplication(object):
             list[dict]: Deduplicated data
 
         """
-        # TODO: Deduplicate
+        if not isinstance(data, list):
+            self.ioc.getLogger().error(
+                "Data was not of type list for Deduplication got type [{0}]".format(str(type(data))),
+                notify=False,
+                verbose=True
+            )
+            return []
         return data

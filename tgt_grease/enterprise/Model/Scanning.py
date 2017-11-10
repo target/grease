@@ -41,6 +41,9 @@ class Scan(object):
             configuration is parsed. If both are provided then the configuration will *only* be parsed if it is of
             the source provided
 
+        Note:
+            **If mocking is enabled**: Deduplication *will not occur*
+
         Args:
             source (str): If set will only parse for the source listed
             config (str): If set will only parse the specified config
@@ -56,10 +59,9 @@ class Scan(object):
             if not isinstance(inst, BaseSourceClass):
                 self.ioc.getLogger().error("Invalid Source [{0}]".format(conf.get('source')), notify=False)
             else:
-                if inst.parse_source(conf):
-                    # send to scheduling after deduplication
-                    # TODO: Mocking
-                    if self.scheduler.ScheduleSource(self.dedup.Deduplicate(inst.get_data(), 'DeDup_Sourcing')):
+                # If mock mode enabled
+                if self.ioc.getConfig().get('Sourcing', 'mock'):
+                    if self.scheduler.ScheduleSource(inst.mock_data(config)):
                         del inst
                         continue
                     else:
@@ -69,9 +71,23 @@ class Scan(object):
                         )
                         del inst
                         continue
+                # else actually do sourcing
                 else:
-                    self.ioc.getLogger().warning("Source [{0}] parsing failed".format(conf.get('source')), notify=False)
-                    del inst
+                    if inst.parse_source(conf):
+                        # send to scheduling after deduplication
+                        if self.scheduler.ScheduleSource(self.dedup.Deduplicate(inst.get_data(), 'DeDup_Sourcing')):
+                            del inst
+                            continue
+                        else:
+                            self.ioc.getLogger().error(
+                                "Failed to schedule source [{0}] for detection".format(conf.get('source')),
+                                notify=False
+                            )
+                            del inst
+                            continue
+                    else:
+                        self.ioc.getLogger().warning("Source [{0}] parsing failed".format(conf.get('source')), notify=False)
+                        del inst
         return True
 
     def generate_config_set(self, source=None, config=None):

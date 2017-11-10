@@ -14,7 +14,22 @@ class BaseSourceClass(object):
     def __init__(self):
         self._data = []
 
-    # TODO: Mocking Method
+    @abstractmethod
+    def mock_data(self, configuration):
+        """Mock the source for data
+
+        Use this method to read through configuration provided to you, and mock getting data. This will *always* be
+        called by the scan engine. **Ensure you set any data to the `self._data` variable. A list of dictionaries for
+        the engine to schedule for detection**
+
+        Note:
+            This is the method to fill out to get data into GREASE.
+
+        Returns:
+            list[dict]: mock data from source
+
+        """
+        pass
 
     @abstractmethod
     def parse_source(self, configuration):

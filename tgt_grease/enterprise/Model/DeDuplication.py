@@ -120,6 +120,6 @@ class Deduplication(object):
             proc.start()
             threads.append(proc)
             data_pointer += 1
-            self.ioc.getCollection(collection).create_index([('expiry', 1), ('expireAfterSeconds', 1)])
-            self.ioc.getCollection(collection).create_index([('max_expiry', 1), ('expireAfterSeconds', 1)])
+        self.ioc.getCollection(collection).create_index([('expiry', 1), ('expireAfterSeconds', 1)])
+        self.ioc.getCollection(collection).create_index([('max_expiry', 1), ('expireAfterSeconds', 1)])
         return final

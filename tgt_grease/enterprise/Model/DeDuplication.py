@@ -313,17 +313,17 @@ class Deduplication(object):
                     fieldProbabilityList = []
                     for record in FieldColl.find({'source': source_name, 'field': field, 'type': 2})\
                             .sort('score', pymongo.ASCENDING).limit(100):
-                        if Deduplication.string_match_percentage(record['value'], T2Object['value']) > .95:
+                        if Deduplication.string_match_percentage(record['value'], str(T2Object['value'])) > .95:
                             # We've found a REALLY strong match
                             # Set this field's score to that of the match
                             field_scores.append(
-                                100 * Deduplication.string_match_percentage(record['value'], T2Object['value'])
+                                100 * Deduplication.string_match_percentage(record['value'], str(T2Object['value']))
                             )
                             # leave the for loop for this field since we found a highly probable match
                             break
                         else:
                             fieldProbabilityList.append(
-                                100 * Deduplication.string_match_percentage(record['value'], T2Object['value'])
+                                100 * Deduplication.string_match_percentage(record['value'], str(T2Object['value']))
                             )
                     if fieldProbabilityList:
                         # We have at least one result

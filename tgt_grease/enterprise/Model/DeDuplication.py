@@ -400,4 +400,4 @@ class Deduplication(object):
             float: Percentage likelihood of duplicate value
 
         """
-        return difflib.SequenceMatcher(lambda x: x == " ", constant, new_value).ratio()
+        return difflib.SequenceMatcher(lambda x: x == " ", constant, new_value).quick_ratio()

@@ -1,1 +1,1 @@
-from UrlParser import URLParser as url_source
+from .UrlParser import URLParser as url_source

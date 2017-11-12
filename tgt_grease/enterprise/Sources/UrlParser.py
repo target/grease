@@ -23,6 +23,8 @@ class URLParser(BaseSourceClass):
 
     Note:
         This configuration is an example
+    Note:
+        If a URL in the `url` parameter is not prefixed with `http://` then the class will do so for you
 
     """
 
@@ -41,20 +43,20 @@ class URLParser(BaseSourceClass):
             return False
         scanned = 0
         for URL in configuration.get('url', []):  # type: str
-            if not URL.startswith("http"):
+            if not URL.startswith("http://"):
                 URL = "http://" + URL
             try:
                 response = requests.get(URL)
                 self._data.append({
-                    'url': URL,
+                    'url': ''.join(response.url).encode('utf-8'),
                     'status_code': int(response.status_code),
                     'headers': str(response.headers),
-                    'body': str(response.text)
+                    'body': ''.join(response.text).encode('utf-8')
                 })
                 scanned += 1
             except requests.HTTPError:
                 continue
-        if scanned > (scannable / 2):
+        if scanned < (scannable / 2):
             return False
         else:
             return True

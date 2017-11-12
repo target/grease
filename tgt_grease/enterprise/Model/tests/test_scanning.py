@@ -284,6 +284,7 @@ class TestScan(TestCase):
         jServer.delete_one({'_id': ObjectId(jID1)})
         jServer.delete_one({'_id': ObjectId(jID2)})
         ioc.getCollection('SourceData').drop()
+        ioc.getCollection('Dedup_Sourcing').drop()
         ioc.getConfig().set('trace', False, 'Logging')
         ioc.getConfig().set('verbose', False, 'Logging')
         Configuration.ReloadConfig()

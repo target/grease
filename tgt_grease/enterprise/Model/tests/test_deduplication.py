@@ -28,41 +28,41 @@ class TestDeduplication(TestCase):
         obj = {'test': 'var', 'test1': 5, 'test2': 7.89}
         self.assertEqual(
             Deduplication.generate_hash_from_obj(obj),
-            hashlib.sha256(str(obj)).hexdigest()
+            hashlib.sha256(str(obj).encode('utf-8')).hexdigest()
         )
 
     def test_generate_hash_multi_str_type(self):
         obj = {'test': u'var', 'test1': 5, 'test2': 7.89, 'test3': 'ver'}
         self.assertEqual(
             Deduplication.generate_hash_from_obj(obj),
-            hashlib.sha256(str(obj)).hexdigest()
+            hashlib.sha256(str(obj).encode('utf-8')).hexdigest()
         )
 
     def test_generate_hash_other_type(self):
         obj = 7
         self.assertEqual(
             Deduplication.generate_hash_from_obj(obj),
-            hashlib.sha256(str(obj)).hexdigest()
+            hashlib.sha256(str(obj).encode('utf-8')).hexdigest()
         )
         obj = 'test'
         self.assertEqual(
             Deduplication.generate_hash_from_obj(obj),
-            hashlib.sha256(str(obj)).hexdigest()
+            hashlib.sha256(str(obj).encode('utf-8')).hexdigest()
         )
         obj = u'test'
         self.assertEqual(
             Deduplication.generate_hash_from_obj(obj),
-            hashlib.sha256(str(obj)).hexdigest()
+            hashlib.sha256(str(obj).encode('utf-8')).hexdigest()
         )
         obj = 7.8
         self.assertEqual(
             Deduplication.generate_hash_from_obj(obj),
-            hashlib.sha256(str(obj)).hexdigest()
+            hashlib.sha256(str(obj).encode('utf-8')).hexdigest()
         )
         obj = ['test', 'var', 8, 8.43]
         self.assertEqual(
             Deduplication.generate_hash_from_obj(obj),
-            hashlib.sha256(str(obj)).hexdigest()
+            hashlib.sha256(str(obj).encode('utf-8')).hexdigest()
         )
 
     def test_object_score_low_duplication(self):

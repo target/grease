@@ -130,15 +130,15 @@ class TestScheduling(TestCase):
         ]))
         time.sleep(1)
         self.assertEqual(ioc.getCollection('SourceData').find({
-            '_id': ObjectId(jID1)
+            'detectionServer': ObjectId(jID1)
         }).count(), 3)
         self.assertEqual(ioc.getCollection('SourceData').find({
-            '_id': ObjectId(jID2)
+            'detectionServer': ObjectId(jID2)
         }).count(), 3)
-        self.assertEqual(ioc.getCollection('JobServer').find({
+        self.assertEqual(ioc.getCollection('JobServer').find_one({
             '_id': ObjectId(jID1)
         })['jobs'], 3)
-        self.assertEqual(ioc.getCollection('JobServer').find({
+        self.assertEqual(ioc.getCollection('JobServer').find_one({
             '_id': ObjectId(jID2)
         })['jobs'], 3)
         jServer.delete_one({'_id': ObjectId(jID1)})

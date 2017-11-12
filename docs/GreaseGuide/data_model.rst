@@ -21,3 +21,29 @@ cluster. A typical record looks like this::
 
 This is the central registration of a node in GREASE. A node's registration on their
 filesystem is the MongoDB ID found in the database.
+
+The SourceData Collection
+===========================
+
+This collection is responsible for storing all source data. Data is transformed after sourcing traversing through
+detection & scheduling eventually making it to the JobQueue collection. This is the primary data model found in this
+collection is this:::
+
+    {
+        '_id': ObjectId, # <-- MongoDB ID
+        'source': String, # <-- Source data came from
+        'data': dict, # <-- Source data object
+        'createTime': DateTime, # <-- DateTime when object was entered into MongoDB **TTL occurs 12 hours after this time**
+        'detectionServer': ObjectId, # <-- MongoDB Object ID of server assigned to perform detection
+        'detectionStart': DateTime, # <-- DateTime when detection started
+        'detectionEnd': DateTime, # <-- DateTime when detection completed
+        'detectionCompleted': Boolean, # <-- True if the detection server is complete with detection on the object
+        'schedulingServer': ObjectId, # <-- MongoDB Object ID of server assigned to perform scheduling
+        'schedulingStart': DateTime, # <-- DateTime when scheduling started
+        'schedulingEnd': DateTime, # <-- DateTime when scheduling completed
+        'schedulingCompleted': Boolean, # <-- True if the scheduling server is complete with scheduling for the object
+        'schedulingExecutionServer': ObjectId # <-- MongoDB ID of execution server if execution should occur **Only exists for source objects that produce a job**
+    }
+
+Data is collected from a source and distributed to each individual dictionary in the collection. Nodes will pick up
+each piece of data and process it based on their assignment.

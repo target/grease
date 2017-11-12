@@ -273,7 +273,7 @@ class Deduplication(object):
             ioc (GreaseContainer): IoC Access
             source_name (str): source of data to be deduplicated
             obj (dict): Single dimensional list to be compared against collection
-            ObjectId (str): T1 Hash Mongo ObjectId to be used to associate fields to a T1
+            objectId (str): T1 Hash Mongo ObjectId to be used to associate fields to a T1
             expiry (int): Hours for deduplication to wait before removing a field if not seen again
             max_expiry (int): Days for deduplication to wait before ensuring object is deleted
             field_set (list, optional): List of fields to deduplicate with if provided. Else will use all keys

@@ -18,6 +18,8 @@ class URLParser(BaseSourceClass):
             'exe_env': 'general', # <-- Selected execution environment; Can be anything!
             'source': 'url_source', # <-- This source
             'url': ['google.com', 'http://bing.com', '8.8.8.8'], # <-- List of URL's to parse
+            'hour': 16, # <-- **OPTIONAL** 24hr time hour to poll URL
+            'minute': 30, # <-- **OPTIONAL** Minute to poll URL
             'logic': {} # <-- Whatever logic your heart desires
         }
 
@@ -25,6 +27,8 @@ class URLParser(BaseSourceClass):
         This configuration is an example
     Note:
         If a URL in the `url` parameter is not prefixed with `http://` then the class will do so for you
+    Note:
+        without `minute` parameter the engine will poll for the entire hour
 
     """
 

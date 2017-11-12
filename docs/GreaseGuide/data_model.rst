@@ -32,6 +32,7 @@ collection is this:::
     {
         '_id': ObjectId, # <-- MongoDB ID
         'source': String, # <-- Source data came from
+        'configuration': String, # <-- Configuration data was sourced for
         'data': dict, # <-- Source data object
         'createTime': DateTime, # <-- DateTime when object was entered into MongoDB **TTL occurs 12 hours after this time**
         'expiry': DateTime, # <-- DateTime when object will expire

@@ -84,7 +84,7 @@ class Scan(object):
                         )
                         data = []
                 if len(data) > 0:
-                    if self.scheduler.scheduleDetection(conf.get('source'), data):
+                    if self.scheduler.scheduleDetection(conf.get('source'), conf.get('name'), data):
                         self.ioc.getLogger().info(
                             "Data scheduled for detection from source [{0}]".format(conf.get('source')),
                             trace=True

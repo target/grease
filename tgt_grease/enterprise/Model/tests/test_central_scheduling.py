@@ -22,7 +22,7 @@ class TestScheduling(TestCase):
                 'activationTime': datetime.utcnow()
         }).inserted_id
         time.sleep(1.5)
-        self.assertFalse(sch.scheduleDetection('test', []))
+        self.assertFalse(sch.scheduleDetection('test', 'test_conf', []))
         jServer.delete_one({'_id': ObjectId(jID)})
         ioc.getCollection('SourceData').drop()
 
@@ -48,7 +48,7 @@ class TestScheduling(TestCase):
                 'activationTime': datetime.utcnow()
         }).inserted_id
         time.sleep(1)
-        self.assertTrue(sch.scheduleDetection('test', [
+        self.assertTrue(sch.scheduleDetection('test', 'test_conf', [
             {
                 'test0': 'var0',
                 'test1': 'var1',

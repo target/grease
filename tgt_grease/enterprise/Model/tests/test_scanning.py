@@ -1,8 +1,292 @@
 from unittest import TestCase
-from tgt_grease.enterprise.Model import Scan, PrototypeConfig
+from tgt_grease.core import GreaseContainer, Configuration
+from tgt_grease.enterprise.Model import Scan, PrototypeConfig, BaseSourceClass
+from datetime import datetime
+from bson.objectid import ObjectId
+import json
+import platform
+import time
+import uuid
+
+
+class TestSource(BaseSourceClass):
+    def parse_source(self, configuration):
+        self._data = [
+            {
+                'field': 'var',
+                'field1': 'var1',
+                'field2': 'var2',
+                'field3': 'var3',
+                'field4': 'var4',
+                'field5': 'var5',
+            },
+            {
+                'field': 'var',
+                'field1': 'var1',
+                'field2': 'var2',
+                'field3': 'var3',
+                'field4': 'var4',
+                'field5': 'var5',
+            },
+            {
+                'field': 'var',
+                'field1': 'var1',
+                'field2': 'var2',
+                'field3': 'var3',
+                'field4': 'var4',
+                'field5': 'var5',
+            },
+            {
+                'field': 'var',
+                'field1': 'var1',
+                'field2': 'var2',
+                'field3': 'var3',
+                'field4': 'var4',
+                'field5': 'var5',
+            },
+            {
+                'field': str(uuid.uuid4()),
+                'field1': str(uuid.uuid4()),
+                'field2': str(uuid.uuid4()),
+                'field3': str(uuid.uuid4()),
+                'field4': str(uuid.uuid4()),
+                'field5': str(uuid.uuid4())
+            },
+            {
+                'field': 'var',
+                'field1': 'var1',
+                'field2': 'var2',
+                'field3': 'var3',
+                'field4': 'var4',
+                'field5': 'var5',
+            },
+            {
+                'field': 'var',
+                'field1': 'var1',
+                'field2': 'var2',
+                'field3': 'var3',
+                'field4': 'var4',
+                'field5': 'var5',
+            },
+            {
+                'field': 'var',
+                'field1': 'var1',
+                'field2': 'var2',
+                'field3': 'var3',
+                'field4': 'var4',
+                'field5': 'var5',
+            },
+            {
+                'field': str(uuid.uuid4()),
+                'field1': str(uuid.uuid4()),
+                'field2': str(uuid.uuid4()),
+                'field3': str(uuid.uuid4()),
+                'field4': str(uuid.uuid4()),
+                'field5': str(uuid.uuid4())
+            },
+            {
+                'field': str(uuid.uuid4()),
+                'field1': str(uuid.uuid4()),
+                'field2': str(uuid.uuid4()),
+                'field3': str(uuid.uuid4()),
+                'field4': str(uuid.uuid4()),
+                'field5': str(uuid.uuid4())
+            },
+            {
+                'field': str(uuid.uuid4()),
+                'field1': str(uuid.uuid4()),
+                'field2': str(uuid.uuid4()),
+                'field3': str(uuid.uuid4()),
+                'field4': str(uuid.uuid4()),
+                'field5': str(uuid.uuid4())
+            }
+        ]
+        return True
+
+    def mock_data(self, configuration):
+        self._data = [
+            {
+                'field': 'var',
+                'field1': 'var1',
+                'field2': 'var2',
+                'field3': 'var3',
+                'field4': 'var4',
+                'field5': 'var5',
+            },
+            {
+                'field': 'var',
+                'field1': 'var1',
+                'field2': 'var2',
+                'field3': 'var3',
+                'field4': 'var4',
+                'field5': 'var5',
+            },
+            {
+                'field': 'var',
+                'field1': 'var1',
+                'field2': 'var2',
+                'field3': 'var3',
+                'field4': 'var4',
+                'field5': 'var5',
+            },
+            {
+                'field': 'var',
+                'field1': 'var1',
+                'field2': 'var2',
+                'field3': 'var3',
+                'field4': 'var4',
+                'field5': 'var5',
+            },
+            {
+                'field': str(uuid.uuid4()),
+                'field1': str(uuid.uuid4()),
+                'field2': str(uuid.uuid4()),
+                'field3': str(uuid.uuid4()),
+                'field4': str(uuid.uuid4()),
+                'field5': str(uuid.uuid4())
+            },
+            {
+                'field': 'var',
+                'field1': 'var1',
+                'field2': 'var2',
+                'field3': 'var3',
+                'field4': 'var4',
+                'field5': 'var5',
+            },
+            {
+                'field': 'var',
+                'field1': 'var1',
+                'field2': 'var2',
+                'field3': 'var3',
+                'field4': 'var4',
+                'field5': 'var5',
+            },
+            {
+                'field': 'var',
+                'field1': 'var1',
+                'field2': 'var2',
+                'field3': 'var3',
+                'field4': 'var4',
+                'field5': 'var5',
+            },
+            {
+                'field': str(uuid.uuid4()),
+                'field1': str(uuid.uuid4()),
+                'field2': str(uuid.uuid4()),
+                'field3': str(uuid.uuid4()),
+                'field4': str(uuid.uuid4()),
+                'field5': str(uuid.uuid4())
+            },
+            {
+                'field': str(uuid.uuid4()),
+                'field1': str(uuid.uuid4()),
+                'field2': str(uuid.uuid4()),
+                'field3': str(uuid.uuid4()),
+                'field4': str(uuid.uuid4()),
+                'field5': str(uuid.uuid4())
+            },
+            {
+                'field': str(uuid.uuid4()),
+                'field1': str(uuid.uuid4()),
+                'field2': str(uuid.uuid4()),
+                'field3': str(uuid.uuid4()),
+                'field4': str(uuid.uuid4()),
+                'field5': str(uuid.uuid4())
+            }
+        ]
 
 
 class TestScan(TestCase):
+
+    def test_scan(self):
+        # setup
+        configList = [
+            {
+                "name": "test1",
+                "job": "fakeJob",
+                "exe_env": "windows",
+                "source": "TestSource",
+                "logic": {
+                    "regex": [
+                        {
+                            "field": "character",
+                            "pattern": ".*skywalker.*"
+                        }
+                    ]
+                }
+            }
+        ]
+        ioc = GreaseContainer()
+        ioc.getConfig().set('trace', True, 'Logging')
+        ioc.getConfig().set('verbose', True, 'Logging')
+        fil = open(ioc.getConfig().greaseConfigFile, 'r')
+        data = json.loads(fil.read())
+        fil.close()
+        fil = open(ioc.getConfig().greaseConfigFile, 'w')
+        data['Import']['searchPath'].append('tgt_grease.enterprise.Model.tests')
+        fil.write(json.dumps(data, sort_keys=True, indent=4))
+        fil.close()
+        Configuration.ReloadConfig()
+        jServer = ioc.getCollection('JobServer')
+        jID1 = jServer.insert_one({
+                'jobs': 0,
+                'os': platform.system().lower(),
+                'roles': ["general"],
+                'prototypes': ["detect"],
+                'active': True,
+                'activationTime': datetime.utcnow()
+        }).inserted_id
+        time.sleep(1)
+        jID2 = jServer.insert_one({
+                'jobs': 0,
+                'os': platform.system().lower(),
+                'roles': ["general"],
+                'prototypes': ["detect"],
+                'active': True,
+                'activationTime': datetime.utcnow()
+        }).inserted_id
+
+        # Begin Test
+        conf = PrototypeConfig(ioc)
+        conf.load(reloadConf=True, ConfigurationList=configList)
+        scanner = Scan(ioc)
+        # Scan Environment
+        self.assertTrue(scanner.Parse())
+        # Begin ensuring environment is how we expect
+        # we assert less or equal because sometimes uuid's are close :p
+        self.assertLessEqual(ioc.getCollection('SourceData').find({
+            'detectionServer': ObjectId(jID1)
+        }).count(), 3)
+        self.assertLessEqual(ioc.getCollection('SourceData').find({
+            'detectionServer': ObjectId(jID2)
+        }).count(), 3)
+        self.assertLessEqual(ioc.getCollection('JobServer').find_one({
+            '_id': ObjectId(jID1)
+        })['jobs'], 3)
+        self.assertLessEqual(ioc.getCollection('JobServer').find_one({
+            '_id': ObjectId(jID2)
+        })['jobs'], 3)
+
+        # clean up
+        fil = open(ioc.getConfig().greaseConfigFile, 'r')
+        data = json.loads(fil.read())
+        fil.close()
+        # remove collection
+        ioc.getCollection('TestProtoType').drop()
+        # remove prototypes
+        data['NodeInformation']['ProtoTypes'] = []
+        # pop search path
+        trash = data['Import']['searchPath'].pop()
+        # close out
+        fil = open(ioc.getConfig().greaseConfigFile, 'w')
+        fil.write(json.dumps(data, sort_keys=True, indent=4))
+        fil.close()
+        jServer.delete_one({'_id': ObjectId(jID1)})
+        jServer.delete_one({'_id': ObjectId(jID2)})
+        ioc.getCollection('SourceData').drop()
+        ioc.getConfig().set('trace', False, 'Logging')
+        ioc.getConfig().set('verbose', False, 'Logging')
+        Configuration.ReloadConfig()
 
     def test_config_load_empty(self):
         scan = Scan()

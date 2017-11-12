@@ -21,13 +21,14 @@ class Scheduling(object):
         else:
             self.ioc = GreaseContainer()
 
-    def scheduleDetection(self, source, data):
+    def scheduleDetection(self, source, configName, data):
         """Schedule a Source Parse to detection
 
         This method will take a list of single dimension dictionaries and schedule them for detection
 
         Args:
             source (str): Name of the source
+            configName (str): Configuration Data was sourced from
             data (list[dict]): Data to be scheduled for detection
 
         Returns:
@@ -55,6 +56,7 @@ class Scheduling(object):
             if server:
                 sourceCollect.insert_one({
                     'source': str(source).encode('utf-8'),
+                    'configuration': str(configName).encode('utf-8'),
                     'data': elem,
                     'createTime': datetime.datetime.utcnow(),
                     'expiry': Deduplication.generate_max_expiry_time(1),

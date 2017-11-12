@@ -34,6 +34,7 @@ collection is this:::
         'source': String, # <-- Source data came from
         'data': dict, # <-- Source data object
         'createTime': DateTime, # <-- DateTime when object was entered into MongoDB **TTL occurs 12 hours after this time**
+        'expiry': DateTime, # <-- DateTime when object will expire
         'detectionServer': ObjectId, # <-- MongoDB Object ID of server assigned to perform detection
         'detectionStart': DateTime, # <-- DateTime when detection started
         'detectionEnd': DateTime, # <-- DateTime when detection completed

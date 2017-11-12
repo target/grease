@@ -189,6 +189,7 @@ class Configuration(object):
                     'tgt_grease.core',
                     'tgt_grease.router.Commands',
                     'tgt_grease.enterprise.Prototype',
+                    'tgt_grease.enterprise.Sources',
                     'tgt_grease'
                 ]
             },

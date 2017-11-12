@@ -8,6 +8,7 @@ below for more information on how to get started.
    :caption: Contents:
 
    GreaseGuide/Installation
+   GreaseGuide/data_model
 
 
 

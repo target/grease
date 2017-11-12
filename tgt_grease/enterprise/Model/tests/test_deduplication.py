@@ -470,7 +470,7 @@ class TestDeduplication(TestCase):
             1,
             'test_source'
         )
-        self.assertEqual(len(finalObj), 5)
+        self.assertGreaterEqual(len(finalObj), 5)
         ioc.getConfig().set('verbose', False, 'Logging')
         ioc.getCollection('test_source').drop()
         time.sleep(1.5)

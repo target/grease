@@ -6,6 +6,7 @@ import platform
 from bson.objectid import ObjectId
 import threading
 from psutil import cpu_percent, virtual_memory
+import os
 
 
 class DaemonProcess(object):
@@ -315,6 +316,19 @@ class DaemonProcess(object):
         """
         # TODO: Make a cluster management command to utilize this in more places
         collection = self.ioc.getCollection("JobServer")
+        if os.path.isfile(self.ioc.getConfig().greaseDir + 'grease.identity'):
+            # check to see if identity file is valid
+            fil = open(self.ioc.getConfig().greaseDir + 'grease.identity', 'r')
+            nodeId = str(fil.read()).encode('utf-8')
+            fil.close()
+            server = collection.find_one({'_id': ObjectId(nodeId)})
+            if server:
+                # Valid registration
+                self.registered = True
+                self.ioc.getConfig().NodeIdentity = nodeId
+                return True
+            else:
+                self.ioc.getLogger().warning("Invalid node identity found to exist!")
         if self.ioc.getConfig().NodeIdentity == "Unknown":
             # Actual registration
             uid = collection.insert_one({

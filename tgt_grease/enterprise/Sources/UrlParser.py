@@ -4,6 +4,7 @@ import json
 import fnmatch
 import os
 import requests
+import time
 
 
 class URLParser(BaseSourceClass):
@@ -18,8 +19,8 @@ class URLParser(BaseSourceClass):
             'exe_env': 'general', # <-- Selected execution environment; Can be anything!
             'source': 'url_source', # <-- This source
             'url': ['google.com', 'http://bing.com', '8.8.8.8'], # <-- List of URL's to parse
-            'hour': 16, # <-- **OPTIONAL** 24hr time hour to poll URL
-            'minute': 30, # <-- **OPTIONAL** Minute to poll URL
+            'hour': 16, # <-- **OPTIONAL** 24hr time hour to poll URLs
+            'minute': 30, # <-- **OPTIONAL** Minute to poll URLs
             'logic': {} # <-- Whatever logic your heart desires
         }
 
@@ -46,6 +47,14 @@ class URLParser(BaseSourceClass):
         if scannable is 0:
             return False
         scanned = 0
+        if configuration.get('hour'):
+            if time.gmtime().tm_hour != int(configuration.get('hour')):
+                # it is not the correct hour
+                return True
+        if configuration.get('minute'):
+            if time.gmtime().tm_hour != int(configuration.get('minute')):
+                # it is not the correct hour
+                return True
         for URL in configuration.get('url', []):  # type: str
             if not URL.startswith("http://"):
                 URL = "http://" + URL

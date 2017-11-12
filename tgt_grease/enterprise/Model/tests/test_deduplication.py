@@ -450,12 +450,12 @@ class TestDeduplication(TestCase):
         finalObj = dedup.Deduplicate(
             obj,
             'test_source',
-            40.0,
+            85.0,
             1,
             1,
             'test_source'
         )
-        self.assertEqual(len(finalObj), 3)
+        self.assertEqual(len(finalObj), 5)
         ioc.getConfig().set('verbose', False, 'Logging')
         ioc.getCollection('test_source').drop()
         time.sleep(1.5)

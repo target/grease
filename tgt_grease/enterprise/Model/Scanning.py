@@ -71,7 +71,7 @@ class Scan(object):
                         data = self.dedup.Deduplicate(
                             data=inst.get_data(),
                             source=conf.get('source'),
-                            strength=inst.deduplication_strength,
+                            threshold=inst.deduplication_strength,
                             expiry_hours=inst.deduplication_expiry,
                             expiry_max=inst.deduplication_expiry_max,
                             collection='Dedup_Sourcing',

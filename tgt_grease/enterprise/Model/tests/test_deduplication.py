@@ -115,8 +115,12 @@ class TestDeduplication(TestCase):
             1,
             1
         )
+        print("++++++++++++++++++++++++++++++++++")
+        print("score1: {0}".format(score1))
+        print("score2: {0}".format(score2))
+        print("++++++++++++++++++++++++++++++++++")
         self.assertTrue(score1 == 0.0)
-        self.assertTrue(score2 < 20.0)
+        self.assertTrue(score2 <= 20.0)
         ioc.getCollection('test_scoring').drop()
         time.sleep(1.5)
 
@@ -170,8 +174,12 @@ class TestDeduplication(TestCase):
             1,
             1
         )
+        print("++++++++++++++++++++++++++++++++++")
+        print("score1: {0}".format(score1))
+        print("score2: {0}".format(score2))
+        print("++++++++++++++++++++++++++++++++++")
         self.assertTrue(score1 == 0.0)
-        self.assertTrue(score2 < 50.0)
+        self.assertTrue(score2 <= 50.0)
         ioc.getCollection('test_scoring').drop()
         time.sleep(1.5)
 
@@ -225,8 +233,12 @@ class TestDeduplication(TestCase):
             1,
             1
         )
+        print("++++++++++++++++++++++++++++++++++")
+        print("score1: {0}".format(score1))
+        print("score2: {0}".format(score2))
+        print("++++++++++++++++++++++++++++++++++")
         self.assertTrue(score1 == 0.0)
-        self.assertTrue(score2 > 80.0)
+        self.assertTrue(score2 >= 80.0)
         ioc.getCollection('test_scoring').drop()
         time.sleep(1.5)
 
@@ -280,8 +292,11 @@ class TestDeduplication(TestCase):
             1,
             1
         )
+        print("++++++++++++++++++++++++++++++++++")
+        print("score1: {0}".format(score1))
+        print("score2: {0}".format(score2))
+        print("++++++++++++++++++++++++++++++++++")
         self.assertTrue(score1 == 0.0)
-        print(score2)
         self.assertTrue(score2 == 100.0)
         ioc.getCollection('test_scoring').drop()
         time.sleep(1.5)

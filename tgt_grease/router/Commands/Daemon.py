@@ -319,7 +319,7 @@ class DaemonProcess(object):
         if os.path.isfile(self.ioc.getConfig().greaseDir + 'grease.identity'):
             # check to see if identity file is valid
             fil = open(self.ioc.getConfig().greaseDir + 'grease.identity', 'r')
-            nodeId = str(str(fil.read()).encode('utf-8'))
+            nodeId = "".join(fil.read())
             fil.close()
             server = collection.find_one({'_id': ObjectId(nodeId)})
             if server:

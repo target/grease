@@ -63,7 +63,7 @@ class Scan(object):
             else:
                 # If mock mode enabled
                 if self.ioc.getConfig().get('Sourcing', 'mock'):
-                    data = inst.mock_data(config)
+                    data = inst.mock_data(conf)
                 # else actually do sourcing
                 else:
                     if inst.parse_source(conf):

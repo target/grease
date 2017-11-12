@@ -30,6 +30,9 @@ class BaseSourceClass(object):
         called by the scan engine. **Ensure you set any data to the `self._data` variable. A list of dictionaries for
         the engine to schedule for detection**
 
+        Args:
+            configuration (dict): Configuration for the sourcing to occur with
+
         Note:
             This is the method to fill out to get data into GREASE.
 
@@ -46,6 +49,9 @@ class BaseSourceClass(object):
         Use this method to read through configuration provided to you, and get data. This will *always* be called
         by the scan engine. **Ensure you set any data to the `self._data` variable. A list of dictionaries for the
         engine to schedule for detection**
+
+        Args:
+            configuration (dict): Configuration for the sourcing to occur with
 
         Note:
             This is the method to fill out to get data into GREASE.

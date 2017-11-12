@@ -364,7 +364,7 @@ class Deduplication(object):
             str: Object Hash
 
         """
-        return hashlib.sha256(str(obj)).hexdigest()
+        return hashlib.sha256(str(obj).encode('utf-8')).hexdigest()
 
     @staticmethod
     def generate_expiry_time(hours):

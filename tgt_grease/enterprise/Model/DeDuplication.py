@@ -48,7 +48,7 @@ class Deduplication(object):
 
     """
 
-    def __init__(self, ioc):
+    def __init__(self, ioc=None):
         if isinstance(ioc, GreaseContainer):
             self.ioc = ioc
         else:
@@ -97,6 +97,10 @@ class Deduplication(object):
         data_pointer = 0
         # Max Length
         data_max = len(data)
+        if data_max is 0:
+            # we have no data to process
+            self.ioc.getLogger().trace("Length of data is zero", verbose=True)
+            return []
         # Thread pool
         threads = []
         # Final result
@@ -132,7 +136,7 @@ class Deduplication(object):
                 )
                 continue
             # Ensure each object is a dictionary
-            if not isinstance(source[data_pointer], dict):
+            if not isinstance(data[data_pointer], dict):
                 self.ioc.getLogger().warning(
                     'DeDuplication Received NON-DICT from source: [{0}] Type: [{1}] got: [{2}]'.format(
                         source,
@@ -339,7 +343,7 @@ class Deduplication(object):
                     T2Object['expiry'] = Deduplication.generate_expiry_time(expiry)
                     T2Object['max_expiry'] = Deduplication.generate_max_expiry_time(max_expiry)
                     T2Object['type'] = 2
-                    T2Object['parentId'] = ObjectId(ObjectId)
+                    T2Object['parentId'] = ObjectId(objectId)
                     FieldColl.insert_one(T2Object)
             else:
                 ioc.getLogger().warning("field [{0}] not found in object".format(field), trace=True, notify=False)

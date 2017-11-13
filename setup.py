@@ -36,7 +36,8 @@ setup(
     install_requires=[
         'requests',
         'pymongo',
-        'psutil'
+        'psutil',
+        'elasticsearch'
     ] + (
          ["pypiwin32"] if "nt" == os.name else []
         ),

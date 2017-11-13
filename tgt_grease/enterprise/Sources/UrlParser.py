@@ -4,7 +4,7 @@ import json
 import fnmatch
 import os
 import requests
-import time
+import datetime
 
 
 class URLParser(BaseSourceClass):
@@ -30,6 +30,10 @@ class URLParser(BaseSourceClass):
         If a URL in the `url` parameter is not prefixed with `http://` then the class will do so for you
     Note:
         without `minute` parameter the engine will poll for the entire hour
+    Note:
+        **Hour and minute parameters are in UTC time**
+    Note:
+        To only poll once an hour only set the **minute** field
 
     """
 
@@ -48,11 +52,11 @@ class URLParser(BaseSourceClass):
             return False
         scanned = 0
         if configuration.get('hour'):
-            if time.gmtime().tm_hour != int(configuration.get('hour')):
+            if datetime.datetime.utcnow().hour != int(configuration.get('hour')):
                 # it is not the correct hour
                 return True
         if configuration.get('minute'):
-            if time.gmtime().tm_hour != int(configuration.get('minute')):
+            if datetime.datetime.utcnow().minute != int(configuration.get('minute')):
                 # it is not the correct hour
                 return True
         for URL in configuration.get('url', []):  # type: str

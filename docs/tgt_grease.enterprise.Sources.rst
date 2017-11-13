@@ -8,3 +8,11 @@ URL Parsing Source
     :members:
     :undoc-members:
     :show-inheritance:
+
+ElasticSearch Source
+--------------------------------------------
+
+.. autoclass:: tgt_grease.enterprise.Sources.ElasticSearch.ElasticSource
+    :members:
+    :undoc-members:
+    :show-inheritance:

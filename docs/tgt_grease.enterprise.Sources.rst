@@ -16,3 +16,11 @@ ElasticSearch Source
     :members:
     :undoc-members:
     :show-inheritance:
+
+SQL Source
+--------------------------------------------
+
+.. autoclass:: tgt_grease.enterprise.Sources.SQLSearch.SQLSource
+    :members:
+    :undoc-members:
+    :show-inheritance:

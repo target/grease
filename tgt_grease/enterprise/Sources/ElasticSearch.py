@@ -3,6 +3,7 @@ from tgt_grease.core import Configuration
 import elasticsearch
 import os
 import fnmatch
+import datetime
 import json
 
 
@@ -21,8 +22,17 @@ class ElasticSource(BaseSourceClass):
             'index': 'my_fake_index', # <-- Index to query within ES
             'doc_type': 'myData' # <-- Document type to query for in ES
             'query': {}, # <-- Dict of ElasticSearch Query
+            'hour': 16, # <-- **OPTIONAL** 24hr time hour to poll SQL
+            'minute': 30, # <-- **OPTIONAL** Minute to poll SQL
             'logic': {} # <-- Whatever logic your heart desires
         }
+
+    Note:
+        without `minute` parameter the engine will poll for the entire hour
+    Note:
+        **Hour and minute parameters are in UTC time**
+    Note:
+        To only poll once an hour only set the **minute** field
 
     """
 
@@ -36,6 +46,14 @@ class ElasticSource(BaseSourceClass):
             bool: If True data will be scheduled for ingestion after deduplication. If False the engine will bail out
 
         """
+        if configuration.get('hour'):
+            if datetime.datetime.utcnow().hour != int(configuration.get('hour')):
+                # it is not the correct hour
+                return True
+        if configuration.get('minute'):
+            if datetime.datetime.utcnow().minute != int(configuration.get('minute')):
+                # it is not the correct hour
+                return True
         if configuration.get('server') \
                 and configuration.get('query') \
                 and configuration.get('index') \

@@ -40,3 +40,11 @@ The Scanning Processor
     :members:
     :undoc-members:
     :show-inheritance:
+
+The Detection Processor
+-----------------------------------------------
+
+.. autoclass:: tgt_grease.enterprise.Model.Detection
+    :members:
+    :undoc-members:
+    :show-inheritance:

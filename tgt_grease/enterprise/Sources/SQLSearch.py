@@ -1,5 +1,5 @@
 from tgt_grease.enterprise.Model import BaseSourceClass
-from tgt_grease.core import Configuration
+from tgt_grease.core import Configuration, GreaseContainer
 import psycopg2
 import datetime
 import fnmatch
@@ -18,7 +18,7 @@ class SQLSource(BaseSourceClass):
             'job': 'example_job', # <-- Any job you want to run
             'exe_env': 'general', # <-- Selected execution environment; Can be anything!
             'source': 'sql_source', # <-- This source
-            'type': 'postgresql' # <-- SQL Server Type (Only supports PostgreSQL Currently)
+            'type': 'postgresql', # <-- SQL Server Type (Only supports PostgreSQL Currently)
             'dsn': 'SQL_SERVER_CONNECTION', # <-- String representing the Environment variable used to connect with
             'query': 'select count(*) as order_total from orders where oDate::DATE = current_data', # <-- SQL Query to execute on server
             'hour': 16, # <-- **OPTIONAL** 24hr time hour to poll SQL
@@ -60,6 +60,7 @@ class SQLSource(BaseSourceClass):
         if configuration.get('type') != 'postgresql':
             return False
         else:
+            ioc = GreaseContainer()
             # Attempt to get the DSN for the connection
             if os.environ.get(configuration.get('dsn')) and configuration.get('query'):
                 # ensure the DSN is setup and the query is present
@@ -72,11 +73,16 @@ class SQLSource(BaseSourceClass):
                             data = cursor.fetchAll()
                             for row in data:
                                 self._data.append(zip(columns, row))
-                except:
+                            del ioc
+                except Exception as e:
                     # Naked except to prevent issues around connections
+                    ioc.getLogger().error("Error processing configuration; Error [{0}]".format(e.message), notify=False)
+                    del ioc
                     return False
             else:
                 # could not get the DSN
+                ioc.getLogger().error("Failed to locate the DSN variable", notify=False)
+                del ioc
                 return False
 
     def mock_data(self, configuration):

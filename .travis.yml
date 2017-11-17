@@ -37,6 +37,7 @@ matrix:
 
 services:
   - mongodb
+  - postgresql
 
 before_script:
   - pip install pymongo requests

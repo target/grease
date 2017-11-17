@@ -44,7 +44,9 @@ before_script:
   - sudo mkdir /opt/grease/
   - sudo chmod 777 /opt/grease/
   - if [ $TRAVIS_OS_NAME = linux ]; then true; else brew install mongo; fi
+  - if [ $TRAVIS_OS_NAME = linux ]; then true; else brew install postgres; fi
   - if [ $TRAVIS_OS_NAME = linux ]; then true; else brew services start mongodb; fi
+  - if [ $TRAVIS_OS_NAME = linux ]; then true; else brew services start postgresql; fi
 
 install:
   - python setup.py install

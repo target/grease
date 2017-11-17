@@ -84,13 +84,20 @@ class SQLSource(BaseSourceClass):
 
         Mock data for this source can be place in `<GREASE_DIR>/etc/*.mock.sql.json`. This source will pick up all these
         files and load them into the returning object. The data in these files should reflect what you expect to return
-        from SQL
+        from SQL::
+
+            {
+                'column expected': 'value expected'
+                ...
+            }
 
         Args:
             configuration (dict): Configuration Data for source
 
         Note:
             Argument **configuration** is not honored here
+        Note:
+            A mock file should represent a single row
 
         Returns:
             list[dict]: Mocked Data

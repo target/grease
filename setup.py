@@ -34,6 +34,7 @@ setup(
     test_suite='nose.collector',
     tests_require=['nose', 'nose-cover3'],
     install_requires=[
+        'psycopg2',
         'requests',
         'pymongo',
         'psutil',

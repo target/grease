@@ -17,7 +17,7 @@ class Detection(Command):
     This command detects possible jobs from the scan command
     
     Args:
-        --loops:<int>
+        --loop:<int>
             How many detection cycles to do
         --foreground
             Print log messages to the foreground
@@ -40,10 +40,10 @@ class Detection(Command):
             # set foreground if in context
             self.ioc.getLogger().foreground = True
         Detector = Detect(self.ioc)
-        if 'loops' in context:
+        if 'loop' in context:
             # scan only a certain amount of times
             scan_count = 0
-            while scan_count < int(context.get('loops')):
+            while scan_count < int(context.get('loop')):
                 if not Detector.detectSource():
                     self.ioc.getLogger().warning("Detection Process Failed", notify=False)
                 scan_count += 1

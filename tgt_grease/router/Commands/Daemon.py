@@ -64,6 +64,7 @@ class DaemonProcess(object):
             return False
         self.ioc.getLogger().trace("Server execution starting", trace=True)
         # establish job collection
+        # TODO: Transition to using SourceData
         JobsCollection = self.ioc.getCollection("JobQueue")
         self.ioc.getLogger().trace("Searching for Jobs", trace=True)
         jobs = JobsCollection.find({

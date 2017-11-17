@@ -2,7 +2,7 @@ from tgt_grease.core import GreaseContainer
 from tgt_grease.core import ImportTool
 
 
-class Detection(object):
+class Detect(object):
     """Detection class for GREASE detect
 
     This is the model to actually utilize the detectors to parse the sources from scan
@@ -21,4 +21,9 @@ class Detection(object):
         self.impTool = ImportTool(ioc.getLogger())
 
     def detectSource(self):
-        """This will perform detection the oldest source from SourceData"""
+        """This will perform detection the oldest source from SourceData
+
+        Returns:
+            bool: If detection process was successful
+
+        """

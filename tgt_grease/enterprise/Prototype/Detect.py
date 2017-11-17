@@ -1,4 +1,5 @@
 from tgt_grease.core.Types import Command
+from tgt_grease.enterprise.Model import Detect
 
 
 class Detection(Command):
@@ -38,4 +39,25 @@ class Detection(Command):
         if context.get('foreground'):
             # set foreground if in context
             self.ioc.getLogger().foreground = True
+        Detector = Detect(self.ioc)
+        if 'loops' in context:
+            # scan only a certain amount of times
+            scan_count = 0
+            while scan_count < int(context.get('loops')):
+                if not Detector.detectSource():
+                    self.ioc.getLogger().warning("Detection Process Failed", notify=False)
+                scan_count += 1
+        else:
+            try:
+                while True:
+                    if not Detector.detectSource():
+                        self.ioc.getLogger().warning("Detection Process Failed", notify=False)
+                    continue
+            except KeyboardInterrupt:
+                # graceful close for scanning
+                self.ioc.getLogger().trace("Keyboard interrupt in detect detected", trace=True)
+                return True
+        # ensure we clean up after ourselves
+        if context.get('foreground'):
+            self.ioc.getLogger().foreground = False
         return True

@@ -68,5 +68,6 @@ class Scanner(Command):
                 self.ioc.getLogger().trace("Keyboard interrupt in scanner detected", trace=True)
                 return True
         # ensure we clean up after ourselves
-        self.ioc.getLogger().foreground = False
+        if context.get('foreground'):
+            self.ioc.getLogger().foreground = False
         return True

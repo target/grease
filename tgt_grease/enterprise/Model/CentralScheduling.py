@@ -55,6 +55,9 @@ class Scheduling(object):
             server, jobCount = self.determineDetectionServer()
             if server:
                 sourceCollect.insert_one({
+                    'grease_data': {
+                        'sourcing_server': ObjectId(self.ioc.getConfig().NodeIdentity)
+                    },
                     'source': str(source).encode('utf-8'),
                     'configuration': str(configName).encode('utf-8'),
                     'data': elem,

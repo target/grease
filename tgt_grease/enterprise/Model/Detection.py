@@ -27,3 +27,6 @@ class Detect(object):
             bool: If detection process was successful
 
         """
+
+    def assignedSources(self):
+        """Queries for sources that have been assigned"""

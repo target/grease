@@ -30,32 +30,38 @@ detection & scheduling eventually making it to the JobQueue collection. This is 
 collection is this:::
 
     {
-        '_id': ObjectId, # <-- MongoDB ID
-        'grease_data': {
-            'sourcing': {
-                server': ObjectId # <-- Server that performed sourcing
+        'grease_data': { # <-- Tracing Data for the object moving through the system
+            'sourcing': { # <-- Sourcing Data
+                'server': ObjectId # <-- Server the source came from
             },
-            'detection': {
-                server': ObjectId # <-- Server that performed detection
-            }
-            'scheduling': {
-                server': ObjectId # <-- Server that performed scheduling
+            'detection': { # <-- Detection Data
+                'server': ObjectId, # <-- Server assigned to detection
+                'detectionStart': DateTime, # <-- Time detection server started detection
+                'detectionEnd': DateTime, # <-- Time detection server completed detection
+                'detection': {} # <-- Data from detection
+            },
+            'scheduling': { # <-- Scheduling Data
+                'schedulingServer': ObjectId, # <-- Server assigned to scheduling
+                'schedulingStart': DateTime, # <-- Time scheduling started
+                'schedulingEnd': DateTime # <-- Time scheduling completed
+            },
+            'execution': { # <-- Execution Data
+                'server': ObjectId, # <-- Server assigned for execution
+                'assignmentTime': DateTime, # <-- Time job was assigned
+                'executionStart': DateTime, # <-- Time execution started
+                'executionEnd': DateTime, # <-- Time execution ended
+                'context': dict, # <-- Data passed to the command as context
+                'executionSuccess': Boolean, # <-- Execution Success
+                'commandSuccess': Boolean, # <-- Command Success
+                'failures': Int, # <-- Job Execution Failures
+                'retryTime': DateTime # <-- If a failure happens, when it should be tried again
             }
         },
-        'source': String, # <-- Source data came from
-        'configuration': String, # <-- Configuration data was sourced for
-        'data': dict, # <-- Source data object
-        'createTime': DateTime, # <-- DateTime when object was entered into MongoDB **TTL occurs 12 hours after this time**
-        'expiry': DateTime, # <-- DateTime when object will expire
-        'detectionServer': ObjectId, # <-- MongoDB Object ID of server assigned to perform detection
-        'detectionStart': DateTime, # <-- DateTime when detection started
-        'detectionEnd': DateTime, # <-- DateTime when detection completed
-        'detectionCompleted': Boolean, # <-- True if the detection server is complete with detection on the object
-        'schedulingServer': ObjectId, # <-- MongoDB Object ID of server assigned to perform scheduling
-        'schedulingStart': DateTime, # <-- DateTime when scheduling started
-        'schedulingEnd': DateTime, # <-- DateTime when scheduling completed
-        'schedulingCompleted': Boolean, # <-- True if the scheduling server is complete with scheduling for the object
-        'schedulingExecutionServer': ObjectId # <-- MongoDB ID of execution server if execution should occur **Only exists for source objects that produce a job**
+        'source': str(source).encode('utf-8'),
+        'configuration': str(configName).encode('utf-8'),
+        'data': elem,
+        'createTime': datetime.datetime.utcnow(),
+        'expiry': Deduplication.generate_max_expiry_time(1)
     }
 
 Data is collected from a source and distributed to each individual dictionary in the collection. Nodes will pick up

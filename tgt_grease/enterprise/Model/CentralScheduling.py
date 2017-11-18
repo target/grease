@@ -58,21 +58,35 @@ class Scheduling(object):
                     'grease_data': {
                         'sourcing': {
                             'server': ObjectId(self.ioc.getConfig().NodeIdentity)
+                        },
+                        'detection': {
+                            'server': ObjectId(server),
+                            'detectionStart': None,
+                            'detectionEnd': None,
+                            'detection': {}
+                        },
+                        'scheduling': {
+                            'schedulingServer': None,
+                            'schedulingStart': None,
+                            'schedulingEnd': None
+                        },
+                        'execution': {
+                            'server': None,
+                            'assignmentTime': None,
+                            'executionStart': None,
+                            'executionEnd': None,
+                            'context': {},
+                            'executionSuccess': False,
+                            'commandSuccess': False,
+                            'failures': 0,
+                            'retryTime': datetime.datetime.utcnow()
                         }
                     },
                     'source': str(source).encode('utf-8'),
                     'configuration': str(configName).encode('utf-8'),
                     'data': elem,
                     'createTime': datetime.datetime.utcnow(),
-                    'expiry': Deduplication.generate_max_expiry_time(1),
-                    'detectionServer': ObjectId(server),
-                    'detectionStart': None,
-                    'detectionEnd': None,
-                    'detectionCompleted': False,
-                    'schedulingServer': None,
-                    'schedulingStart': None,
-                    'schedulingEnd': None,
-                    'schedulingCompleted': False
+                    'expiry': Deduplication.generate_max_expiry_time(1)
                 })
                 jServerCollect.update_one({
                     '_id': ObjectId(server)},

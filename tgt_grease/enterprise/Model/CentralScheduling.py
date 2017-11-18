@@ -56,7 +56,9 @@ class Scheduling(object):
             if server:
                 sourceCollect.insert_one({
                     'grease_data': {
-                        'sourcing_server': ObjectId(self.ioc.getConfig().NodeIdentity)
+                        'sourcing': {
+                            'server': ObjectId(self.ioc.getConfig().NodeIdentity)
+                        }
                     },
                     'source': str(source).encode('utf-8'),
                     'configuration': str(configName).encode('utf-8'),

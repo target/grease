@@ -31,6 +31,17 @@ collection is this:::
 
     {
         '_id': ObjectId, # <-- MongoDB ID
+        'grease_data': {
+            'sourcing': {
+                server': ObjectId # <-- Server that performed sourcing
+            },
+            'detection': {
+                server': ObjectId # <-- Server that performed detection
+            }
+            'scheduling': {
+                server': ObjectId # <-- Server that performed scheduling
+            }
+        },
         'source': String, # <-- Source data came from
         'configuration': String, # <-- Configuration data was sourced for
         'data': dict, # <-- Source data object

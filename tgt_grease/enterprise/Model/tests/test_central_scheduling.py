@@ -28,6 +28,7 @@ class TestScheduling(TestCase):
 
     def test_detectionScheduling(self):
         ioc = GreaseContainer()
+        ioc.ensureRegistration()
         sch = Scheduling(ioc)
         jServer = ioc.getCollection('JobServer')
         jID1 = jServer.insert_one({
@@ -130,10 +131,10 @@ class TestScheduling(TestCase):
         ]))
         time.sleep(1)
         self.assertEqual(ioc.getCollection('SourceData').find({
-            'detectionServer': ObjectId(jID1)
+            'grease_data.detection.server': ObjectId(jID1)
         }).count(), 3)
         self.assertEqual(ioc.getCollection('SourceData').find({
-            'detectionServer': ObjectId(jID2)
+            'grease_data.detection.server': ObjectId(jID2)
         }).count(), 3)
         self.assertEqual(ioc.getCollection('JobServer').find_one({
             '_id': ObjectId(jID1)

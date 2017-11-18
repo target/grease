@@ -315,49 +315,7 @@ class DaemonProcess(object):
             bool: Registration Success
 
         """
-        # TODO: Make a cluster management command to utilize this in more places
-        collection = self.ioc.getCollection("JobServer")
-        if os.path.isfile(self.ioc.getConfig().greaseDir + 'grease.identity'):
-            # check to see if identity file is valid
-            fil = open(self.ioc.getConfig().greaseDir + 'grease.identity', 'r')
-            nodeId = "".join(fil.read())
-            fil.close()
-            server = collection.find_one({'_id': ObjectId(nodeId)})
-            if server:
-                # Valid registration
-                self.registered = True
-                self.ioc.getConfig().NodeIdentity = nodeId
-                return True
-            else:
-                self.ioc.getLogger().warning("Invalid node identity found to exist!")
-        if self.ioc.getConfig().NodeIdentity == "Unknown":
-            # Actual registration
-            uid = collection.insert_one({
-                'jobs': 0,
-                'os': platform.system().lower(),
-                'roles': ["general"],
-                'prototypes': [],
-                'active': True,
-                'activationTime': datetime.utcnow()
-            }).inserted_id
-            fil = open(self.ioc.getConfig().greaseDir + "grease.identity", "w")
-            fil.write(str(uid))
-            fil.close()
-            self.registered = True
-            self.ioc.getConfig().NodeIdentity = uid
-            del collection
-            return True
-        else:
-            # Check the Identity is actually registered
-            if collection.find({'_id': ObjectId(self.ioc.getConfig().NodeIdentity)}).count():
-                del collection
-                return True
-            else:
-                self.ioc.getLogger().error("Invalid Node Identity::Node Identity Not Found", additional={
-                    'NodeID': self.ioc.getConfig().NodeIdentity
-                })
-                del collection
-                return False
+        return self.ioc.ensureRegistration()
 
     def log_once_per_second(self, message, level=DEBUG, additional=None):
         """Log Message once per second

@@ -20,6 +20,7 @@ class Scheduling(object):
             self.ioc = ioc
         else:
             self.ioc = GreaseContainer()
+        self.ioc.ensureRegistration()
 
     def scheduleDetection(self, source, configName, data):
         """Schedule a Source Parse to detection

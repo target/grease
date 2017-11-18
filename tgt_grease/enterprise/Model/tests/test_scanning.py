@@ -217,6 +217,7 @@ class TestScan(TestCase):
             }
         ]
         ioc = GreaseContainer()
+        ioc.ensureRegistration()
         ioc.getConfig().set('trace', True, 'Logging')
         ioc.getConfig().set('verbose', True, 'Logging')
         fil = open(ioc.getConfig().greaseConfigFile, 'r')

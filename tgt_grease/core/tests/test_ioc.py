@@ -27,3 +27,7 @@ class TestIOC(TestCase):
         coll = ioc.getCollection('TestCollection')
         self.assertTrue(isinstance(coll, Collection))
         self.assertEqual(coll.name, "TestCollection")
+
+    def test_registration(self):
+        ioc = GreaseContainer()
+        self.assertTrue(ioc.ensureRegistration())

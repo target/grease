@@ -3,8 +3,39 @@ The GREASE Data Models
 
 This section covers the different collections of GREASE's MongoDB instance.
 
+Prototype Configurations
+===========================
+
+Prototype configurations tell GREASE what to do with data it detects, and where to detect it from. A Typical config
+will look like this::
+
+    {
+        "name": String,
+        "job": String,
+        "exe_env": String, # <-- If not provided will be default as 'general'
+        "source": String,
+        "logic": {
+            "Regex": [
+                {
+                    "field": String, # <-- field to process
+                    "pattern": String # <-- pattern to match
+                }
+            ]
+        }
+    }
+
+**NOTE**: This is only an example. See the detection documentation for all the options available to you!
+
+These are stored as JSON files either in the config directory of the project :code:`<PROJECT_ROOT>/tgt_grease/enterprise/Model/config`
+or in the GREASE directory in the etc folder :code:`<GREASE_DIR>/etc/` and the file ends with :code:`.config.json`. Another
+place to store these configurations is within MongoDB in the :code:`Configuration` collection with the key :code:`type` set
+to :code:`prototype_config`.
+
+MongoDB
+==========
+
 The JobServer Collection
-==========================
+--------------------------
 
 The JobServer collection is used for data pertaining to Job Servers/Nodes of a GREASE
 cluster. A typical record looks like this::
@@ -23,7 +54,7 @@ This is the central registration of a node in GREASE. A node's registration on t
 filesystem is the MongoDB ID found in the database.
 
 The SourceData Collection
-===========================
+----------------------------
 
 This collection is responsible for storing all source data. Data is transformed after sourcing traversing through
 detection & scheduling eventually making it to the JobQueue collection. This is the primary data model found in this

@@ -129,6 +129,7 @@ class Detect(object):
                     finalBool = False
                     break
                 else:
+                    self.ioc.getLogger().trace("Detection yielded true for [{0}]".format(detector), trace=True)
                     for key, val in resultData.items():
                         final[key] = val
                     continue

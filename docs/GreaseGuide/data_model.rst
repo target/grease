@@ -57,11 +57,11 @@ collection is this:::
                 'retryTime': DateTime # <-- If a failure happens, when it should be tried again
             }
         },
-        'source': str(source).encode('utf-8'),
-        'configuration': str(configName).encode('utf-8'),
-        'data': elem,
-        'createTime': datetime.datetime.utcnow(),
-        'expiry': Deduplication.generate_max_expiry_time(1)
+        'source': String, # <-- source data came from
+        'configuration': String, # <-- Name of configuration data came from
+        'data': Dict, # <-- Actual Response Data
+        'createTime': DateTime, # <-- Time of Entry
+        'expiry': DateTime # <-- Expiration time
     }
 
 Data is collected from a source and distributed to each individual dictionary in the collection. Nodes will pick up

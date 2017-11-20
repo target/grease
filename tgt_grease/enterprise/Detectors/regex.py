@@ -44,6 +44,7 @@ class Regex(Detector):
 
         """
         final = {}
+        finalBool = False
         if not isinstance(source, dict):
             return False, {}
         if not isinstance(ruleConfig, list):
@@ -61,10 +62,11 @@ class Regex(Detector):
                     # look for field and perform regex
                     if block.get('field') in source:
                         if source.get(block.get('field')):
-                            result = re.findall(block.get('pattern'), source.get(block.get('field')))
+                            result = re.findall(block.get('pattern'), str(source.get(block.get('field'))))
                             if len(result):
-                                if source.get('variable') and source.get('variable_name'):
-                                    final[str(source.get('variable_name'))] = result
+                                finalBool = True
+                                if block.get('variable') and block.get('variable_name'):
+                                    final[str(block.get('variable_name'))] = result
                                 else:
                                     continue
                             else:
@@ -91,4 +93,4 @@ class Regex(Detector):
                             trace=True
                         )
                         return False, {}
-            return True, final
+            return finalBool, final

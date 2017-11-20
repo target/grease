@@ -24,9 +24,19 @@ class Detector(object):
     def processObject(self, source, ruleConfig):
         """Processes an object and returns valid rule data
 
+        Data returned in the second parameter from this method should be in this form::
+
+            {
+                '<field>': Object # <-- if specified as a variable then return the key->Value pairs
+                ...
+            }
+
         Args:
             source (dict): Source Data
             ruleConfig (list[dict]): Rule Configuration Data
+
+        Return:
+            tuple: first element boolean for success; second dict for any fields returned as variables
 
         """
         pass

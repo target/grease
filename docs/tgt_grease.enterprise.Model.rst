@@ -17,6 +17,14 @@ The Base Source
     :undoc-members:
     :show-inheritance:
 
+The Base Detector
+-----------------------------------------------
+
+.. autoclass:: tgt_grease.enterprise.Model.Detector
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 The DeDuplication Engine
 -----------------------------------------------
 

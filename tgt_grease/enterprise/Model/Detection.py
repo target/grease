@@ -48,13 +48,13 @@ class Detect(object):
                         'grease_data.detection.detectionStart': datetime.datetime.utcnow()
                     }
                 )
-                result = self.detection(sourceData.get('data'), configurationData)
+                result, resultData = self.detection(sourceData.get('data'), configurationData)
                 if result:
                     self.ioc.getCollection('SourceData').update_one(
                         {'_id': ObjectId(sourceData.get('_id'))},
                         {
                             'grease_data.detection.detectionEnd': datetime.datetime.utcnow(),
-                            'grease_data.detection.detection': result
+                            'grease_data.detection.detection': resultData
                         }
                     )
                     # TODO: Schedule to scheduling server
@@ -103,17 +103,37 @@ class Detect(object):
             configuration (dict): Prototype configuration provided from sourcing
 
         Returns:
-            dict: Detection Results, if empty then detection found no successful logical blocks
+            tuple: Detection Results; first boolean for success, second dict of variables for context
 
         """
         # Ensure types
+        final = {}
+        finalBool = True
         if not isinstance(source, dict):
             self.ioc.getLogger().warning("Detection got non-dict source data", notify=False)
-            return {}
+            finalBool = False
+            return finalBool, final
         if not isinstance(configuration, dict):
             self.ioc.getLogger().warning("Detection got non-dict configuration", notify=False)
-            return {}
+            finalBool = False
+            return finalBool, final
         # Now loop through logical blocks
         for detector, logicBlock in configuration.items():
             if not isinstance(logicBlock, list):
                 self.ioc.getLogger().warning("Logical Block was not list", trace=True, notify=False)
+            detect = self.impTool.load(detector)
+            if isinstance(detect, Detector):
+                result, resultData = detect.processObject(source, logicBlock)
+                if not result:
+                    self.ioc.getLogger().trace("Detection yielded false for [{0}]".format(detector), trace=True)
+                    finalBool = False
+                    break
+                else:
+                    for key, val in resultData.items():
+                        final[key] = val
+                    continue
+            else:
+                self.ioc.getLogger().warning("invalid detector [{0}]".format(detector), notify=False)
+                finalBool = False
+                break
+        return finalBool, final

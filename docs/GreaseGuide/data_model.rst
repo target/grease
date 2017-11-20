@@ -69,7 +69,7 @@ collection is this:::
                 'server': ObjectId, # <-- Server assigned to detection
                 'detectionStart': DateTime, # <-- Time detection server started detection
                 'detectionEnd': DateTime, # <-- Time detection server completed detection
-                'detection': {} # <-- Data from detection
+                'detection': Dict # <-- Fields set to be variables in context if any
             },
             'scheduling': { # <-- Scheduling Data
                 'schedulingServer': ObjectId, # <-- Server assigned to scheduling

@@ -10,12 +10,12 @@ Prototype configurations tell GREASE what to do with data it detects, and where 
 will look like this::
 
     {
-        "name": String,
-        "job": String,
+        "name": String, # <-- Unique name for your configuration
+        "job": String, # <-- name of command to be run if logic is true
         "exe_env": String, # <-- If not provided will be default as 'general'
-        "source": String,
-        "logic": {
-            "Regex": [
+        "source": String, # <-- source of data to be provided
+        "logic": { # <-- Logical blocks to be evaluated by Detection
+            "Regex": [ # <-- example for regex detector
                 {
                     "field": String, # <-- field to process
                     "pattern": String # <-- pattern to match

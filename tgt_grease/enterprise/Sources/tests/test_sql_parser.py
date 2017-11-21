@@ -314,7 +314,7 @@ class TestSQLSource(TestCase):
                     'type': 'postgresql',
                     'dsn': 'GREASE_TEST_DSN',
                     'query': 'select * from test_data;',
-                    'hour': (datetime.datetime.utcnow() + datetime.timedelta(hours=1)).hour,
+                    'hour': (datetime.datetime.utcnow() + datetime.timedelta(hours=2)).hour,
                     'logic': {}
                 }))
                 data = source.get_data()
@@ -367,7 +367,7 @@ class TestSQLSource(TestCase):
                     'type': 'postgresql',
                     'dsn': 'GREASE_TEST_DSN',
                     'query': 'select * from test_data;',
-                    'minute': (datetime.datetime.utcnow() + datetime.timedelta(minutes=1)).minute,
+                    'minute': (datetime.datetime.utcnow() + datetime.timedelta(minutes=2)).minute,
                     'logic': {}
                 }))
                 data = source.get_data()
@@ -420,8 +420,8 @@ class TestSQLSource(TestCase):
                     'type': 'postgresql',
                     'dsn': 'GREASE_TEST_DSN',
                     'query': 'select * from test_data;',
-                    'hour': (datetime.datetime.utcnow() + datetime.timedelta(hours=1)).hour,
-                    'minute': (datetime.datetime.utcnow() + datetime.timedelta(minutes=1)).minute,
+                    'hour': (datetime.datetime.utcnow() + datetime.timedelta(hours=2)).hour,
+                    'minute': (datetime.datetime.utcnow() + datetime.timedelta(minutes=2)).minute,
                     'logic': {}
                 }))
                 data = source.get_data()

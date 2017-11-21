@@ -50,6 +50,9 @@ class Detect(object):
                 )
                 result, resultData = self.detection(sourceData.get('data'), configurationData)
                 if result:
+                    # Put constants in detection results
+                    resultData['constants'] = self.conf.get_config(configurationData.get('name')).get('constants', {})
+                    # Update detection
                     self.ioc.getCollection('SourceData').update_one(
                         {'_id': ObjectId(sourceData.get('_id'))},
                         {
@@ -57,8 +60,8 @@ class Detect(object):
                             'grease_data.detection.detection': resultData
                         }
                     )
-                    # TODO: Schedule to scheduling server
-                    return True
+                    # attempt scheduling
+                    return self.scheduler.scheduleScheduling(sourceData.get('_id'))
                 else:
                     self.ioc.getCollection('SourceData').update_one(
                         {'_id': ObjectId(sourceData.get('_id'))},
@@ -108,7 +111,7 @@ class Detect(object):
         """
         # Ensure types
         final = {}
-        finalBool = True
+        finalBool = False
         if not isinstance(source, dict):
             self.ioc.getLogger().warning("Detection got non-dict source data", notify=False)
             finalBool = False
@@ -118,7 +121,7 @@ class Detect(object):
             finalBool = False
             return finalBool, final
         # Now loop through logical blocks
-        for detector, logicBlock in configuration.items():
+        for detector, logicBlock in configuration.get('logic', {}).items():
             if not isinstance(logicBlock, list):
                 self.ioc.getLogger().warning("Logical Block was not list", trace=True, notify=False)
             detect = self.impTool.load(detector)
@@ -132,9 +135,9 @@ class Detect(object):
                     self.ioc.getLogger().trace("Detection yielded true for [{0}]".format(detector), trace=True)
                     for key, val in resultData.items():
                         final[key] = val
+                    finalBool = True
                     continue
             else:
                 self.ioc.getLogger().warning("invalid detector [{0}]".format(detector), notify=False)
                 finalBool = False
-                break
         return finalBool, final

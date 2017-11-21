@@ -52,3 +52,153 @@ class TestDetect(TestCase):
             ObjectId(d.ioc.getConfig().NodeIdentity)
         )
         d.ioc.getCollection('SourceData').drop()
+
+    def test_detection(self):
+        d = Detect()
+        source = {
+            'key': 'var',
+            'ver': 'key',
+            'greg': 'old'
+        }
+        configuration = {
+            'name': 'demo config',
+            'job': 'otherThing',
+            'exe_env': 'general',
+            'source': 'Google',
+            'logic': {
+                'Regex': [
+                    {
+                        'field': 'key',
+                        'pattern': '.*',
+                        'variable': True,
+                        'variable_name': 'field'
+                    },
+                    {
+                        'field': 'ver',
+                        'pattern': '.*'
+                    }
+                ]
+            }
+        }
+        result, resultData = d.detection(source, configuration)
+        self.assertTrue(result)
+        self.assertTrue(resultData.get('field'))
+
+    def test_detection_bad_source(self):
+        d = Detect()
+        configuration = {
+            'name': 'demo config',
+            'job': 'otherThing',
+            'exe_env': 'general',
+            'source': 'Google',
+            'logic': {
+                'Regex': [
+                    {
+                        'field': 'key',
+                        'pattern': '.*',
+                        'variable': True,
+                        'variable_name': 'field'
+                    },
+                    {
+                        'field': 'ver',
+                        'pattern': '.*'
+                    }
+                ]
+            }
+        }
+        result, resultData = d.detection([], configuration)
+        self.assertFalse(result)
+        self.assertFalse(resultData)
+
+    def test_detection_bad_config(self):
+        d = Detect()
+        source = {
+            'key': 'var',
+            'ver': 'key',
+            'greg': 'old'
+        }
+        result, resultData = d.detection(source, [])
+        self.assertFalse(result)
+        self.assertFalse(resultData)
+
+    def test_detection_failed(self):
+        d = Detect()
+        source = {
+            'key': 'var',
+            'ver': 'key',
+            'greg': 'old'
+        }
+        configuration = {
+            'name': 'demo config',
+            'job': 'otherThing',
+            'exe_env': 'general',
+            'source': 'Google',
+            'logic': {
+                'Regex': [
+                    {
+                        'field': 'ke',
+                        'pattern': '.*',
+                        'variable': True,
+                        'variable_name': 'field'
+                    },
+                    {
+                        'field': 'var',
+                        'pattern': '.*'
+                    }
+                ]
+            }
+        }
+        result, resultData = d.detection(source, configuration)
+        self.assertFalse(result)
+        self.assertFalse(resultData)
+
+    def test_detection_bad_detector(self):
+        d = Detect()
+        source = {
+            'key': 'var',
+            'ver': 'key',
+            'greg': 'old'
+        }
+        configuration = {
+            'name': 'demo config',
+            'job': 'otherThing',
+            'exe_env': 'general',
+            'source': 'Google',
+            'logic': {
+                'regex': [
+                    {
+                        'field': 'key',
+                        'pattern': '.*',
+                        'variable': True,
+                        'variable_name': 'field'
+                    },
+                    {
+                        'field': 'ver',
+                        'pattern': '.*'
+                    }
+                ]
+            }
+        }
+        result, resultData = d.detection(source, configuration)
+        self.assertFalse(result)
+        self.assertFalse(resultData)
+
+    def test_detection_bad_logical_block(self):
+        d = Detect()
+        source = {
+            'key': 'var',
+            'ver': 'key',
+            'greg': 'old'
+        }
+        configuration = {
+            'name': 'demo config',
+            'job': 'otherThing',
+            'exe_env': 'general',
+            'source': 'Google',
+            'logic': {
+                'Regex': {}
+            }
+        }
+        result, resultData = d.detection(source, configuration)
+        self.assertFalse(result)
+        self.assertFalse(resultData)

@@ -105,13 +105,44 @@ class Scheduling(object):
                 return False
         return True
 
+    def scheduleScheduling(self, objectId):
+        """Schedule a source for job scheduling
+
+        This method schedules a source for job scheduling
+
+        Args:
+            objectId (str): MongoDB ObjectId to schedule
+
+        Returns:
+            bool: If scheduling was successful
+
+        """
+        # TODO: Usage in Cluster management to re-trigger job scheduling
+        server, jobCount = self.determineSchedulingServer()
+        if not server:
+            self.ioc.getLogger().error("Failed to find scheduling server", notify=False)
+            return False
+        self.ioc.getCollection('SourceData').update_one(
+            {'_id': ObjectId(objectId)},
+            {
+                'grease_data.scheduling.server': ObjectId(server),
+                'grease_data.scheduling.schedulingStart': None,
+                'grease_data.scheduling.schedulingEnd': None
+            }
+        )
+        self.ioc.getCollection('SourceData').update_one({
+            '_id': ObjectId(server)},
+            {'$set': {'jobs': int(jobCount) + 1}}
+        )
+        return True
+
     def determineDetectionServer(self):
         """Determines detection server to use
 
         Finds the detection server available for a new detection job
 
         Returns:
-            str: MongoDB Object ID of server; if one cannot be found then string will be empty
+            tuple: MongoDB Object ID of server & current job count
 
         """
         result = self.ioc.getCollection('JobServer').find({
@@ -128,7 +159,7 @@ class Scheduling(object):
         Finds the scheduling server available for a new scheduling job
 
         Returns:
-            str: MongoDB Object ID of server; if one cannot be found then string will be empty
+            tuple: MongoDB Object ID of server & current job count
 
         """
         result = self.ioc.getCollection('JobServer').find({
@@ -137,7 +168,7 @@ class Scheduling(object):
         if result:
             return str(result['_id']), int(result['jobs'])
         else:
-            return ""
+            return "", 0
 
     def determineExecutionServer(self, role):
         """Determines execution server to use

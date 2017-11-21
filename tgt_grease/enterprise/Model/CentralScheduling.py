@@ -125,9 +125,11 @@ class Scheduling(object):
         self.ioc.getCollection('SourceData').update_one(
             {'_id': ObjectId(objectId)},
             {
-                'grease_data.scheduling.server': ObjectId(server),
-                'grease_data.scheduling.schedulingStart': None,
-                'grease_data.scheduling.schedulingEnd': None
+                '$set': {
+                    'grease_data.scheduling.server': ObjectId(server),
+                    'grease_data.scheduling.schedulingStart': None,
+                    'grease_data.scheduling.schedulingEnd': None
+                }
             }
         )
         self.ioc.getCollection('SourceData').update_one({
@@ -166,7 +168,7 @@ class Scheduling(object):
             'prototypes': 'schedule'
         }).sort('jobs', pymongo.DESCENDING).limit(1)
         if result:
-            return str(result['_id']), int(result['jobs'])
+            return str(result[0]['_id']), int(result[0]['jobs'])
         else:
             return "", 0
 

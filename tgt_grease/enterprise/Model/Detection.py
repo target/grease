@@ -45,7 +45,9 @@ class Detect(object):
                 self.ioc.getCollection('SourceData').update_one(
                     {'_id': ObjectId(sourceData.get('_id'))},
                     {
-                        'grease_data.detection.detectionStart': datetime.datetime.utcnow()
+                        '$set': {
+                            'grease_data.detection.detectionStart': datetime.datetime.utcnow()
+                        }
                     }
                 )
                 result, resultData = self.detection(sourceData.get('data'), configurationData)
@@ -56,8 +58,10 @@ class Detect(object):
                     self.ioc.getCollection('SourceData').update_one(
                         {'_id': ObjectId(sourceData.get('_id'))},
                         {
-                            'grease_data.detection.detectionEnd': datetime.datetime.utcnow(),
-                            'grease_data.detection.detection': resultData
+                            '$set': {
+                                'grease_data.detection.detectionEnd': datetime.datetime.utcnow(),
+                                'grease_data.detection.detection': resultData
+                            }
                         }
                     )
                     # attempt scheduling
@@ -66,8 +70,10 @@ class Detect(object):
                     self.ioc.getCollection('SourceData').update_one(
                         {'_id': ObjectId(sourceData.get('_id'))},
                         {
-                            'grease_data.detection.detectionEnd': datetime.datetime.utcnow(),
-                            'grease_data.detection.detection': {}
+                            '$set': {
+                                'grease_data.detection.detectionEnd': datetime.datetime.utcnow(),
+                                'grease_data.detection.detection': {}
+                            }
                         }
                     )
                     self.ioc.getLogger().trace("Detection yielded no detection data", trace=True)

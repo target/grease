@@ -1,6 +1,7 @@
 from unittest import TestCase
-from tgt_grease.enterprise.Model import Detect, Deduplication
+from tgt_grease.enterprise.Model import Detect, Deduplication, PrototypeConfig
 from bson.objectid import ObjectId
+import platform
 import datetime
 
 
@@ -202,3 +203,153 @@ class TestDetect(TestCase):
         result, resultData = d.detection(source, configuration)
         self.assertFalse(result)
         self.assertFalse(resultData)
+
+    def test_detection_full(self):
+        d = Detect()
+        p = PrototypeConfig(d.ioc)
+        source = {
+            'key': 'var',
+            'ver': 'key',
+            'greg': 'old'
+        }
+        configuration = {
+            'name': 'demoConfig',
+            'job': 'otherThing',
+            'exe_env': 'general',
+            'source': 'Google',
+            'logic': {
+                'Regex': [
+                    {
+                        'field': 'key',
+                        'pattern': '.*',
+                        'variable': True,
+                        'variable_name': 'field'
+                    },
+                    {
+                        'field': 'ver',
+                        'pattern': '.*'
+                    }
+                ]
+            }
+        }
+        p.load(True, [configuration])
+        sourceId = d.ioc.getCollection('SourceData').insert_one({
+                    'grease_data': {
+                        'sourcing': {
+                            'server': ObjectId(d.ioc.getConfig().NodeIdentity)
+                        },
+                        'detection': {
+                            'server': ObjectId(d.ioc.getConfig().NodeIdentity),
+                            'detectionStart': None,
+                            'detectionEnd': None,
+                            'detection': {}
+                        },
+                        'scheduling': {
+                            'schedulingServer': None,
+                            'schedulingStart': None,
+                            'schedulingEnd': None
+                        },
+                        'execution': {
+                            'server': None,
+                            'assignmentTime': None,
+                            'executionStart': None,
+                            'executionEnd': None,
+                            'context': {},
+                            'executionSuccess': False,
+                            'commandSuccess': False,
+                            'failures': 0,
+                            'retryTime': datetime.datetime.utcnow()
+                        }
+                    },
+                    'source': str('test').encode('utf-8'),
+                    'configuration': configuration.get('name'),
+                    'data': source,
+                    'createTime': datetime.datetime.utcnow(),
+                    'expiry': Deduplication.generate_max_expiry_time(1)
+        }).inserted_id
+        scheduleServer = d.ioc.getCollection('JobServer').insert_one({
+                'jobs': 0,
+                'os': platform.system().lower(),
+                'roles': ["general"],
+                'prototypes': ["schedule"],
+                'active': True,
+                'activationTime': datetime.datetime.utcnow()
+        }).inserted_id
+        self.assertTrue(d.detectSource())
+        d.ioc.getCollection('JobServer').delete_one({'_id': ObjectId(scheduleServer)})
+        d.ioc.getCollection('SourceData').delete_one({'_id': ObjectId(sourceId)})
+
+    def test_detection_logic_not_pass(self):
+        d = Detect()
+        p = PrototypeConfig(d.ioc)
+        source = {
+            'key': 'var',
+            'ver': 'key',
+            'greg': 'old'
+        }
+        configuration = {
+            'name': 'demoConfig',
+            'job': 'otherThing',
+            'exe_env': 'general',
+            'source': 'Google',
+            'logic': {
+                'Regex': [
+                    {
+                        'field': 'key',
+                        'pattern': '.*',
+                        'variable': True,
+                        'variable_name': 'field'
+                    },
+                    {
+                        'field': 'missingField',
+                        'pattern': '.*'
+                    }
+                ]
+            }
+        }
+        p.load(True, [configuration])
+        sourceId = d.ioc.getCollection('SourceData').insert_one({
+                    'grease_data': {
+                        'sourcing': {
+                            'server': ObjectId(d.ioc.getConfig().NodeIdentity)
+                        },
+                        'detection': {
+                            'server': ObjectId(d.ioc.getConfig().NodeIdentity),
+                            'detectionStart': None,
+                            'detectionEnd': None,
+                            'detection': {}
+                        },
+                        'scheduling': {
+                            'schedulingServer': None,
+                            'schedulingStart': None,
+                            'schedulingEnd': None
+                        },
+                        'execution': {
+                            'server': None,
+                            'assignmentTime': None,
+                            'executionStart': None,
+                            'executionEnd': None,
+                            'context': {},
+                            'executionSuccess': False,
+                            'commandSuccess': False,
+                            'failures': 0,
+                            'retryTime': datetime.datetime.utcnow()
+                        }
+                    },
+                    'source': str('test').encode('utf-8'),
+                    'configuration': configuration.get('name'),
+                    'data': source,
+                    'createTime': datetime.datetime.utcnow(),
+                    'expiry': Deduplication.generate_max_expiry_time(1)
+        }).inserted_id
+        scheduleServer = d.ioc.getCollection('JobServer').insert_one({
+                'jobs': 0,
+                'os': platform.system().lower(),
+                'roles': ["general"],
+                'prototypes': ["schedule"],
+                'active': True,
+                'activationTime': datetime.datetime.utcnow()
+        }).inserted_id
+        self.assertTrue(d.detectSource())
+        d.ioc.getCollection('JobServer').delete_one({'_id': ObjectId(scheduleServer)})
+        d.ioc.getCollection('SourceData').delete_one({'_id': ObjectId(sourceId)})

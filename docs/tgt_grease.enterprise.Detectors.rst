@@ -10,3 +10,11 @@ Regex Detector
     :members:
     :undoc-members:
     :show-inheritance:
+
+Exists Detector
+--------------------------------------------
+
+.. autoclass:: tgt_grease.enterprise.Detectors.Exists
+    :members:
+    :undoc-members:
+    :show-inheritance:

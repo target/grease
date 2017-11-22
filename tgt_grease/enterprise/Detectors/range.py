@@ -114,8 +114,14 @@ class Range(Detector):
         if not LogicalBlock.get('min') and not LogicalBlock.get('max'):
             self.ioc.getLogger().trace("[min] and/or [max] not found in config block", verbose=True)
             return False
+        if LogicalBlock.get('min') and not isinstance(LogicalBlock.get('min'), (int, float)):
+            self.ioc.getLogger().trace("min not of type int or float", verbose=True)
+            return False
+        if LogicalBlock.get('max') and not isinstance(LogicalBlock.get('max'), (int, float)):
+            self.ioc.getLogger().trace("max not of type int or float", verbose=True)
+            return False
         # ensure field is an number
-        if not isinstance(field, (int, float, long)):
+        if not isinstance(field, (int, float)):
             self.ioc.getLogger().trace("Field is NaN", verbose=True)
             return False
         if LogicalBlock.get('min') and LogicalBlock.get('max'):
@@ -128,10 +134,6 @@ class Range(Detector):
                 minValue = float(LogicalBlock.get('min'))
                 maxValue = float(LogicalBlock.get('max'))
                 field = float(field)
-            elif isinstance(field, long):
-                minValue = long(LogicalBlock.get('min'))
-                maxValue = long(LogicalBlock.get('max'))
-                field = long(field)
             else:
                 self.ioc.getLogger().error("Internal Casting Error; Failed to determine field type", notify=False)
                 return False
@@ -147,9 +149,6 @@ class Range(Detector):
             elif isinstance(field, float):
                 minValue = float(LogicalBlock.get('min'))
                 field = float(field)
-            elif isinstance(field, long):
-                minValue = long(LogicalBlock.get('min'))
-                field = long(field)
             else:
                 self.ioc.getLogger().error("Internal Casting Error; Failed to determine field type", notify=False)
                 return False
@@ -165,9 +164,6 @@ class Range(Detector):
             elif isinstance(field, float):
                 maxValue = float(LogicalBlock.get('max'))
                 field = float(field)
-            elif isinstance(field, long):
-                maxValue = long(LogicalBlock.get('max'))
-                field = long(field)
             else:
                 self.ioc.getLogger().error("Internal Casting Error; Failed to determine field type", notify=False)
                 return False

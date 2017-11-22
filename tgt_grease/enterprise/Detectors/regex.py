@@ -72,25 +72,25 @@ class Regex(Detector):
                             else:
                                 self.ioc.getLogger().trace(
                                     "Field did not pass regex",
-                                    trace=True
+                                    verbose=True
                                 )
                                 return False, {}
                         else:
                             # truthy false field value
-                            self.ioc.getLogger().error(
+                            self.ioc.getLogger().trace(
                                 "Field [{0}] equates to false [{1}]".format(
                                     block.get('field'),
                                     source.get(block.get('field'))
                                 ),
                                 notify=False,
-                                trace=True
+                                verbose=True
                             )
                             return False, {}
                     else:
-                        self.ioc.getLogger().error(
+                        self.ioc.getLogger().trace(
                             "Field not found in source [{0}]".format(block.get('field')),
                             notify=False,
-                            trace=True
+                            verbose=True
                         )
                         return False, {}
             return finalBool, final

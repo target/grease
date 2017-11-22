@@ -58,7 +58,7 @@ class Exists(Detector):
                     )
                     return False, {}
                 else:
-                    # look for field and perform regex
+                    # look for field and perform exists check
                     if block.get('field') in source:
                         if source.get(block.get('field')):
                             finalBool = True

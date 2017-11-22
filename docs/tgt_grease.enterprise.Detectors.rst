@@ -18,3 +18,11 @@ Exists Detector
     :members:
     :undoc-members:
     :show-inheritance:
+
+Range Detector
+--------------------------------------------
+
+.. autoclass:: tgt_grease.enterprise.Detectors.Range
+    :members:
+    :undoc-members:
+    :show-inheritance:

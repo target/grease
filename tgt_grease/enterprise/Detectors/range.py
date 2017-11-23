@@ -71,7 +71,7 @@ class Range(Detector):
                     if block.get('field') in source:
                         # perform range operation since field exists
                         if source.get(block.get('field')):
-                            if self.range_compare(block.get('field'), block):
+                            if self.range_compare(source.get(block.get('field')), block):
                                 finalBool = True
                                 if block.get('variable') and block.get('variable_name'):
                                     final[str(block.get('variable_name'))] = source.get(block.get('field'))

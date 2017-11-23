@@ -50,3 +50,182 @@ class TestRange(TestCase):
         self.assertFalse(r.range_compare(4.1, {'max': 'dog'}))
         self.assertFalse(r.range_compare(5, {'max': 'cat', 'min': 'bagel'}))
         self.assertFalse(r.range_compare(4.1, {'max': 'dog', 'min': 'bagel'}))
+
+    def test_emptyList(self):
+        r = Range()
+        state, data = r.processObject({}, [])
+        self.assertFalse(state)
+        self.assertFalse(data)
+
+    def test_valid(self):
+        r = Range()
+        state, data = r.processObject(
+            {
+                'test': u'data',
+                'ver': 'var',
+                'data': 5
+            },
+            [
+                {
+                    'field': 'data',
+                    'min': 4,
+                    'variable': True,
+                    'variable_name': 'data'
+                }
+            ]
+        )
+        self.assertTrue(state)
+        self.assertEqual(data.get('data'), 5)
+
+    def test_valid_no_variables(self):
+        r = Range()
+        state, data = r.processObject(
+            {
+                'test': u'data',
+                'ver': 'var',
+                'data': 5
+            },
+            [
+                {
+                    'field': 'data',
+                    'min': 5,
+                }
+            ]
+        )
+        self.assertTrue(state)
+        self.assertEqual(len(data), 0)
+
+    def test_invalid_config(self):
+        r = Range()
+        state, data = r.processObject(
+            {
+                'test': u'data',
+                'ver': 'var',
+                'data': 5
+            },
+            [
+                {
+                },
+                {
+                    'pattern': '.*(var).*'
+                },
+                {
+                    'field': 'data',
+                }
+            ]
+        )
+        self.assertFalse(state)
+        self.assertEqual(len(data), 0)
+
+    def test_failed_regex(self):
+        r = Range()
+        state, data = r.processObject(
+            {
+                'test': u'data',
+                'ver': 'var',
+                'data': 5
+            },
+            [
+                {
+                    'max': 4
+                }
+            ]
+        )
+        self.assertFalse(state)
+        self.assertEqual(len(data), 0)
+
+    def test_bad_source(self):
+        r = Range()
+        state, data = r.processObject(
+            [],
+            [
+                {
+                    'field': 'data',
+                    'min': 3
+                }
+            ]
+        )
+        self.assertFalse(state)
+        self.assertEqual(len(data), 0)
+
+    def test_bad_config(self):
+        r = Range()
+        state, data = r.processObject(
+            {
+                'test': u'data',
+                'ver': 'var',
+                'data': 5
+            },
+            {}
+        )
+        self.assertFalse(state)
+        self.assertEqual(len(data), 0)
+
+    def test_empty_result(self):
+        r = Range()
+        state, data = r.processObject(
+            {
+                'test': u'data',
+                'ver': 'var',
+                'data': 5
+            },
+            [
+                {
+                    'field': 'data',
+                    'min': 7
+                }
+            ]
+        )
+        self.assertFalse(state)
+        self.assertEqual(len(data), 0)
+
+    def test_field_not_exist(self):
+        r = Range()
+        state, data = r.processObject(
+            {
+                'test': u'data',
+                'ver': 'var',
+                'data': 5
+            },
+            [
+                {
+                    'field': 'data2',
+                    'min': 6
+                }
+            ]
+        )
+        self.assertFalse(state)
+        self.assertEqual(len(data), 0)
+
+    def test_field_false(self):
+        r = Range()
+        state, data = r.processObject(
+            {
+                'test': u'data',
+                'ver': 'var',
+                'data': False
+            },
+            [
+                {
+                    'field': 'data',
+                    'min': 6
+                }
+            ]
+        )
+        self.assertFalse(state)
+        self.assertEqual(len(data), 0)
+
+    def test_bad_block(self):
+        r = Range()
+        state, data = r.processObject(
+            {
+                'test': u'data',
+                'ver': 'var',
+                'data': 5
+            },
+            [
+                []
+            ]
+        )
+        self.assertFalse(state)
+        self.assertEqual(len(data), 0)

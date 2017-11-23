@@ -26,3 +26,11 @@ Range Detector
     :members:
     :undoc-members:
     :show-inheritance:
+
+DateRange Detector
+--------------------------------------------
+
+.. autoclass:: tgt_grease.enterprise.Detectors.DateRange
+    :members:
+    :undoc-members:
+    :show-inheritance:

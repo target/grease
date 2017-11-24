@@ -17,7 +17,7 @@ class Scanner(Command):
     schedule jobs a detection node
     
     Args:
-        --scans:<int>
+        --loop:<int>
             How many scans you would like to go through
         --config:<filename>
             The specific config file you want to parse
@@ -53,10 +53,10 @@ class Scanner(Command):
             'source': context.get('source', self.ioc.getConfig().get('Sourcing', 'source', None)),
             'config': context.get('config', self.ioc.getConfig().get('Sourcing', 'config', None))
         }
-        if 'scans' in context:
+        if 'loop' in context:
             # scan only a certain amount of times
             scan_count = 0
-            while scan_count < int(context.get('scans')):
+            while scan_count < int(context.get('loop')):
                 scanner.Parse(**args)
                 scan_count += 1
         else:

@@ -1,7 +1,10 @@
 GREASE Source Detectors
 =====================================
 
-Detectors are used to parse data from sourcing and determine if a job needs to be executed
+Detectors are used to parse data from sourcing and determine if a job needs to be executed.
+
+**NOTE**: If developing a new detector it is the accepted practice for all non-error log messages to be set to only
+print in *verbose* mode
 
 Regex Detector
 --------------------------------------------

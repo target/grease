@@ -360,7 +360,8 @@ class TestDetect(TestCase):
         source = {
             'key': 'var',
             'ver': 'key',
-            'greg': 'old'
+            'greg': 'old',
+            'created': '2017-11-24'
         }
         configuration = {
             'name': 'demoConfig',
@@ -368,6 +369,14 @@ class TestDetect(TestCase):
             'exe_env': 'general',
             'source': 'Google',
             'logic': {
+                'DateRange': [
+                    {
+                        'field': 'created',
+                        'format': '%Y-%m-%d',
+                        'min': '2017-11-23',
+                        'max': '2017-11-25'
+                    }
+                ],
                 'Regex': [
                     {
                         'field': 'key',
@@ -442,7 +451,8 @@ class TestDetect(TestCase):
         source = {
             'key': 'var',
             'ver': 'key',
-            'greg': 'old'
+            'greg': 'old',
+            'created': '2017-11-30'
         }
         configuration = {
             'name': 'demoConfig',
@@ -450,6 +460,14 @@ class TestDetect(TestCase):
             'exe_env': 'general',
             'source': 'Google',
             'logic': {
+                'DateRange': [
+                    {
+                        'field': 'created',
+                        'format': '%Y-%m-%d',
+                        'min': '2017-11-23',
+                        'max': '2017-11-25'
+                    }
+                ],
                 'Regex': [
                     {
                         'field': 'key',

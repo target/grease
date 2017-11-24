@@ -37,3 +37,11 @@ DateRange Detector
     :members:
     :undoc-members:
     :show-inheritance:
+
+DateDelta Detector
+--------------------------------------------
+
+.. autoclass:: tgt_grease.enterprise.Detectors.DateDelta
+    :members:
+    :undoc-members:
+    :show-inheritance:

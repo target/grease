@@ -16,3 +16,11 @@ Detection Prototype (detect)
     :members:
     :undoc-members:
     :show-inheritance:
+
+Scheduling Prototype (schedule)
+--------------------------------------------
+
+.. autoclass:: tgt_grease.enterprise.Prototype.Schedule.Scheduling
+    :members:
+    :undoc-members:
+    :show-inheritance:

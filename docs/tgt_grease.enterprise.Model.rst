@@ -56,3 +56,11 @@ The Detection Processor
     :members:
     :undoc-members:
     :show-inheritance:
+
+The Scheduling Processor
+-----------------------------------------------
+
+.. autoclass:: tgt_grease.enterprise.Model.Scheduler
+    :members:
+    :undoc-members:
+    :show-inheritance:

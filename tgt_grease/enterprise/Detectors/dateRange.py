@@ -131,11 +131,11 @@ class DateRange(Detector):
             else:
                 self.ioc.getLogger().error("Failed to find either min OR max in LogicalBlock", verbose=True, notify=False)
                 return False
-        except ValueError as e:
+        except ValueError:
             # probable datetime format error
-            self.ioc.getLogger().error("Value error processing rule! [{0}]".format(e.message), notify=False)
+            self.ioc.getLogger().error("Value error processing rule!", notify=False)
             return False
-        except TypeError as e:
+        except TypeError:
             # probable datetime format error
-            self.ioc.getLogger().error("Type error processing rule! [{0}]".format(e.message), notify=False)
+            self.ioc.getLogger().error("Type error processing rule!", notify=False)
             return False

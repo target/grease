@@ -289,14 +289,12 @@ class Daemon(Command):
                     daemon.log_once_per_second("Server Process Failed", ERROR)
                     continue
         else:
-            current_second = int(datetime.datetime.utcnow().second)
-            real_second = int(datetime.datetime.utcnow().second)
-            while current_second + int(timing) >= real_second:
-                if daemon.server():
-                    real_second = int(datetime.datetime.utcnow().second)
-                    continue
-                else:
+            self.ioc.getLogger().debug("Daemon in timed mode")
+            SecondToStop = int(datetime.datetime.utcnow().second) + int(timing)
+            while SecondToStop != datetime.datetime.utcnow().second:
+                if not daemon.server():
                     daemon.log_once_per_second("Server Process Failed", ERROR)
-                    real_second = int(datetime.datetime.utcnow().second)
-                    continue
+                daemon.log_once_per_second(
+                    "Daemon Server process complete for second [{0}]".format(datetime.datetime.utcnow().second)
+                )
         return True

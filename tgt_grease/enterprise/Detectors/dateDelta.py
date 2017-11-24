@@ -77,7 +77,7 @@ class DateDelta(Detector):
                     or not block.get('delta') \
                     or not block.get('operator') \
                     or not block.get('direction') \
-                    or block.get('operator') not in ['weeks', 'days', 'hours', 'minutes', 'seconds', 'milliseconds', 'microseconds'] \
+                    or block.get('delta') not in ['weeks', 'days', 'hours', 'minutes', 'seconds', 'milliseconds', 'microseconds'] \
                     or not block.get('delta_value'):
                 self.ioc.getLogger().error(
                     "malformed rule block; fields [delta, operator, format] are required but not found"
@@ -136,17 +136,17 @@ class DateDelta(Detector):
                                     str(LogicalBlock.get('delta')): int(LogicalBlock.get('delta_value'))
                                }) \
                                * direction
-            if LogicalBlock.get('operator') is '<':
+            if LogicalBlock.get('operator') == '<':
                 ReturnBool = (source_date < compare_date)
-            elif LogicalBlock.get('operator') is '<=':
+            elif LogicalBlock.get('operator') == '<=':
                 ReturnBool = (source_date <= compare_date)
-            elif LogicalBlock.get('operator') is '>':
+            elif LogicalBlock.get('operator') == '>':
                 ReturnBool = (source_date > compare_date)
-            elif LogicalBlock.get('operator') is '>=':
+            elif LogicalBlock.get('operator') == '>=':
                 ReturnBool = (source_date >= compare_date)
-            elif LogicalBlock.get('operator') is '=':
+            elif LogicalBlock.get('operator') == '=':
                 ReturnBool = (source_date == compare_date)
-            elif LogicalBlock.get('operator') is '!=':
+            elif LogicalBlock.get('operator') == '!=':
                 ReturnBool = (source_date != compare_date)
             else:
                 self.ioc.getLogger().error(

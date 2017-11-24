@@ -17,9 +17,11 @@ class DateDelta(Detector):
                 'DateDelta': [
                     {
                         'field': String, # <-- Field to search for
-                        'delta': Int, # <-- Numeric delta value
+                        'delta': String, # <-- timedelta key for delta range; Accepted Values: weeks, days, hours, minutes, seconds, milliseconds, microseconds,
+                        'delta_value': Int, # <-- numeric value for delta to be EX: 1 weeks
                         'format': '%Y-%m-%d', # <-- Mandatory via strptime behavior
                         'operator': String, # <-- Accepted Values: < <= > >= = !=
+                        'direction': String, # <-- Accepted Values: future past
                         'date': String, # <-- OPTIONAL, if set then operation will be performed on this date compared to field
                         'variable': Boolean, # <-- OPTIONAL, if true then create a context variable of result
                         'variable_name: String # <-- REQUIRED IF variable, name of context variable
@@ -32,6 +34,8 @@ class DateDelta(Detector):
 
     Note:
         Change the format to any supported https://docs.python.org/2/library/datetime.html#strftime-and-strptime-behavior
+    Note:
+        If date field not provided will be assumed to be UTC Time
 
     """
 
@@ -68,9 +72,16 @@ class DateDelta(Detector):
                 )
                 return False, {}
             # ensure field is there and date format
-            if not block.get('field') in source or 'format' not in block:
+            if not block.get('field') in source \
+                    or 'format' not in block \
+                    or not block.get('delta') \
+                    or not block.get('operator') \
+                    or not block.get('direction') \
+                    or block.get('operator') not in ['weeks', 'days', 'hours', 'minutes', 'seconds', 'milliseconds', 'microseconds'] \
+                    or not block.get('delta_value'):
                 self.ioc.getLogger().error(
-                    "malformed rule block; field and/or format not found in source",
+                    "malformed rule block; fields [delta, operator, format] are required but not found"
+                    " or field not found in source",
                     notify=False
                 )
                 return False, {}
@@ -104,32 +115,46 @@ class DateDelta(Detector):
         """
         try:
             source_date = datetime.datetime.strptime(field, LogicalBlock.get('format'))
-            # Ensure field is present
-            # ensure at least min OR max is present
-            if not LogicalBlock.get('min') and not LogicalBlock.get('max'):
-                self.ioc.getLogger().trace("[min] and/or [max] not found in config block", verbose=True)
-                return False
-            if LogicalBlock.get('min') and LogicalBlock.get('max'):
-                # Min & Max Defined
-                if datetime.datetime.strptime(LogicalBlock.get('min'), LogicalBlock.get('format')) <= source_date <= datetime.datetime.strptime(LogicalBlock.get('max'), LogicalBlock.get('format')):
-                    return True
-                else:
-                    return False
-            elif LogicalBlock.get('min') and not LogicalBlock.get('max'):
-                # Min Defined
-                if source_date >= datetime.datetime.strptime(LogicalBlock.get('min'), LogicalBlock.get('format')):
-                    return True
-                else:
-                    return False
-            elif not LogicalBlock.get('min') and LogicalBlock.get('max'):
-                # Max Defined
-                if source_date <= datetime.datetime.strptime(LogicalBlock.get('max'), LogicalBlock.get('format')):
-                    return True
-                else:
-                    return False
+            if LogicalBlock.get('direction') is 'future':
+                direction = 1
+            elif LogicalBlock.get('direction') is 'past':
+                direction = -1
             else:
-                self.ioc.getLogger().error("Failed to find either min OR max in LogicalBlock", verbose=True, notify=False)
+                self.ioc.getLogger().error("key [direction] is not future or past", notify=False)
                 return False
+            # setup compare object
+            if LogicalBlock.get('date'):
+                compare_date = datetime.datetime.strptime(LogicalBlock.get('date'), LogicalBlock.get('format')) \
+                               + datetime.timedelta(**{
+                                    str(LogicalBlock.get('delta')): int(LogicalBlock.get('delta_value'))
+                               }) \
+                               * direction
+            else:
+                compare_date = datetime.datetime.utcnow().strftime(LogicalBlock.get('format'))
+                compare_date = datetime.datetime.strptime(compare_date, LogicalBlock.get('format')) \
+                               + datetime.timedelta(**{
+                                    str(LogicalBlock.get('delta')): int(LogicalBlock.get('delta_value'))
+                               }) \
+                               * direction
+            if LogicalBlock.get('operator') is '<':
+                ReturnBool = (source_date < compare_date)
+            elif LogicalBlock.get('operator') is '<=':
+                ReturnBool = (source_date <= compare_date)
+            elif LogicalBlock.get('operator') is '>':
+                ReturnBool = (source_date > compare_date)
+            elif LogicalBlock.get('operator') is '>=':
+                ReturnBool = (source_date >= compare_date)
+            elif LogicalBlock.get('operator') is '=':
+                ReturnBool = (source_date == compare_date)
+            elif LogicalBlock.get('operator') is '!=':
+                ReturnBool = (source_date != compare_date)
+            else:
+                self.ioc.getLogger().error(
+                    "Invalid operator provided [{0}]".format(LogicalBlock.get('operator')),
+                    notify=False
+                )
+                return False
+            return ReturnBool
         except ValueError:
             # probable datetime format error
             self.ioc.getLogger().error("Value error processing rule!", notify=False)

@@ -86,8 +86,6 @@ class TestRegistration(TestCase):
         fil.close()
         # remove collection
         ioc.getCollection('TestProtoType').drop()
-        # remove prototypes
-        data['NodeInformation']['ProtoTypes'] = []
         # pop search path
         trash = data['Import']['searchPath'].pop()
         # close out

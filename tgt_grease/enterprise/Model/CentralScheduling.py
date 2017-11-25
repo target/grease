@@ -62,20 +62,20 @@ class Scheduling(object):
                         },
                         'detection': {
                             'server': ObjectId(server),
-                            'detectionStart': None,
-                            'detectionEnd': None,
+                            'start': None,
+                            'end': None,
                             'detection': {}
                         },
                         'scheduling': {
-                            'schedulingServer': None,
-                            'schedulingStart': None,
-                            'schedulingEnd': None
+                            'server': None,
+                            'start': None,
+                            'end': None
                         },
                         'execution': {
                             'server': None,
                             'assignmentTime': None,
-                            'executionStart': None,
-                            'executionEnd': None,
+                            'start': None,
+                            'end': None,
                             'context': {},
                             'executionSuccess': False,
                             'commandSuccess': False,
@@ -127,8 +127,8 @@ class Scheduling(object):
             {
                 '$set': {
                     'grease_data.scheduling.server': ObjectId(server),
-                    'grease_data.scheduling.schedulingStart': None,
-                    'grease_data.scheduling.schedulingEnd': None
+                    'grease_data.scheduling.start': None,
+                    'grease_data.scheduling.end': None
                 }
             }
         )

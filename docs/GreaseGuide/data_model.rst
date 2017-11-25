@@ -67,20 +67,20 @@ collection is this:::
             },
             'detection': { # <-- Detection Data
                 'server': ObjectId, # <-- Server assigned to detection
-                'detectionStart': DateTime, # <-- Time detection server started detection
-                'detectionEnd': DateTime, # <-- Time detection server completed detection
+                'start': DateTime, # <-- Time detection server started detection
+                'end': DateTime, # <-- Time detection server completed detection
                 'detection': Dict # <-- Fields set to be variables in context if any
             },
             'scheduling': { # <-- Scheduling Data
-                'schedulingServer': ObjectId, # <-- Server assigned to scheduling
-                'schedulingStart': DateTime, # <-- Time scheduling started
-                'schedulingEnd': DateTime # <-- Time scheduling completed
+                'server': ObjectId, # <-- Server assigned to scheduling
+                'start': DateTime, # <-- Time scheduling started
+                'end': DateTime # <-- Time scheduling completed
             },
             'execution': { # <-- Execution Data
                 'server': ObjectId, # <-- Server assigned for execution
                 'assignmentTime': DateTime, # <-- Time job was assigned
-                'executionStart': DateTime, # <-- Time execution started
-                'executionEnd': DateTime, # <-- Time execution ended
+                'start': DateTime, # <-- Time execution started
+                'end': DateTime, # <-- Time execution ended
                 'context': dict, # <-- Data passed to the command as context
                 'executionSuccess': Boolean, # <-- Execution Success
                 'commandSuccess': Boolean, # <-- Command Success

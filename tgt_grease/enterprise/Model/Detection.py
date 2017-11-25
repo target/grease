@@ -98,8 +98,8 @@ class Detect(object):
         return self.ioc.getCollection('SourceData').find_one(
             {
                 'grease_data.detection.server': ObjectId(self.ioc.getConfig().NodeIdentity),
-                'grease_data.detection.detectionStart': None,
-                'grease_data.detection.detectionEnd': None,
+                'grease_data.detection.start': None,
+                'grease_data.detection.end': None,
             },
             sort=[('grease_data.createTime', pymongo.DESCENDING)]
         )

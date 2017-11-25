@@ -46,7 +46,7 @@ class Detect(object):
                     {'_id': ObjectId(sourceData.get('_id'))},
                     {
                         '$set': {
-                            'grease_data.detection.detectionStart': datetime.datetime.utcnow()
+                            'grease_data.detection.start': datetime.datetime.utcnow()
                         }
                     }
                 )
@@ -59,7 +59,7 @@ class Detect(object):
                         {'_id': ObjectId(sourceData.get('_id'))},
                         {
                             '$set': {
-                                'grease_data.detection.detectionEnd': datetime.datetime.utcnow(),
+                                'grease_data.detection.end': datetime.datetime.utcnow(),
                                 'grease_data.detection.detection': resultData
                             }
                         }
@@ -71,7 +71,7 @@ class Detect(object):
                         {'_id': ObjectId(sourceData.get('_id'))},
                         {
                             '$set': {
-                                'grease_data.detection.detectionEnd': datetime.datetime.utcnow(),
+                                'grease_data.detection.end': datetime.datetime.utcnow(),
                                 'grease_data.detection.detection': {}
                             }
                         }

@@ -442,6 +442,7 @@ class TestDetect(TestCase):
                 'activationTime': datetime.datetime.utcnow()
         }).inserted_id
         self.assertTrue(d.detectSource())
+        self.assertFalse(d.getScheduledSource())
         d.ioc.getCollection('JobServer').delete_one({'_id': ObjectId(scheduleServer)})
         d.ioc.getCollection('SourceData').delete_one({'_id': ObjectId(sourceId)})
 

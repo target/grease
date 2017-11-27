@@ -184,7 +184,7 @@ class Scheduling(object):
         result = self.ioc.getCollection('JobServer').find({
             'roles': str(role)
         }).sort('jobs', pymongo.DESCENDING).limit(1)
-        if result:
+        if result.count():
             return str(result[0]['_id']), int(result[0]['jobs'])
         else:
-            return ""
+            return "", 0

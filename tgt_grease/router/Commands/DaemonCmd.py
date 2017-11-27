@@ -152,7 +152,8 @@ class Daemon(Command):
         plat = platform.system().lower()
         if plat.startswith("win"):
             # Windows
-            win32serviceutil.HandleCommandLine(AppServerSvc)
+            print("Installing Windows Service")
+            win32serviceutil.HandleCommandLine(AppServerSvc, argv=['grease', 'install'])
             return True
         elif plat.startswith("dar"):
             # MacOS
@@ -225,7 +226,7 @@ class Daemon(Command):
         plat = platform.system().lower()
         if plat.startswith("win"):
             # Windows
-            win32serviceutil.HandleCommandLine(AppServerSvc, argv=['', 'start'])
+            win32serviceutil.HandleCommandLine(AppServerSvc, argv=['grease', 'start'])
             return True
         elif plat.startswith("dar"):
             # MacOS
@@ -251,7 +252,7 @@ class Daemon(Command):
         plat = platform.system().lower()
         if plat.startswith("win"):
             # Windows
-            win32serviceutil.HandleCommandLine(AppServerSvc, argv=['', 'stop'])
+            win32serviceutil.HandleCommandLine(AppServerSvc, argv=['grease', 'stop'])
             return True
         elif plat.startswith("dar"):
             if subprocess.call(["sudo", "launchctl", "unload", "/Library/LaunchDaemons/net.grease.daemon.plist"]) != 0:

@@ -185,6 +185,6 @@ class Scheduling(object):
             'roles': str(role)
         }).sort('jobs', pymongo.DESCENDING).limit(1)
         if result:
-            return str(result['_id']), int(result['jobs'])
+            return str(result[0]['_id']), int(result[0]['jobs'])
         else:
             return ""

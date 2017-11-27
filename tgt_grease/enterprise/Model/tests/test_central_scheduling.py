@@ -1,6 +1,6 @@
 from unittest import TestCase
 from tgt_grease.core import GreaseContainer
-from tgt_grease.enterprise.Model import Scheduling, Detect, PrototypeConfig, Scheduler, Deduplication
+from tgt_grease.enterprise.Model import Scheduling, Detect, PrototypeConfig, Deduplication
 from bson.objectid import ObjectId
 import datetime
 import platform
@@ -150,7 +150,6 @@ class TestScheduling(TestCase):
     def test_scheduleScheduling(self):
         d = Detect()
         p = PrototypeConfig(d.ioc)
-        s = Scheduler(d.ioc)
         source = {
             'key': 'var',
             'ver': 'key',

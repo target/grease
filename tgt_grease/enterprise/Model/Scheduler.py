@@ -3,6 +3,7 @@ from .Configuration import PrototypeConfig
 from .CentralScheduling import Scheduling
 from bson.objectid import ObjectId
 import pymongo
+import datetime
 
 
 class Scheduler(object):
@@ -35,7 +36,47 @@ class Scheduler(object):
             bool: True if detection is successful else false
 
         """
-        pass
+        source = self.getDetectedSource()
+        if source:
+            self.ioc.getLogger().trace("Attempting schedule of source", trace=True)
+            self.ioc.getCollection('SourceData').update_one(
+                {'_id': ObjectId(source.get('id'))},
+                {
+                    '$set': {
+                        'grease_data.scheduling.start': datetime.datetime.utcnow()
+                    }
+                }
+            )
+            if self.schedule(source):
+                self.ioc.getLogger().trace("Scheduling [{0}] was successful".format(source['_id']), trace=True)
+                self.ioc.getCollection('SourceData').update_one(
+                    {'_id': ObjectId(source.get('id'))},
+                    {
+                        '$set': {
+                            'grease_data.scheduling.end': datetime.datetime.utcnow()
+                        }
+                    }
+                )
+                return True
+            else:
+                self.ioc.getLogger().error(
+                    "Failed to schedule [{0}] for execution".format(source['_id']),
+                    trace=True,
+                    notify=False
+                )
+                self.ioc.getCollection('SourceData').update_one(
+                    {'_id': ObjectId(source.get('id'))},
+                    {
+                        '$set': {
+                            'grease_data.scheduling.start': None,
+                            'grease_data.scheduling.end': None
+                        }
+                    }
+                )
+                return False
+        else:
+            self.ioc.getLogger().trace("No sources detected for this node at this time", trace=True)
+            return True
 
     def getDetectedSource(self):
         """Gets the oldest successfully detected source
@@ -52,3 +93,40 @@ class Scheduler(object):
             },
             sort=[('grease_data.createTime', pymongo.DESCENDING)]
         )
+
+    def schedule(self, source):
+        """Schedules source for execution
+
+        Returns:
+            bool: If scheduling was successful or not
+
+        """
+        config = self.conf.get_config(source['configuration'])
+        if not config:
+            self.ioc.getLogger().error("Failed to load configuration for source [{0}]".format(source['_id']))
+            return False
+        server, jobs = self.scheduler.determineExecutionServer(config.get('exe_env', 'general'))
+        if not server:
+            self.ioc.getLogger().error(
+                "Failed to find an Execution Node for environment [{0}]".format(config.get('exe_env', 'general'))
+            )
+            return False
+        self.ioc.getCollection('SourceData').update_one(
+            {'_id': ObjectId(source['_id'])},
+            {
+                '$set': {
+                    'grease_data.execution.server': ObjectId(server),
+                    'grease_data.execution.context': source.get('grease_data', {}).get('detection', {}).get('detection', {}),
+                    'grease_data.execution.assignmentTime': datetime.datetime.utcnow(),
+                }
+            }
+        )
+        self.ioc.getCollection('JobServer').update_one(
+            {'_id': ObjectId(server)},
+            {
+                '$set': {
+                    'jobs': jobs + 1
+                }
+            }
+        )
+        return True

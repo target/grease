@@ -3,8 +3,8 @@ The GREASE Data Models
 
 This section covers the different collections of GREASE's MongoDB instance.
 
-Prototype Configurations
-===========================
+Prototype Configurations (GREASE configs)
+===========================================
 
 Prototype configurations tell GREASE what to do with data it detects, and where to detect it from. A Typical config
 will look like this::

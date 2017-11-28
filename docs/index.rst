@@ -10,7 +10,7 @@ Welcome to GREASE. Target's operations automation platform! Here lies all the do
 to checkout the :doc:`GREASE_Guide` for more information!
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents:
 
    GREASE_Guide

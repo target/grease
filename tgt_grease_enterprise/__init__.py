@@ -1,5 +1,5 @@
 from . import Detectors
-from .BaseSourceClass import BaseSource
+from Sources import BaseSource, URLSource
 from .Article14Section31 import Section31 as system_heartbeat
 from .Detector import Detector as engage_lcars
 from .Kirk import CaptainKirk as explore_galaxy

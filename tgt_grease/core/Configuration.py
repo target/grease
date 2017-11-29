@@ -103,6 +103,31 @@ class Configuration(object):
         else:
             return False
 
+    def set(self, key, value, section=None):
+        """Set configuration item
+
+        Args:
+            section (str): Configuration Section to set
+            key (str): Configuration key to set
+            value (object): value to set
+
+        Returns:
+            None: Sets item only
+
+        """
+        global GREASE_CONFIG
+        if section:
+            if isinstance(GREASE_CONFIG, dict):
+                if GREASE_CONFIG.get(section):
+                    GREASE_CONFIG[section][key] = value
+                else:
+                    GREASE_CONFIG[section] = dict()
+                    GREASE_CONFIG[section][key] = value
+            else:
+                return False
+        else:
+            GREASE_CONFIG[key] = value
+
     #########
     # Initialization / Internal Methods
     #########
@@ -151,24 +176,27 @@ class Configuration(object):
                 }
             },
             'Configuration': {
-                'mode': 'filesystem',
                 'dir': Configuration.greaseDir + 'etc' + os.sep
             },
             'Sourcing': {
-                'mode': 'filesystem',
-                'dir': Configuration.greaseDir + 'etc' + os.sep
+                'dir': Configuration.greaseDir + 'etc' + os.sep,
+                'source': None,
+                'config': None,
+                'mock': False
             },
             'Import': {
                 'searchPath': [
                     'tgt_grease.core',
                     'tgt_grease.router.Commands',
+                    'tgt_grease.enterprise.Prototype',
+                    'tgt_grease.enterprise.Sources',
+                    'tgt_grease.enterprise.Detectors',
                     'tgt_grease'
                 ]
             },
             "NodeInformation": {
-                "Roles": ["general"],
-                "ProtoTypes": [],
-                "ResourceMax": 95
+                "ResourceMax": 95,
+                "DeduplicationThreads": 150
             },
             "Additional": {}
         }

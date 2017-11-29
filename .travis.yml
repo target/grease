@@ -37,6 +37,7 @@ matrix:
 
 services:
   - mongodb
+  - postgresql
 
 before_script:
   - pip install pymongo requests
@@ -44,15 +45,24 @@ before_script:
   - sudo chmod 777 /opt/grease/
   - if [ $TRAVIS_OS_NAME = linux ]; then true; else brew install mongo; fi
   - if [ $TRAVIS_OS_NAME = linux ]; then true; else brew services start mongodb; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then rm -rf /usr/local/var/postgres; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then initdb /usr/local/var/postgres; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then pg_ctl -D /usr/local/var/postgres start; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then createuser -s postgres; fi
 
 install:
   - python setup.py install
   
 script:
   - python setup.py test
+# Run twice to ensure state management is successful
+  - python setup.py test
 # TODO: Redo Node Tests
   - grease help
   - grease daemon run --timing:5 --foreground
+  - grease scan --loop:5 --foreground
+  - grease detect --loop:5 --foreground
+  - grease schedule --loop:5 --foreground
 #  - grease enterprise bridge list-pjobs
 #  - grease enterprise bridge list-jobs
 #  - grease enterprise bridge enable-detection

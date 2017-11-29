@@ -6,6 +6,7 @@ import platform
 from bson.objectid import ObjectId
 import threading
 from psutil import cpu_percent, virtual_memory
+import os
 
 
 class DaemonProcess(object):
@@ -63,6 +64,7 @@ class DaemonProcess(object):
             return False
         self.ioc.getLogger().trace("Server execution starting", trace=True)
         # establish job collection
+        # TODO: Transition to using SourceData
         JobsCollection = self.ioc.getCollection("JobQueue")
         self.ioc.getLogger().trace("Searching for Jobs", trace=True)
         jobs = JobsCollection.find({
@@ -176,6 +178,7 @@ class DaemonProcess(object):
                     self.ioc.getLogger().warning(
                         "Job Failed [{0}]".format(job.get('_id')), additional=finishedJob.getData()
                     )
+                    # TODO: Job Execution cooldown timing
                     JobCollection.update_one(
                         {'_id': ObjectId(job['_id'])},
                         {
@@ -312,36 +315,7 @@ class DaemonProcess(object):
             bool: Registration Success
 
         """
-        # TODO: Make a cluster management command to utilize this in more places
-        collection = self.ioc.getCollection("JobServer")
-        if self.ioc.getConfig().NodeIdentity == "Unknown":
-            # Actual registration
-            uid = collection.insert_one({
-                'jobs': 0,
-                'os': platform.system().lower(),
-                'roles': self.ioc.getConfig().get('NodeInformation', "Roles"),
-                'prototypes': self.ioc.getConfig().get('NodeInformation', "ProtoTypes"),
-                'active': True,
-                'activationTime': datetime.utcnow()
-            }).inserted_id
-            fil = open(self.ioc.getConfig().greaseDir + "grease.identity", "w")
-            fil.write(str(uid))
-            fil.close()
-            self.registered = True
-            self.ioc.getConfig().NodeIdentity = uid
-            del collection
-            return True
-        else:
-            # Check the Identity is actually registered
-            if collection.find({'_id': ObjectId(self.ioc.getConfig().NodeIdentity)}).count():
-                del collection
-                return True
-            else:
-                self.ioc.getLogger().error("Invalid Node Identity::Node Identity Not Found", additional={
-                    'NodeID': self.ioc.getConfig().NodeIdentity
-                })
-                del collection
-                return False
+        return self.ioc.ensureRegistration()
 
     def log_once_per_second(self, message, level=DEBUG, additional=None):
         """Log Message once per second

@@ -56,7 +56,6 @@ class TestRegistration(TestCase):
         data = json.loads(fil.read())
         fil.close()
         fil = open(ioc.getConfig().greaseConfigFile, 'w')
-        data['NodeInformation']['ProtoTypes'] = ['TestProtoType']
         data['Import']['searchPath'].append('tgt_grease.router.Commands.tests')
         fil.write(json.dumps(data, sort_keys=True, indent=4))
         fil.close()
@@ -71,6 +70,8 @@ class TestRegistration(TestCase):
                 }
             }
         )
+        # Sleeps are because mongo in Travis is slow sometimes to persist data
+        time.sleep(1.5)
         self.assertTrue(cmd.server())
         self.assertTrue(cmd.drain_jobs(ioc.getCollection('JobQueue')))
         # ensure jobs drain out
@@ -85,11 +86,18 @@ class TestRegistration(TestCase):
         fil.close()
         # remove collection
         ioc.getCollection('TestProtoType').drop()
-        # remove prototypes
-        data['NodeInformation']['ProtoTypes'] = []
         # pop search path
         trash = data['Import']['searchPath'].pop()
         # close out
         fil = open(ioc.getConfig().greaseConfigFile, 'w')
         fil.write(json.dumps(data, sort_keys=True, indent=4))
         fil.close()
+        ioc.getCollection('JobServer') \
+            .update_one(
+            {'_id': ObjectId(ioc.getConfig().NodeIdentity)},
+            {
+                '$set': {
+                    'prototypes': []
+                }
+            }
+        )

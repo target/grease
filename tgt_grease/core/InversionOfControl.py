@@ -1,5 +1,9 @@
 from tgt_grease.core import Logging
 from tgt_grease.core.Connectivity import Mongo
+from datetime import datetime
+from bson.objectid import ObjectId
+import platform
+import os
 
 
 class GreaseContainer(object):
@@ -65,3 +69,49 @@ class GreaseContainer(object):
 
         """
         return self._logger.getConfig()
+
+    def ensureRegistration(self):
+        """
+
+        :return:
+        """
+        collection = self.getCollection("JobServer")
+        if os.path.isfile(self.getConfig().greaseDir + 'grease.identity'):
+            # check to see if identity file is valid
+            fil = open(self.getConfig().greaseDir + 'grease.identity', 'r')
+            nodeId = "".join(fil.read())
+            fil.close()
+            server = collection.find_one({'_id': ObjectId(nodeId)})
+            if server:
+                # Valid registration
+                self.getConfig().NodeIdentity = nodeId
+                return True
+            else:
+                self.getLogger().warning("Invalid node identity found to exist!")
+        if self.getConfig().NodeIdentity == "Unknown":
+            # Actual registration
+            uid = collection.insert_one({
+                'jobs': 0,
+                'os': platform.system().lower(),
+                'roles': ["general"],
+                'prototypes': [],
+                'active': True,
+                'activationTime': datetime.utcnow()
+            }).inserted_id
+            fil = open(self.getConfig().greaseDir + "grease.identity", "w")
+            fil.write(str(uid))
+            fil.close()
+            self.getConfig().NodeIdentity = uid
+            del collection
+            return True
+        else:
+            # Check the Identity is actually registered
+            if collection.find({'_id': ObjectId(self.getConfig().NodeIdentity)}).count():
+                del collection
+                return True
+            else:
+                self.getLogger().error("Invalid Node Identity::Node Identity Not Found", additional={
+                    'NodeID': self.getConfig().NodeIdentity
+                })
+                del collection
+                return False

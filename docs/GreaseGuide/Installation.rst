@@ -1,4 +1,6 @@
-Installing GREASE
+.. _installing-grease:
+
+GREASE Installation
 *********************
 
 Via PyPi: The Traditional Way

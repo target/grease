@@ -14,7 +14,8 @@ setup(
     """,
     classifiers=[
         'Development Status :: 5 - Production/Stable',
-        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 3',
         'Intended Audience :: System Administrators',
         'Intended Audience :: Information Technology',
         'Topic :: System',
@@ -24,8 +25,7 @@ setup(
         'Operating System :: Microsoft :: Windows :: Windows 8',
         'Operating System :: Microsoft :: Windows :: Windows 8.1',
         'Operating System :: Microsoft :: Windows :: Windows 10',
-        'Operating System :: POSIX',
-        'Programming Language :: Python :: 2.7'
+        'Operating System :: POSIX'
     ],
     keywords='python automated recovery',
     author='James E. Bell Jr.',
@@ -34,9 +34,11 @@ setup(
     test_suite='nose.collector',
     tests_require=['nose', 'nose-cover3'],
     install_requires=[
+        'psycopg2',
         'requests',
         'pymongo',
-        'psutil'
+        'psutil',
+        'elasticsearch'
     ] + (
          ["pypiwin32"] if "nt" == os.name else []
         ),

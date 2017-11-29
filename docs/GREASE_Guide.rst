@@ -7,7 +7,8 @@ below for more information on how to get started.
 .. toctree::
    :caption: Contents:
 
+   GreaseGuide/what_is_grease
    GreaseGuide/Installation
-
+   GreaseGuide/data_model
 
 

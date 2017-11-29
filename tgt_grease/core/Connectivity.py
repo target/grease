@@ -55,10 +55,12 @@ class Mongo(object):
                     mongoConf.get('host', 'localhost'),
                     mongoConf.get('port', 27017),
                     mongoConf.get('db', 'grease')
-                )
+                ),
+                w=1
             )
         else:
             return pymongo.MongoClient(
                 host=mongoConf.get('host', 'localhost'),
-                port=mongoConf.get('port', 27017)
+                port=mongoConf.get('port', 27017),
+                w=1
             )

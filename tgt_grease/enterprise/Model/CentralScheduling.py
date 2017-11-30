@@ -150,10 +150,10 @@ class Scheduling(object):
         result = self.ioc.getCollection('JobServer').find({
             'prototypes': 'detect'
         }).sort('jobs', pymongo.ASCENDING).limit(1)
-        if result:
+        if result.count():
             return str(result[0]['_id']), int(result[0]['jobs'])
         else:
-            return ""
+            return "", 0
 
     def determineSchedulingServer(self):
         """Determines scheduling server to use
@@ -167,7 +167,7 @@ class Scheduling(object):
         result = self.ioc.getCollection('JobServer').find({
             'prototypes': 'schedule'
         }).sort('jobs', pymongo.DESCENDING).limit(1)
-        if result:
+        if result.count():
             return str(result[0]['_id']), int(result[0]['jobs'])
         else:
             return "", 0

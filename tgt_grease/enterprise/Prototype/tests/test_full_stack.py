@@ -162,7 +162,6 @@ class TestFullStack(TestCase):
         #############################################
         #            CLEAN UP TIME
         #############################################
-        pConf.load(reloadConf=True)
         ioc.getCollection('JobServer').update_one(
             {'_id': ObjectId(ioc.getConfig().NodeIdentity)},
             {
@@ -173,4 +172,5 @@ class TestFullStack(TestCase):
         )
         ioc.getCollection('Configuration').drop()
         ioc.getCollection('SourceData').drop()
+        pConf.load(reloadConf=True)
         os.remove(TestFile)

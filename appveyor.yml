@@ -1,5 +1,6 @@
 environment:
-  PGUSER: postgres
+  PGUSER: 'postgres'
+  PGPASSWORD: ''
 
   matrix:
 
@@ -40,3 +41,5 @@ test_script:
   # to put the Python version you want to use on PATH.
   - "%PYTHON%\\python.exe setup.py test"
   - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease daemon install"
+  - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease daemon start"
+  - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease daemon stop"

@@ -21,7 +21,7 @@ environment:
 
 # environment variables
 environment:
-  PGUSER=postgres
+  PGUSER: postgres
 
 services:
   - mongodb

@@ -96,6 +96,8 @@ class TestFullStack(TestCase):
         self.assertTrue(ioc.getCollection('SourceData').find_one({
             'grease_data.sourcing.server': ObjectId(ioc.getConfig().NodeIdentity),
             'grease_data.detection.server': ObjectId(ioc.getConfig().NodeIdentity),
+            'grease_data.detection.detection.url': ['https://google.com', ''],
+            'grease_data.detection.detection.constants.test': 'ver',
             'grease_data.scheduling.server': ObjectId(ioc.getConfig().NodeIdentity),
             'grease_data.scheduling.start': None,
             'grease_data.scheduling.end': None

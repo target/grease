@@ -40,7 +40,11 @@ class Detect(object):
         """
         sourceData = self.getScheduledSource()
         if sourceData:
-            configurationData = self.conf.get_config(sourceData.get('configuration'))
+            if isinstance(sourceData.get('configuration'), bytes):
+                conf = sourceData.get('configuration').decode()
+            else:
+                conf = sourceData.get('configuration')
+            configurationData = self.conf.get_config(conf)
             if configurationData:
                 self.ioc.getCollection('SourceData').update_one(
                     {'_id': ObjectId(sourceData.get('_id'))},

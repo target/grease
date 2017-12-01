@@ -82,6 +82,25 @@ class TestFullStack(TestCase):
             'grease_data.detection.end': None
         }))
         #############################################
+        #            EXECUTE DETECTION
+        #############################################
+        Detect = detect()
+        Detect.ioc.getLogger().getConfig().set('verbose', True, 'Logging')
+        Detect.ioc.getLogger().getConfig().set('trace', True, 'Logging')
+        Detect.ioc.getLogger().getConfig().set('mock', True, 'Sourcing')
+        Detect.ioc.getLogger().getConfig().set('config', 'full_stack_test', 'Sourcing')
+        self.assertTrue(Detect.execute({'loop': 1}))
+        #############################################
+        #            ASSERT DETECTION
+        #############################################
+        self.assertTrue(ioc.getCollection('SourceData').find_one({
+            'grease_data.sourcing.server': ObjectId(ioc.getConfig().NodeIdentity),
+            'grease_data.detection.server': ObjectId(ioc.getConfig().NodeIdentity),
+            'grease_data.scheduling.server': ObjectId(ioc.getConfig().NodeIdentity),
+            'grease_data.scheduling.start': None,
+            'grease_data.scheduling.end': None
+        }))
+        #############################################
         #            CLEAN UP TIME
         #############################################
         pConf.load(reloadConf=True)

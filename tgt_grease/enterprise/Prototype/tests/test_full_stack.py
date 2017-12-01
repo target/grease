@@ -225,13 +225,11 @@ class TestFullStack(TestCase):
         #############################################
         #            EXECUTE SCANNING
         #############################################
-        print "SCAN"
         Scanner = scan()
         Scanner.ioc.getLogger().getConfig().set('verbose', True, 'Logging')
         Scanner.ioc.getLogger().getConfig().set('trace', True, 'Logging')
         Scanner.ioc.getLogger().getConfig().set('config', 'full_stack_test', 'Sourcing')
         self.assertTrue(Scanner.execute({'loop': 1}))
-        print "END SCAN"
         #############################################
         #            ASSERT SCANNING
         #############################################
@@ -244,13 +242,11 @@ class TestFullStack(TestCase):
         #############################################
         #            EXECUTE DETECTION
         #############################################
-        print "DETECT"
         Detect = detect()
         Detect.ioc.getLogger().getConfig().set('verbose', True, 'Logging')
         Detect.ioc.getLogger().getConfig().set('trace', True, 'Logging')
         Detect.ioc.getLogger().getConfig().set('config', 'full_stack_test', 'Sourcing')
         self.assertTrue(Detect.execute({'loop': 1}))
-        print "END DETECT"
         #############################################
         #            ASSERT DETECTION
         #############################################
@@ -264,13 +260,11 @@ class TestFullStack(TestCase):
         #############################################
         #            EXECUTE SCHEDULING
         #############################################
-        print "SCHEDULE"
         Scheduling = schedule()
         Scheduling.ioc.getLogger().getConfig().set('verbose', True, 'Logging')
         Scheduling.ioc.getLogger().getConfig().set('trace', True, 'Logging')
         Scheduling.ioc.getLogger().getConfig().set('config', 'full_stack_test', 'Sourcing')
         self.assertTrue(Scheduling.execute({'loop': 1}))
-        print "END SCHEDULE"
         #############################################
         #            ASSERT SCHEDULING
         #############################################

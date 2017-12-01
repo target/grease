@@ -293,7 +293,11 @@ class Deduplication(object):
             # ensure key is in the object
             ioc.getLogger().trace("Starting field [{0}]".format(field), verbose=True)
             if field in obj:
-                T2Object = {'source': source_name, 'field': field, 'value': str(obj.get(field)).encode('utf-8')}
+                if isinstance(obj.get(field), bytes):
+                    value = obj.get(field).decode('utf-8', 'ignore')
+                else:
+                    value = obj.get(field)
+                T2Object = {'source': source_name, 'field': field, 'value': value}
                 checkDoc = FieldColl.find_one({'hash': Deduplication.generate_hash_from_obj(T2Object)})
                 if checkDoc:
                     # we found a 100% matching T2 object
@@ -404,4 +408,4 @@ class Deduplication(object):
             float: Percentage likelihood of duplicate value
 
         """
-        return difflib.SequenceMatcher(lambda x: x == " ", constant.decode(), new_value.decode()).quick_ratio()
+        return difflib.SequenceMatcher(lambda x: x == " ", constant, new_value).quick_ratio()

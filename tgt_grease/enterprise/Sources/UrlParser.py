@@ -5,14 +5,6 @@ import fnmatch
 import os
 import requests
 import datetime
-import sys
-import importlib
-
-try:
-    reload(sys)
-except NameError:
-    importlib.reload(sys)
-sys.setdefaultencoding('utf8')
 
 
 class URLParser(BaseSourceClass):
@@ -73,10 +65,10 @@ class URLParser(BaseSourceClass):
             try:
                 response = requests.get(URL)
                 self._data.append({
-                    'url': ''.join(response.url.decode(response.encoding).encode('utf8')),
+                    'url': response.url.encode('utf-8', 'ignore'),
                     'status_code': int(response.status_code),
                     'headers': str(response.headers),
-                    'body': ''.join(response.text.decode(response.encoding).encode('utf8'))
+                    'body': response.text.encode('utf-8', 'ignore')
                 })
                 scanned += 1
             except requests.HTTPError:

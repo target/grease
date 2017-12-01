@@ -9,7 +9,7 @@ import os
 
 class TestFullStack(TestCase):
 
-    def test_sourcing(self):
+    def test_mock(self):
         #############################################
         #            SETUP UP TIME
         #############################################
@@ -48,6 +48,9 @@ class TestFullStack(TestCase):
                             'max': 201
                         }
                     ]
+                },
+                'constants': {
+                    'test': 'ver'
                 }
             }
         )

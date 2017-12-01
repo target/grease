@@ -6,8 +6,12 @@ import os
 import requests
 import datetime
 import sys
+import importlib
 
-reload(sys)
+try:
+    reload(sys)
+except NameError:
+    importlib.reload(sys)
 sys.setdefaultencoding('utf8')
 
 

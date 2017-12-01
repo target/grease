@@ -101,7 +101,10 @@ class Scheduler(object):
             bool: If scheduling was successful or not
 
         """
-        config = self.conf.get_config(source['configuration'])
+        if isinstance(source['configuration'], bytes):
+            config = self.conf.get_config(source['configuration'].decode())
+        else:
+            config = self.conf.get_config(source['configuration'])
         if not config:
             self.ioc.getLogger().error("Failed to load configuration for source [{0}]".format(source['_id']))
             return False

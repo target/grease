@@ -103,6 +103,28 @@ class TestFullStack(TestCase):
             'grease_data.scheduling.end': None
         }))
         #############################################
+        #            EXECUTE SCHEDULING
+        #############################################
+        Scheduling = schedule()
+        Scheduling.ioc.getLogger().getConfig().set('verbose', True, 'Logging')
+        Scheduling.ioc.getLogger().getConfig().set('trace', True, 'Logging')
+        Scheduling.ioc.getLogger().getConfig().set('mock', True, 'Sourcing')
+        Scheduling.ioc.getLogger().getConfig().set('config', 'full_stack_test', 'Sourcing')
+        self.assertTrue(Scheduling.execute({'loop': 1}))
+        #############################################
+        #            ASSERT SCHEDULING
+        #############################################
+        self.assertTrue(ioc.getCollection('SourceData').find_one({
+            'grease_data.sourcing.server': ObjectId(ioc.getConfig().NodeIdentity),
+            'grease_data.detection.server': ObjectId(ioc.getConfig().NodeIdentity),
+            'grease_data.detection.detection.url': ['https://google.com', ''],
+            'grease_data.detection.detection.constants.test': 'ver',
+            'grease_data.scheduling.server': ObjectId(ioc.getConfig().NodeIdentity),
+            'grease_data.execution.server': ObjectId(ioc.getConfig().NodeIdentity),
+            'grease_data.execution.start': None,
+            'grease_data.execution.end': None
+        }))
+        #############################################
         #            CLEAN UP TIME
         #############################################
         pConf.load(reloadConf=True)

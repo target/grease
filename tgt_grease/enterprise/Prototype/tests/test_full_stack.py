@@ -2,9 +2,11 @@ from unittest import TestCase
 from tgt_grease.core import GreaseContainer
 from tgt_grease.enterprise.Model import PrototypeConfig
 from tgt_grease.enterprise.Prototype import scan, detect, schedule
+from tgt_grease.router.Commands.Daemon import DaemonProcess
 from bson.objectid import ObjectId
 import json
 import os
+import time
 
 
 class TestFullStack(TestCase):
@@ -123,6 +125,39 @@ class TestFullStack(TestCase):
             'grease_data.execution.server': ObjectId(ioc.getConfig().NodeIdentity),
             'grease_data.execution.start': None,
             'grease_data.execution.end': None
+        }))
+        #############################################
+        #            EXECUTE JOBS
+        #############################################
+        ioc.getCollection('JobServer').update_one(
+            {'_id': ObjectId(ioc.getConfig().NodeIdentity)},
+            {
+                '$set': {
+                    'prototypes': []
+                }
+            }
+        )
+        Daemon = DaemonProcess(ioc)
+        Daemon.ioc.getLogger().getConfig().set('verbose', True, 'Logging')
+        Daemon.ioc.getLogger().getConfig().set('trace', True, 'Logging')
+        Daemon.ioc.getLogger().getConfig().set('mock', True, 'Sourcing')
+        Daemon.ioc.getLogger().getConfig().set('config', 'full_stack_test', 'Sourcing')
+        self.assertTrue(Daemon.server())
+        self.assertTrue(Daemon.drain_jobs(ioc.getCollection('SourceData')))
+        #############################################
+        #            ASSERT JOB EXECUTION
+        #############################################
+        # sleep a few for seconds to let help complete
+        time.sleep(5)
+        self.assertTrue(ioc.getCollection('SourceData').find_one({
+            'grease_data.sourcing.server': ObjectId(ioc.getConfig().NodeIdentity),
+            'grease_data.detection.server': ObjectId(ioc.getConfig().NodeIdentity),
+            'grease_data.detection.detection.url': ['https://google.com', ''],
+            'grease_data.detection.detection.constants.test': 'ver',
+            'grease_data.scheduling.server': ObjectId(ioc.getConfig().NodeIdentity),
+            'grease_data.execution.server': ObjectId(ioc.getConfig().NodeIdentity),
+            'grease_data.execution.commandSuccess': True,
+            'grease_data.execution.executionSuccess': True
         }))
         #############################################
         #            CLEAN UP TIME

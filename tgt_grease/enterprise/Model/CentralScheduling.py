@@ -74,13 +74,11 @@ class Scheduling(object):
                         'execution': {
                             'server': None,
                             'assignmentTime': None,
-                            'start': None,
-                            'end': None,
-                            'context': {},
+                            'completeTime': None,
+                            'returnData': {},
                             'executionSuccess': False,
                             'commandSuccess': False,
-                            'failures': 0,
-                            'retryTime': datetime.datetime.utcnow()
+                            'failures': 0
                         }
                     },
                     'source': str(source).encode('utf-8'),

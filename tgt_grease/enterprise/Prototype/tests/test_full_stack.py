@@ -174,3 +174,156 @@ class TestFullStack(TestCase):
         ioc.getCollection('SourceData').drop()
         pConf.load(reloadConf=True)
         os.remove(TestFile)
+
+    def test_real(self):
+        #############################################
+        #            SETUP UP TIME
+        #############################################
+        ioc = GreaseContainer()
+        pConf = PrototypeConfig(ioc)
+        ioc.ensureRegistration()
+        ioc.getCollection('JobServer').update_one(
+            {'_id': ObjectId(ioc.getConfig().NodeIdentity)},
+            {
+                '$set': {
+                    'prototypes': ['scan', 'detect', 'schedule']
+                }
+            }
+        )
+        ioc.getCollection('Configuration').insert_one(
+            {
+                'active': True,
+                'type': 'prototype_config',
+                "name": "full_stack_test",
+                "job": "help",
+                "exe_env": "general",
+                "source": "url_source",
+                "url": ['http://google.com'],
+                "logic": {
+                    "Regex": [
+                        {
+                            "field": "url",
+                            "pattern": ".*",
+                            'variable': True,
+                            'variable_name': 'url'
+                        }
+                    ],
+                    'Range': [
+                        {
+                            'field': 'status_code',
+                            'min': 199,
+                            'max': 201
+                        }
+                    ]
+                },
+                'constants': {
+                    'test': 'ver'
+                }
+            }
+        )
+        pConf.load(reloadConf=True)
+        #############################################
+        #            EXECUTE SCANNING
+        #############################################
+        print "SCAN"
+        Scanner = scan()
+        Scanner.ioc.getLogger().getConfig().set('verbose', True, 'Logging')
+        Scanner.ioc.getLogger().getConfig().set('trace', True, 'Logging')
+        Scanner.ioc.getLogger().getConfig().set('config', 'full_stack_test', 'Sourcing')
+        self.assertTrue(Scanner.execute({'loop': 1}))
+        print "END SCAN"
+        #############################################
+        #            ASSERT SCANNING
+        #############################################
+        self.assertTrue(ioc.getCollection('SourceData').find_one({
+            'grease_data.sourcing.server': ObjectId(ioc.getConfig().NodeIdentity),
+            'grease_data.detection.server': ObjectId(ioc.getConfig().NodeIdentity),
+            'grease_data.detection.start': None,
+            'grease_data.detection.end': None
+        }))
+        #############################################
+        #            EXECUTE DETECTION
+        #############################################
+        print "DETECT"
+        Detect = detect()
+        Detect.ioc.getLogger().getConfig().set('verbose', True, 'Logging')
+        Detect.ioc.getLogger().getConfig().set('trace', True, 'Logging')
+        Detect.ioc.getLogger().getConfig().set('config', 'full_stack_test', 'Sourcing')
+        self.assertTrue(Detect.execute({'loop': 1}))
+        print "END DETECT"
+        #############################################
+        #            ASSERT DETECTION
+        #############################################
+        self.assertTrue(ioc.getCollection('SourceData').find_one({
+            'grease_data.sourcing.server': ObjectId(ioc.getConfig().NodeIdentity),
+            'grease_data.detection.server': ObjectId(ioc.getConfig().NodeIdentity),
+            'grease_data.scheduling.server': ObjectId(ioc.getConfig().NodeIdentity),
+            'grease_data.scheduling.start': None,
+            'grease_data.scheduling.end': None
+        }))
+        #############################################
+        #            EXECUTE SCHEDULING
+        #############################################
+        print "SCHEDULE"
+        Scheduling = schedule()
+        Scheduling.ioc.getLogger().getConfig().set('verbose', True, 'Logging')
+        Scheduling.ioc.getLogger().getConfig().set('trace', True, 'Logging')
+        Scheduling.ioc.getLogger().getConfig().set('config', 'full_stack_test', 'Sourcing')
+        self.assertTrue(Scheduling.execute({'loop': 1}))
+        print "END SCHEDULE"
+        #############################################
+        #            ASSERT SCHEDULING
+        #############################################
+        self.assertTrue(ioc.getCollection('SourceData').find_one({
+            'grease_data.sourcing.server': ObjectId(ioc.getConfig().NodeIdentity),
+            'grease_data.detection.server': ObjectId(ioc.getConfig().NodeIdentity),
+            'grease_data.scheduling.server': ObjectId(ioc.getConfig().NodeIdentity),
+            'grease_data.execution.server': ObjectId(ioc.getConfig().NodeIdentity),
+            'grease_data.execution.start': None,
+            'grease_data.execution.end': None
+        }))
+        #############################################
+        #            EXECUTE JOBS
+        #############################################
+        ioc.getCollection('JobServer').update_one(
+            {'_id': ObjectId(ioc.getConfig().NodeIdentity)},
+            {
+                '$set': {
+                    'prototypes': []
+                }
+            }
+        )
+        Daemon = DaemonProcess(ioc)
+        Daemon.ioc.getLogger().getConfig().set('verbose', True, 'Logging')
+        Daemon.ioc.getLogger().getConfig().set('trace', True, 'Logging')
+        Daemon.ioc.getLogger().getConfig().set('config', 'full_stack_test', 'Sourcing')
+        self.assertTrue(Daemon.server())
+        self.assertTrue(Daemon.drain_jobs(ioc.getCollection('SourceData')))
+        #############################################
+        #            ASSERT JOB EXECUTION
+        #############################################
+        # sleep a few for seconds to let help complete
+        time.sleep(5)
+        self.assertTrue(ioc.getCollection('SourceData').find_one({
+            'grease_data.sourcing.server': ObjectId(ioc.getConfig().NodeIdentity),
+            'grease_data.detection.server': ObjectId(ioc.getConfig().NodeIdentity),
+            'grease_data.scheduling.server': ObjectId(ioc.getConfig().NodeIdentity),
+            'grease_data.execution.server': ObjectId(ioc.getConfig().NodeIdentity),
+            'grease_data.execution.commandSuccess': True,
+            'grease_data.execution.executionSuccess': True
+        }))
+        #############################################
+        #            CLEAN UP TIME
+        #############################################
+        ioc.getCollection('JobServer').update_one(
+            {'_id': ObjectId(ioc.getConfig().NodeIdentity)},
+            {
+                '$set': {
+                    'prototypes': []
+                }
+            }
+        )
+        ioc.getCollection('Configuration').drop()
+        ioc.getCollection('SourceData').drop()
+        ioc.getCollection('DeDup_Sourcing').drop()
+        pConf.load(reloadConf=True)

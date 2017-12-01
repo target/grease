@@ -89,7 +89,7 @@ class Deduplication(object):
             # empty list return empty lists
             return []
         self.ioc.getLogger().trace(
-            "Starting deduplication from data source [{0}] total records to parse [{0}]".format(source, len(data)),
+            "Starting deduplication from data source [{0}] total records to parse [{1}]".format(source, len(data)),
             trace=True
         )
         # now comes James' version of machine learning. I call it "Blue Collar Machine Learning"
@@ -404,4 +404,4 @@ class Deduplication(object):
             float: Percentage likelihood of duplicate value
 
         """
-        return difflib.SequenceMatcher(lambda x: x == " ", constant, new_value).quick_ratio()
+        return difflib.SequenceMatcher(lambda x: x == " ", constant.decode(), new_value.decode()).quick_ratio()

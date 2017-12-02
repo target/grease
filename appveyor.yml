@@ -39,6 +39,7 @@ test_script:
   # the interpreter you're using - Appveyor does not do anything special
   # to put the Python version you want to use on PATH.
   - "%PYTHON%\\python.exe setup.py test"
+  - "%PYTHON%\\python.exe setup.py install"
   - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease daemon install"
   - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease daemon start"
   - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease daemon stop"

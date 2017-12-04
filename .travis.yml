@@ -9,10 +9,6 @@ matrix:
     - os: linux
       sudo: required
       dist: trusty
-      python: "3.2"
-    - os: linux
-      sudo: required
-      dist: trusty
       python: "3.3"
     - os: linux
       sudo: required

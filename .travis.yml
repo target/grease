@@ -5,11 +5,18 @@ matrix:
     - os: linux
       sudo: required
       dist: trusty
-      python: "2.7"
-    - os: linux
-      sudo: required
-      dist: trusty
-      python: "nightly"
+      python:
+        - "2.7"
+        - "3.2"
+        - "3.3"
+        - "3.4"
+        - "3.5"
+        - "3.6"
+        - "nightly"
+#    - os: linux
+#      sudo: required
+#      dist: trusty
+#      python: "nightly"
 #      Removed Until Travis Fixes Their Image
 #    - os: osx
 #      sudo: required
@@ -26,7 +33,14 @@ matrix:
       sudo: required
       osx_image: xcode9.1
       rvm: 2.3
-      python: "nightly"
+      python:
+        - "2.7"
+        - "3.2"
+        - "3.3"
+        - "3.4"
+        - "3.5"
+        - "3.6"
+        - "nightly"
       env:
 #      Literally taken from the travis folks https://github.com/travis-ci/travis-ci/issues/8552
         - HOMEBREW_DEVELOPER="Not really, but let's pretend I am until this travis bug gets fixed, ok?"

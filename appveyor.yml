@@ -19,6 +19,10 @@ environment:
     - PYTHON: "C:\\Python35-x64"
     - PYTHON: "C:\\Python36-x64"
 
+  allow_failures:
+    # psutil error
+    - PYTHON: "C:\\Python33-x64"
+
 services:
   - mongodb
   - postgresql

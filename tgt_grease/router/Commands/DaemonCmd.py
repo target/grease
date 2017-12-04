@@ -112,8 +112,8 @@ class Daemon(Command):
         run
             run the daemon in the foreground    
             
-        --timing:<int>
-            Seconds to run daemon for
+        --loop:<int>
+            Number of cycles to run the daemon
         --foreground
             If provided this will print log messages into the foreground
     
@@ -133,7 +133,7 @@ class Daemon(Command):
             return bool(self.stop())
         elif 'run' in context.get('grease_other_args'):
             try:
-                return self.run(context.get('timing'))
+                return self.run(context.get('loop'))
             except KeyboardInterrupt:
                 return True
         else:
@@ -268,11 +268,11 @@ class Daemon(Command):
             self.ioc.getLogger().error("Unrecognized operating system [{0}]".format(platform))
             return False
 
-    def run(self, timing=None):
+    def run(self, loop=None):
         """Actual running of the daemon
 
         Args:
-            timing (int): Amount of seconds the daemon should run for
+            loop (int): Amount of cycles the daemon should run for
 
         Returns:
             bool: Server running state
@@ -282,7 +282,7 @@ class Daemon(Command):
         if not daemon.registered:
             self.ioc.getLogger().critical("Node is not registered!")
             return False
-        if not timing:
+        if not loop:
             while True:
                 if daemon.server():
                     continue
@@ -291,11 +291,15 @@ class Daemon(Command):
                     continue
         else:
             self.ioc.getLogger().debug("Daemon in timed mode")
-            SecondToStop = int(datetime.datetime.utcnow().second) + int(timing)
-            while SecondToStop != datetime.datetime.utcnow().second:
+            runs = 0
+            loop = int(loop)
+            while runs < loop:
                 if not daemon.server():
                     daemon.log_once_per_second("Server Process Failed", ERROR)
                 daemon.log_once_per_second(
                     "Daemon Server process complete for second [{0}]".format(datetime.datetime.utcnow().second)
                 )
+                runs += 1
+            if not daemon.drain_jobs(self.ioc.getCollection('SourceData')):
+                self.ioc.getLogger().error("Failed to drain jobs", notify=False)
         return True

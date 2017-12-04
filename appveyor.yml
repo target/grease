@@ -42,7 +42,7 @@ test_script:
   - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease daemon install"
   - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease daemon start"
   - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease daemon stop"
-  - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease daemon run --timing:5 --foreground"
+  - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease daemon run --loop:5 --foreground"
   - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease help"
   - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease scan --loop:5 --foreground"
   - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease detect --loop:5 --foreground"

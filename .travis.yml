@@ -59,7 +59,7 @@ script:
   - python setup.py test
 # TODO: Redo Node Tests
   - grease help
-  - grease daemon run --timing:5 --foreground
+  - grease daemon run --loop:5 --foreground
   - grease scan --loop:5 --foreground
   - grease detect --loop:5 --foreground
   - grease schedule --loop:5 --foreground

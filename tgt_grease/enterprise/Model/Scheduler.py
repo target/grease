@@ -40,7 +40,7 @@ class Scheduler(object):
         if source:
             self.ioc.getLogger().trace("Attempting schedule of source", trace=True)
             self.ioc.getCollection('SourceData').update_one(
-                {'_id': ObjectId(source.get('id'))},
+                {'_id': ObjectId(source.get('_id'))},
                 {
                     '$set': {
                         'grease_data.scheduling.start': datetime.datetime.utcnow()
@@ -50,7 +50,7 @@ class Scheduler(object):
             if self.schedule(source):
                 self.ioc.getLogger().trace("Scheduling [{0}] was successful".format(source['_id']), trace=True)
                 self.ioc.getCollection('SourceData').update_one(
-                    {'_id': ObjectId(source.get('id'))},
+                    {'_id': ObjectId(source.get('_id'))},
                     {
                         '$set': {
                             'grease_data.scheduling.end': datetime.datetime.utcnow()
@@ -65,7 +65,7 @@ class Scheduler(object):
                     notify=False
                 )
                 self.ioc.getCollection('SourceData').update_one(
-                    {'_id': ObjectId(source.get('id'))},
+                    {'_id': ObjectId(source.get('_id'))},
                     {
                         '$set': {
                             'grease_data.scheduling.start': None,
@@ -101,7 +101,10 @@ class Scheduler(object):
             bool: If scheduling was successful or not
 
         """
-        config = self.conf.get_config(source['configuration'])
+        if isinstance(source['configuration'], bytes):
+            config = self.conf.get_config(source['configuration'].decode())
+        else:
+            config = self.conf.get_config(source['configuration'])
         if not config:
             self.ioc.getLogger().error("Failed to load configuration for source [{0}]".format(source['_id']))
             return False
@@ -116,7 +119,6 @@ class Scheduler(object):
             {
                 '$set': {
                     'grease_data.execution.server': ObjectId(server),
-                    'grease_data.execution.context': source.get('grease_data', {}).get('detection', {}).get('detection', {}),
                     'grease_data.execution.assignmentTime': datetime.datetime.utcnow(),
                 }
             }

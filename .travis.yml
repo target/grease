@@ -9,14 +9,35 @@ matrix:
     - os: linux
       sudo: required
       dist: trusty
+      python: "3.3"
+    - os: linux
+      sudo: required
+      dist: trusty
+      python: "3.4"
+    - os: linux
+      sudo: required
+      dist: trusty
+      python: "3.5"
+    - os: linux
+      sudo: required
+      dist: trusty
+      python: "3.5"
+    - os: linux
+      sudo: required
+      dist: trusty
+      python: "3.6"
+    - os: linux
+      sudo: required
+      dist: trusty
       python: "nightly"
-#      Removed Until Travis Fixes Their Image
+# Still Borken
 #    - os: osx
 #      sudo: required
 #      osx_image: xcode9.1
 #      rvm: 2.3
 #      python: "2.7"
 #      env:
+##      Literally taken from the travis folks https://github.com/travis-ci/travis-ci/issues/8552
 #        - HOMEBREW_DEVELOPER="Not really, but let's pretend I am until this travis bug gets fixed, ok?"
 #      before_install:
 #        - rvm install "ruby-2.3.4"
@@ -40,7 +61,7 @@ services:
   - postgresql
 
 before_script:
-  - pip install pymongo requests
+  - pip install pymongo requests psycopg2 psutil elasticsearch
   - sudo mkdir /opt/grease/
   - sudo chmod 777 /opt/grease/
   - if [ $TRAVIS_OS_NAME = linux ]; then true; else brew install mongo; fi
@@ -59,7 +80,7 @@ script:
   - python setup.py test
 # TODO: Redo Node Tests
   - grease help
-  - grease daemon run --timing:5 --foreground
+  - grease daemon run --loop:5 --foreground
   - grease scan --loop:5 --foreground
   - grease detect --loop:5 --foreground
   - grease schedule --loop:5 --foreground

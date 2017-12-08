@@ -1,12 +1,11 @@
 from logging import DEBUG, ERROR, INFO
 from tgt_grease.core import GreaseContainer, ImportTool
 from tgt_grease.core.Types import Command
+from tgt_grease.enterprise.Model import PrototypeConfig
 from datetime import datetime
-import platform
 from bson.objectid import ObjectId
 import threading
 from psutil import cpu_percent, virtual_memory
-import os
 
 
 class DaemonProcess(object):
@@ -17,6 +16,7 @@ class DaemonProcess(object):
         current_real_second (int): Current second in time
         registered (bool): If the node is registered with MongoDB
         impTool (ImportTool): Instance of Import Tool
+        conf (PrototypeConfig): Prototype Configuration Instance
 
     """
 
@@ -35,6 +35,7 @@ class DaemonProcess(object):
         if self.ioc.getConfig().NodeIdentity == "Unknown" and not self.register():
             self.registered = False
         self.impTool = ImportTool(self.ioc.getLogger())
+        self.conf = PrototypeConfig(self.ioc)
 
     def server(self):
         """Server process for ensuring prototypes & jobs are running
@@ -64,13 +65,13 @@ class DaemonProcess(object):
             return False
         self.ioc.getLogger().trace("Server execution starting", trace=True)
         # establish job collection
-        # TODO: Transition to using SourceData
-        JobsCollection = self.ioc.getCollection("JobQueue")
+        JobsCollection = self.ioc.getCollection("SourceData")
         self.ioc.getLogger().trace("Searching for Jobs", trace=True)
         jobs = JobsCollection.find({
-            'node': ObjectId(self.ioc.getConfig().NodeIdentity),
-            'completed': False,
-            'failures': {'$lt': 6}
+            'grease_data.execution.server': ObjectId(self.ioc.getConfig().NodeIdentity),
+            'grease_data.execution.commandSuccess': False,
+            'grease_data.execution.executionSuccess': False,
+            'grease_data.execution.failures': {'$lt': 6}
         })
         # Get Node Information
         Node = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(self.ioc.getConfig().NodeIdentity)})
@@ -111,12 +112,16 @@ class DaemonProcess(object):
         """
         if not self.contextManager['jobs'].get(job.get('_id')):
             # New Job to run
-            inst = self.impTool.load(job.get('command'))
+            if isinstance(job.get('configuration'), bytes):
+                conf = job.get('configuration').decode()
+            else:
+                conf = job.get('configuration')
+            inst = self.impTool.load(self.conf.get_config(conf).get('job'))
             if inst and isinstance(inst, Command):
                 inst.ioc.getLogger().foreground = self.ioc.getLogger().foreground
                 thread = threading.Thread(
                     target=inst.safe_execute,
-                    args=(job.get('context', {})),
+                    args=(job.get('grease_data', {}).get('detection', {}).get('detection', {}),),
                     name="GREASE DAEMON COMMAND EXECUTION [{0}]".format(job.get('_id'))
                 )
                 thread.daemon = True
@@ -125,16 +130,6 @@ class DaemonProcess(object):
                     'thread': thread,
                     'command': inst
                 }
-                JobCollection.update_one(
-                    {'_id': ObjectId(job.get('_id'))},
-                    {
-                        '$set': {
-                            'inProgress': True,
-                            'completed': False,
-                            'executionStart': datetime.utcnow()
-                        }
-                    }
-                )
             else:
                 # Invalid Job
                 del inst
@@ -143,11 +138,7 @@ class DaemonProcess(object):
                     {'_id': ObjectId(job['_id'])},
                     {
                         '$set': {
-                            'inProgress': False,
-                            'completed': False,
-                            'completedTime': None,
-                            'returnData': None,
-                            'failures': job.get('failures', 0) + 1
+                            'grease_data.execution.failures': job.get('failures', 0) + 1
                         }
                     }
                 )
@@ -159,6 +150,7 @@ class DaemonProcess(object):
                 return
             else:
                 # Execution has ended
+                self.ioc.getLogger().trace("Job [{0}] finished running".format(job.get('_id')), trace=True)
                 finishedJob = self.contextManager['jobs'].get(job.get('_id')).get('command')  # type: Command
                 if finishedJob.getRetVal():
                     # job completed successfully
@@ -166,10 +158,10 @@ class DaemonProcess(object):
                         {'_id': ObjectId(job.get('_id'))},
                         {
                             '$set': {
-                                'inProgress': False,
-                                'completed': True,
-                                'completedTime': datetime.utcnow(),
-                                'returnData': finishedJob.getData()
+                                'grease_data.execution.commandSuccess': finishedJob.getRetVal(),
+                                'grease_data.execution.executionSuccess': finishedJob.getExecVal(),
+                                'grease_data.execution.completeTime': datetime.utcnow(),
+                                'grease_data.execution.returnData': finishedJob.getData()
                             }
                         }
                     )
@@ -183,11 +175,7 @@ class DaemonProcess(object):
                         {'_id': ObjectId(job['_id'])},
                         {
                             '$set': {
-                                'inProgress': False,
-                                'completed': False,
-                                'completedTime': None,
-                                'returnData': None,
-                                'failures': job.get('failures', 0) + 1
+                                'grease_data.execution.failures': job.get('failures', 0) + 1
                             }
                         }
                     )
@@ -269,6 +257,7 @@ class DaemonProcess(object):
                         continue
                     else:
                         # Execution has ended
+                        self.ioc.getLogger().trace("Job [{0}] finished running".format(key), trace=True)
                         finishedJob = self.contextManager['jobs'].get(key).get('command')  # type: Command
                         if finishedJob.getRetVal():
                             # job completed successfully
@@ -276,10 +265,10 @@ class DaemonProcess(object):
                                 {'_id': ObjectId(key)},
                                 {
                                     '$set': {
-                                        'inProgress': False,
-                                        'completed': True,
-                                        'completedTime': datetime.utcnow(),
-                                        'returnData': finishedJob.getData()
+                                        'grease_data.execution.commandSuccess': finishedJob.getRetVal(),
+                                        'grease_data.execution.executionSuccess': finishedJob.getExecVal(),
+                                        'grease_data.execution.completeTime': datetime.utcnow(),
+                                        'grease_data.execution.returnData': finishedJob.getData()
                                     }
                                 }
                             )
@@ -292,11 +281,7 @@ class DaemonProcess(object):
                                 {'_id': ObjectId(key)},
                                 {
                                     '$set': {
-                                        'inProgress': False,
-                                        'completed': True,
-                                        'completedTime': datetime.utcnow(),
-                                        'returnData': {'drained': True},
-                                        'failures': val.get('failures', 0) + 1
+                                        'grease_data.execution.failures': val['command'].get('failures', 0) + 1
                                     }
                                 }
                             )

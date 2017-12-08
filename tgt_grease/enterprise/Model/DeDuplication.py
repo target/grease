@@ -89,7 +89,7 @@ class Deduplication(object):
             # empty list return empty lists
             return []
         self.ioc.getLogger().trace(
-            "Starting deduplication from data source [{0}] total records to parse [{0}]".format(source, len(data)),
+            "Starting deduplication from data source [{0}] total records to parse [{1}]".format(source, len(data)),
             trace=True
         )
         # now comes James' version of machine learning. I call it "Blue Collar Machine Learning"
@@ -293,7 +293,11 @@ class Deduplication(object):
             # ensure key is in the object
             ioc.getLogger().trace("Starting field [{0}]".format(field), verbose=True)
             if field in obj:
-                T2Object = {'source': source_name, 'field': field, 'value': str(obj.get(field)).encode('utf-8')}
+                if isinstance(obj.get(field), bytes):
+                    value = obj.get(field).decode('utf-8', 'ignore')
+                else:
+                    value = obj.get(field)
+                T2Object = {'source': source_name, 'field': field, 'value': value}
                 checkDoc = FieldColl.find_one({'hash': Deduplication.generate_hash_from_obj(T2Object)})
                 if checkDoc:
                     # we found a 100% matching T2 object

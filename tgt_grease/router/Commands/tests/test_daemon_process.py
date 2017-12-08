@@ -2,9 +2,11 @@ from unittest import TestCase
 from tgt_grease.core import GreaseContainer
 from tgt_grease.core.Types import Command
 from tgt_grease.router.Commands.Daemon import DaemonProcess
+from tgt_grease.enterprise.Model import Deduplication, PrototypeConfig
 from bson import ObjectId
 from tgt_grease.core import Configuration
 import json
+import datetime
 import time
 
 
@@ -33,20 +35,79 @@ class TestRegistration(TestCase):
     def test_job_execution(self):
         ioc = GreaseContainer()
         cmd = DaemonProcess(ioc)
-        jobid = ioc.getCollection('JobQueue').insert_one({
-            'node': ObjectId(ioc.getConfig().NodeIdentity),
-            'inProgress': False,
-            'completed': False,
-            'failures': 0,
-            'command': 'help',
-            'context': {}
-        }).inserted_id
+        proto = PrototypeConfig(ioc)
+        ioc.getCollection('Configuration').insert_one(
+            {
+                'active': True,
+                'type': 'prototype_config',
+                "name": "exe_test",
+                "job": "help",
+                "exe_env": "general",
+                "source": "url_source",
+                "logic": {
+                    "Regex": [
+                        {
+                            "field": "url",
+                            "pattern": ".*",
+                            'variable': True,
+                            'variable_name': 'url'
+                        }
+                    ],
+                    'Range': [
+                        {
+                            'field': 'status_code',
+                            'min': 199,
+                            'max': 201
+                        }
+                    ]
+                },
+                'constants': {
+                    'test': 'ver'
+                }
+            }
+        )
+        proto.load(reloadConf=True)
+        jobid = ioc.getCollection('SourceData').insert_one({
+                    'grease_data': {
+                        'sourcing': {
+                            'server': ObjectId(ioc.getConfig().NodeIdentity)
+                        },
+                        'detection': {
+                            'server': ObjectId(ioc.getConfig().NodeIdentity),
+                            'start': datetime.datetime.utcnow(),
+                            'end': datetime.datetime.utcnow(),
+                            'detection': {}
+                        },
+                        'scheduling': {
+                            'server': ObjectId(ioc.getConfig().NodeIdentity),
+                            'start': datetime.datetime.utcnow(),
+                            'end': datetime.datetime.utcnow(),
+                        },
+                        'execution': {
+                            'server': ObjectId(ioc.getConfig().NodeIdentity),
+                            'assignmentTime': datetime.datetime.utcnow(),
+                            'completeTime': None,
+                            'returnData': {},
+                            'executionSuccess': False,
+                            'commandSuccess': False,
+                            'failures': 0
+                        }
+                    },
+                    'source': 'dev',
+                    'configuration': 'exe_test',
+                    'data': {},
+                    'createTime': datetime.datetime.utcnow(),
+                    'expiry': Deduplication.generate_max_expiry_time(1)
+                }).inserted_id
         # Run for a bit
         self.assertTrue(cmd.server())
-        self.assertTrue(cmd.drain_jobs(ioc.getCollection('JobQueue')))
-        result = ioc.getCollection('JobQueue').find_one({'_id': ObjectId(jobid)})
+        self.assertTrue(cmd.drain_jobs(ioc.getCollection('SourceData')))
+        result = ioc.getCollection('SourceData').find_one({'_id': ObjectId(jobid)})
         self.assertTrue(result)
-        self.assertTrue(result['completed'])
+        self.assertTrue(result.get('grease_data').get('execution').get('executionSuccess'))
+        self.assertTrue(result.get('grease_data').get('execution').get('commandSuccess'))
+        ioc.getCollection('SourceData').drop()
+        ioc.getCollection('Configuration').drop()
 
     def test_prototype_execution(self):
         ioc = GreaseContainer()

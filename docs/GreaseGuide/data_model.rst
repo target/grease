@@ -79,13 +79,11 @@ collection is this:::
             'execution': { # <-- Execution Data
                 'server': ObjectId, # <-- Server assigned for execution
                 'assignmentTime': DateTime, # <-- Time job was assigned
-                'start': DateTime, # <-- Time execution started
-                'end': DateTime, # <-- Time execution ended
-                'context': dict, # <-- Data passed to the command as context
+                'completeTime': DateTime, # <-- Time job was completed
                 'executionSuccess': Boolean, # <-- Execution Success
                 'commandSuccess': Boolean, # <-- Command Success
                 'failures': Int, # <-- Job Execution Failures
-                'retryTime': DateTime # <-- If a failure happens, when it should be tried again
+                'returnData': Dict # <-- Data returned from command
             }
         },
         'source': String, # <-- source data came from

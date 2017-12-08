@@ -65,10 +65,10 @@ class URLParser(BaseSourceClass):
             try:
                 response = requests.get(URL)
                 self._data.append({
-                    'url': ''.join(response.url).encode('utf-8'),
+                    'url': response.url.encode('utf-8', 'ignore'),
                     'status_code': int(response.status_code),
                     'headers': str(response.headers),
-                    'body': ''.join(response.text).encode('utf-8')
+                    'body': response.text.encode('utf-8', 'ignore')
                 })
                 scanned += 1
             except requests.HTTPError:

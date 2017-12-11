@@ -84,6 +84,7 @@ script:
   - grease scan --loop:5 --foreground
   - grease detect --loop:5 --foreground
   - grease schedule --loop:5 --foreground
+  - grease monitor --loop:5 --foreground
 #  - grease enterprise bridge list-pjobs
 #  - grease enterprise bridge list-jobs
 #  - grease enterprise bridge enable-detection

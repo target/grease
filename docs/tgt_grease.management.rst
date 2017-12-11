@@ -6,4 +6,5 @@ Subpackages
 
 .. toctree::
 
-    tgt_grease.monitor.Commands
+    tgt_grease.management.Commands
+    tgt_grease.management.Model

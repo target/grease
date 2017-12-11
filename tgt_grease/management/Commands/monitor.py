@@ -39,6 +39,7 @@ class ClusterMonitor(Command):
             while runs < int(context.get('loop', 0)):
                 if not mgr.monitor():
                     self.ioc.getLogger().error("Monitoring Process Failed", notify=False)
+                runs += 1
         else:
             while True:
                 if not mgr.monitor():

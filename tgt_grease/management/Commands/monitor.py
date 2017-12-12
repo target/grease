@@ -1,5 +1,7 @@
 from tgt_grease.core.Types import Command
 from tgt_grease.management.Model import NodeMonitoring
+import random
+import time
 
 
 class ClusterMonitor(Command):
@@ -15,6 +17,8 @@ class ClusterMonitor(Command):
     Args:
         --loop:<int>
             How many scans you would like to perform of cluster
+        --foreground
+            If set will print log messages to the commandline
     
     """
 
@@ -33,15 +37,22 @@ class ClusterMonitor(Command):
             bool: Command Success
 
         """
+        if context.get('foreground'):
+            self.ioc.getLogger().foreground = True
         mgr = NodeMonitoring(self.ioc)
         if context.get('loop'):
-            runs = 0
-            while runs < int(context.get('loop', 0)):
+            i = 0
+            while i < int(context.get('loop', 0)):
                 if not mgr.monitor():
                     self.ioc.getLogger().error("Monitoring Process Failed", notify=False)
-                runs += 1
+                i += 1
+                time.sleep(5)
         else:
             while True:
                 if not mgr.monitor():
                     self.ioc.getLogger().error("Monitoring Process Failed", notify=False)
+                # sleep for a random interval to ensure not all nodes poll at the same time
+                time.sleep(int(str(random.choice(range(1, 5))) + str(random.choice(range(0, 9)))))
+        if context.get('foreground'):
+            self.ioc.getLogger().foreground = False
         return True

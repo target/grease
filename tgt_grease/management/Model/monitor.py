@@ -1,4 +1,6 @@
 from tgt_grease.core import GreaseContainer
+from tgt_grease.enterprise.Model import Scheduling
+from tgt_grease.enterprise.Model import Scheduler
 from bson.objectid import ObjectId
 import datetime
 
@@ -8,6 +10,8 @@ class NodeMonitoring(object):
 
     Attributes:
         ioc (GreaseContainer): IoC Access
+        centralScheduler (Scheduling): Central Scheduling Instance
+        scheduler (Scheduler): Scheduling Model Instance
 
     """
 
@@ -16,6 +20,8 @@ class NodeMonitoring(object):
             self.ioc = ioc
         else:
             self.ioc = GreaseContainer()
+        self.centralScheduler = Scheduling(self.ioc)
+        self.scheduler = Scheduler(self.ioc)
 
     def monitor(self):
         """Monitoring process
@@ -43,15 +49,30 @@ class NodeMonitoring(object):
                 self.ioc.getLogger().warning(
                     "Server [{0}] preparing to reallocate detect jobs".format(server.get('_id'))
                 )
-                # TODO: Detect culling
+                if not self.rescheduleDetectJobs(server.get('_id')):
+                    self.ioc.getLogger().error(
+                        "Failed rescheduling detect jobs [{0}]".format(server.get('_id'))
+                    )
+                    retVal = False
+                    break
                 self.ioc.getLogger().warning(
                     "Server [{0}] preparing to reallocate schedule jobs".format(server.get('_id'))
                 )
-                # TODO: Scheduling culling
+                if not self.rescheduleScheduleJobs(server.get('_id')):
+                    self.ioc.getLogger().error(
+                        "Failed rescheduling detect jobs [{0}]".format(server.get('_id'))
+                    )
+                    retVal = False
+                    break
                 self.ioc.getLogger().warning(
                     "Server [{0}] preparing to reallocate jobs".format(server.get('_id'))
                 )
-                # TODO: job culling
+                if not self.rescheduleJobs(server.get('_id')):
+                    self.ioc.getLogger().error(
+                        "Failed rescheduling detect jobs [{0}]".format(server.get('_id'))
+                    )
+                    retVal = False
+                    break
         return retVal
 
     def getServers(self):
@@ -159,3 +180,121 @@ class NodeMonitoring(object):
         else:
             self.ioc.getLogger().warning("Server [{0}] deactivated".format(serverId))
             return True
+
+    def rescheduleDetectJobs(self, serverId):
+        """Reschedules any detection jobs
+
+        Args:
+            serverId (str): Server ObjectId
+
+        Returns:
+            bool: rescheduling success
+
+        """
+        retval = True
+        server = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(serverId)})
+        if not server:
+            self.ioc.getLogger().error(
+                "Failed to load server details while trying to reschedule detection [{0}]".format(serverId)
+            )
+            return False
+        for job in self.ioc.getCollection('SourceData').find(
+            {
+                'grease_data.detection.server': ObjectId(serverId),
+                'grease_data.detection.start': None,
+                'grease_data.detection.end': None,
+            }
+        ):
+            job = dict(job)
+            if not self.centralScheduler.scheduleDetection(job.get('source'), job.get('configuration'), [job]):
+                retval = False
+                break
+            else:
+                self.ioc.getCollection('JobServer').update_one(
+                    {'_id': ObjectId(serverId)},
+                    {
+                        '$set': {
+                            'jobs': dict(server).get('jobs', 0) - 1
+                        }
+                    }
+                )
+        return retval
+
+    def rescheduleScheduleJobs(self, serverId):
+        """Reschedules any detection jobs
+
+        Args:
+            serverId (str): Server ObjectId
+
+        Returns:
+            bool: rescheduling success
+
+        """
+        retval = True
+        server = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(serverId)})
+        if not server:
+            self.ioc.getLogger().error(
+                "Failed to load server details while trying to reschedule schedules [{0}]".format(serverId)
+            )
+            return False
+        for job in self.ioc.getCollection('SourceData').find(
+            {
+                'grease_data.scheduling.server': ObjectId(serverId),
+                'grease_data.scheduling.start': None,
+                'grease_data.scheduling.end': None
+            }
+        ):
+            job = dict(job)
+            if not self.centralScheduler.scheduleScheduling(job.get('_id')):
+                retval = False
+                break
+            else:
+                self.ioc.getCollection('JobServer').update_one(
+                    {'_id': ObjectId(serverId)},
+                    {
+                        '$set': {
+                            'jobs': dict(server).get('jobs', 0) - 1
+                        }
+                    }
+                )
+        return retval
+
+    def rescheduleJobs(self, serverId):
+        """Reschedules any detection jobs
+
+        Args:
+            serverId (str): Server ObjectId
+
+        Returns:
+            bool: rescheduling success
+
+        """
+        retval = True
+        server = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(serverId)})
+        if not server:
+            self.ioc.getLogger().error(
+                "Failed to load server details while trying to reschedule schedules [{0}]".format(serverId)
+            )
+            return False
+        for job in self.ioc.getCollection('SourceData').find(
+            {
+                'grease_data.execution.server': ObjectId(serverId),
+                'grease_data.execution.commandSuccess': False,
+                'grease_data.execution.executionSuccess': False,
+                'grease_data.execution.failures': {'$lt': 6}
+            }
+        ):
+            job = dict(job)
+            if not self.scheduler.schedule(job):
+                retval = False
+                break
+            else:
+                self.ioc.getCollection('JobServer').update_one(
+                    {'_id': ObjectId(serverId)},
+                    {
+                        '$set': {
+                            'jobs': dict(server).get('jobs', 0) - 1
+                        }
+                    }
+                )
+        return retval

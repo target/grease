@@ -11,8 +11,8 @@ class Bridge(Command):
     CLI for administrators to manage GREASE Clusters
     
     Args:
-        --loop:<int>
-            How many scans you would like to perform of cluster
+        register
+            register this node with a GREASE Cluster as provided in the configuration file
         --foreground
             If set will print log messages to the commandline
     
@@ -33,10 +33,22 @@ class Bridge(Command):
             bool: Command Success
 
         """
-        if context.get('register'):
-            print("Working on it!")
+        retVal = False
+        if context.get('foreground'):
+            self.ioc.getLogger().foreground = True
+        if 'register' in context.get('grease_other_args', []):
+            self.ioc.getLogger().debug("Registration Requested")
+            if self.ioc.ensureRegistration():
+                print("Registration Complete!")
+                self.ioc.getLogger().info("Registration Completed Successfully")
+                retVal = True
+            else:
+                print("Registration Failed!")
+                self.ioc.getLogger().info("Registration Failed")
         else:
             print("Sub-command Not Found! Here is the help information:")
             print(self.help)
-            return False
-        return True
+            retVal = False
+        if context.get('foreground'):
+            self.ioc.getLogger().foreground = False
+        return retVal

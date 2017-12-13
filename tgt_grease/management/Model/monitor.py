@@ -25,14 +25,22 @@ class NodeMonitoring(object):
 
         """
         servers = self.getServers()
+        retVal = False
         self.ioc.getLogger().debug("Total servers to monitor [{0}]".format(len(servers)), trace=True)
         for server in servers:
             if self.serverAlive(server.get('_id')):
+                retVal = True
                 continue
             else:
-                # TODO: Culling
-                self.ioc.getLogger().error("Server [{0}] preparing to be culled from pool".format(server.get('_id')))
-        return True
+                self.ioc.getLogger().warning("Server [{0}] preparing to be culled from pool".format(server.get('_id')))
+                if not self.deactivateServer(server.get('_id')):
+                    self.ioc.getLogger().error(
+                        "Failed deactivating server [{0}]".format(server.get('_id'))
+                    )
+                    retVal = False
+                    break
+
+        return retVal
 
     def getServers(self):
         """Returns the servers to be monitored this cycle
@@ -115,3 +123,25 @@ class NodeMonitoring(object):
                 # Failed to find server in JobServer collection
                 self.ioc.getLogger().error("New JobServer not found during node monitoring! [{0}]".format(serverId))
                 return False
+
+    def deactivateServer(self, serverId):
+        """deactivates server from pool
+
+        Args:
+            serverId (str): ObjectId to deactivate
+
+        Returns:
+            bool: If deactivation is successful
+
+        """
+        if self.ioc.getCollection('JobServer').update_one(
+                {'_id': ObjectId(serverId)},
+                {
+                    '$set': {
+                        'active': False
+                    }
+                }
+        ).modified_count < 1:
+            return False
+        else:
+            return True

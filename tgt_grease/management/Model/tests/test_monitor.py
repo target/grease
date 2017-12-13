@@ -141,3 +141,37 @@ class TestNodeMonitoring(TestCase):
             1
         )
         n.ioc.getCollection('ServerHealth').drop()
+
+    def test_serverDeactivateGood(self):
+        n = NodeMonitoring()
+        server = n.ioc.getCollection('JobServer').insert_one({
+            'jobs': 9,
+            'os': platform.system().lower(),
+            'roles': [],
+            'prototypes': [],
+            'active': True,
+            'activationTime': datetime.datetime.utcnow()
+        }).inserted_id
+        self.assertTrue(n.deactivateServer(str(server)))
+        self.assertEqual(
+            n.ioc.getCollection('JobServer').delete_one({'_id': server}).deleted_count,
+            1
+        )
+        n.ioc.getCollection('ServerHealth').drop()
+
+    def test_serverDeactivateFailed(self):
+        n = NodeMonitoring()
+        server = n.ioc.getCollection('JobServer').insert_one({
+            'jobs': 9,
+            'os': platform.system().lower(),
+            'roles': [],
+            'prototypes': [],
+            'active': False,
+            'activationTime': datetime.datetime.utcnow()
+        }).inserted_id
+        self.assertEqual(
+            n.ioc.getCollection('JobServer').delete_one({'_id': server}).deleted_count,
+            1
+        )
+        self.assertFalse(n.deactivateServer(str(server)))
+        n.ioc.getCollection('ServerHealth').drop()

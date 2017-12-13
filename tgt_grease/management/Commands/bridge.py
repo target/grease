@@ -20,6 +20,8 @@ class Bridge(Command):
                 Optional parameter to observe a remote node. Defaults to look at self
             --jobs
                 if set will list jobs executed
+            --pJobs
+                include Prototype Jobs in list of jobs
         --foreground
             If set will print log messages to the commandline
     

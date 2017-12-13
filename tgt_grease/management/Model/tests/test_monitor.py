@@ -237,8 +237,262 @@ class TestNodeMonitoring(TestCase):
             n.ioc.getCollection('JobServer').delete_one({'_id': server2}).deleted_count,
             1
         )
+        n.ioc.getCollection('SourceData').delete_one({'_id': source})
         n.ioc.getCollection('ServerHealth').drop()
 
-    # TODO: Test Reschedule Schedules
+    def test_rescheduleDetectJobsFailed(self):
+        n = NodeMonitoring()
+        server1 = n.ioc.getCollection('JobServer').insert_one({
+            'jobs': 9,
+            'os': platform.system().lower(),
+            'roles': [],
+            'prototypes': [],
+            'active': True,
+            'activationTime': datetime.datetime.utcnow()
+        }).inserted_id
+        n.ioc.getCollection('JobServer').update_many(
+            {'active': True},
+            {
+                '$set': {
+                    'prototypes': []
+                }
+            }
+        )
+        source = n.ioc.getCollection('SourceData').insert_one({
+            'grease_data': {
+                'sourcing': {
+                    'server': server1
+                },
+                'detection': {
+                    'server': server1,
+                    'start': None,
+                    'end': None,
+                    'detection': {}
+                },
+                'scheduling': {
+                    'server': None,
+                    'start': None,
+                    'end': None
+                },
+                'execution': {
+                    'server': None,
+                    'assignmentTime': None,
+                    'completeTime': None,
+                    'returnData': {},
+                    'executionSuccess': False,
+                    'commandSuccess': False,
+                    'failures': 0
+                }
+            },
+            'source': 'test',
+            'configuration': 'test',
+            'data': {'test': 'ver'},
+            'createTime': datetime.datetime.utcnow(),
+            'expiry': Deduplication.generate_max_expiry_time(1)
+        }).acknowledged
+        self.assertTrue(n.deactivateServer(str(server1)))
+        self.assertFalse(n.rescheduleDetectJobs(str(server1)))
+        self.assertEqual(
+            n.ioc.getCollection('JobServer').delete_one({'_id': server1}).deleted_count,
+            1
+        )
+        n.ioc.getCollection('SourceData').delete_one({'_id': source})
+        n.ioc.getCollection('ServerHealth').drop()
+
+    def test_rescheduleScheduleJobsGood(self):
+        n = NodeMonitoring()
+        server1 = n.ioc.getCollection('JobServer').insert_one({
+            'jobs': 9,
+            'os': platform.system().lower(),
+            'roles': [],
+            'prototypes': [],
+            'active': True,
+            'activationTime': datetime.datetime.utcnow()
+        }).inserted_id
+        server2 = n.ioc.getCollection('JobServer').insert_one({
+            'jobs': 9,
+            'os': platform.system().lower(),
+            'roles': ['test'],
+            'prototypes': ['detect', 'schedule'],
+            'active': True,
+            'activationTime': datetime.datetime.utcnow()
+        }).inserted_id
+        config = n.ioc.getCollection('Configuration').insert_one(
+            {
+                'active': True,
+                'type': 'prototype_config',
+                "name": "test",
+                "job": "help",
+                "exe_env": "test",
+                "source": "test",
+                "logic": {
+                    "Regex": [
+                        {
+                            "field": "url",
+                            "pattern": ".*",
+                            'variable': True,
+                            'variable_name': 'url'
+                        }
+                    ],
+                    'Range': [
+                        {
+                            'field': 'status_code',
+                            'min': 199,
+                            'max': 201
+                        }
+                    ]
+                },
+                'constants': {
+                    'test': 'ver'
+                }
+            }
+        ).inserted_id
+        source = n.ioc.getCollection('SourceData').insert_one({
+            'grease_data': {
+                'sourcing': {
+                    'server': server1
+                },
+                'detection': {
+                    'server': server1,
+                    'start': None,
+                    'end': None,
+                    'detection': {}
+                },
+                'scheduling': {
+                    'server': None,
+                    'start': None,
+                    'end': None
+                },
+                'execution': {
+                    'server': None,
+                    'assignmentTime': None,
+                    'completeTime': None,
+                    'returnData': {},
+                    'executionSuccess': False,
+                    'commandSuccess': False,
+                    'failures': 0
+                }
+            },
+            'source': 'test',
+            'configuration': 'test',
+            'data': {'test': 'ver'},
+            'createTime': datetime.datetime.utcnow(),
+            'expiry': Deduplication.generate_max_expiry_time(1)
+        }).acknowledged
+        self.assertTrue(n.deactivateServer(str(server1)))
+        self.assertTrue(n.rescheduleScheduleJobs(str(server1)))
+        self.assertEqual(
+            n.ioc.getCollection('JobServer').delete_one({'_id': server1}).deleted_count,
+            1
+        )
+        self.assertEqual(
+            n.ioc.getCollection('JobServer').delete_one({'_id': server2}).deleted_count,
+            1
+        )
+        n.ioc.getCollection('SourceData').delete_one({'_id': source})
+        n.ioc.getCollection('Configuration').delete_one({'_id': config})
+        n.ioc.getCollection('ServerHealth').drop()
+
+    def test_rescheduleScheduleJobsFailed(self):
+        n = NodeMonitoring()
+        server1 = n.ioc.getCollection('JobServer').insert_one({
+            'jobs': 9,
+            'os': platform.system().lower(),
+            'roles': [],
+            'prototypes': [],
+            'active': True,
+            'activationTime': datetime.datetime.utcnow()
+        }).inserted_id
+        server2 = n.ioc.getCollection('JobServer').insert_one({
+            'jobs': 9,
+            'os': platform.system().lower(),
+            'roles': ['test'],
+            'prototypes': [],
+            'active': True,
+            'activationTime': datetime.datetime.utcnow()
+        }).inserted_id
+        config = n.ioc.getCollection('Configuration').insert_one(
+            {
+                'active': True,
+                'type': 'prototype_config',
+                "name": "test",
+                "job": "help",
+                "exe_env": "test",
+                "source": "test",
+                "logic": {
+                    "Regex": [
+                        {
+                            "field": "url",
+                            "pattern": ".*",
+                            'variable': True,
+                            'variable_name': 'url'
+                        }
+                    ],
+                    'Range': [
+                        {
+                            'field': 'status_code',
+                            'min': 199,
+                            'max': 201
+                        }
+                    ]
+                },
+                'constants': {
+                    'test': 'ver'
+                }
+            }
+        ).inserted_id
+        n.ioc.getCollection('JobServer').update_many(
+            {'active': True},
+            {
+                '$set': {
+                    'prototypes': []
+                }
+            }
+        )
+        source = n.ioc.getCollection('SourceData').insert_one({
+            'grease_data': {
+                'sourcing': {
+                    'server': server1
+                },
+                'detection': {
+                    'server': server1,
+                    'start': None,
+                    'end': None,
+                    'detection': {}
+                },
+                'scheduling': {
+                    'server': server1,
+                    'start': None,
+                    'end': None
+                },
+                'execution': {
+                    'server': None,
+                    'assignmentTime': None,
+                    'completeTime': None,
+                    'returnData': {},
+                    'executionSuccess': False,
+                    'commandSuccess': False,
+                    'failures': 0
+                }
+            },
+            'source': 'test',
+            'configuration': 'test',
+            'data': {'test': 'ver'},
+            'createTime': datetime.datetime.utcnow(),
+            'expiry': Deduplication.generate_max_expiry_time(1)
+        }).acknowledged
+        self.assertTrue(n.deactivateServer(str(server1)))
+        self.assertFalse(n.rescheduleScheduleJobs(str(server1)))
+        self.assertEqual(
+            n.ioc.getCollection('JobServer').delete_one({'_id': server1}).deleted_count,
+            1
+        )
+        self.assertEqual(
+            n.ioc.getCollection('JobServer').delete_one({'_id': server2}).deleted_count,
+            1
+        )
+        n.ioc.getCollection('SourceData').delete_one({'_id': source})
+        n.ioc.getCollection('Configuration').delete_one({'_id': config})
+        n.ioc.getCollection('ServerHealth').drop()
 
     # TODO: Test Reschedule Jobs

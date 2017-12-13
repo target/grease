@@ -145,6 +145,7 @@ class Scheduling(object):
 
         """
         result = self.ioc.getCollection('JobServer').find({
+            'active': True,
             'prototypes': 'detect'
         }).sort('jobs', pymongo.ASCENDING).limit(1)
         if result.count():
@@ -162,6 +163,7 @@ class Scheduling(object):
 
         """
         result = self.ioc.getCollection('JobServer').find({
+            'active': True,
             'prototypes': 'schedule'
         }).sort('jobs', pymongo.DESCENDING).limit(1)
         if result.count():
@@ -179,6 +181,7 @@ class Scheduling(object):
 
         """
         result = self.ioc.getCollection('JobServer').find({
+            'active': True,
             'roles': str(role)
         }).sort('jobs', pymongo.DESCENDING).limit(1)
         if result.count():

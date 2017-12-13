@@ -33,13 +33,25 @@ class NodeMonitoring(object):
                 continue
             else:
                 self.ioc.getLogger().warning("Server [{0}] preparing to be culled from pool".format(server.get('_id')))
+                self.ioc.getLogger().warning("Server [{0}] preparing to be deactivated".format(server.get('_id')))
                 if not self.deactivateServer(server.get('_id')):
                     self.ioc.getLogger().error(
                         "Failed deactivating server [{0}]".format(server.get('_id'))
                     )
                     retVal = False
                     break
-
+                self.ioc.getLogger().warning(
+                    "Server [{0}] preparing to reallocate detect jobs".format(server.get('_id'))
+                )
+                # TODO: Detect culling
+                self.ioc.getLogger().warning(
+                    "Server [{0}] preparing to reallocate schedule jobs".format(server.get('_id'))
+                )
+                # TODO: Scheduling culling
+                self.ioc.getLogger().warning(
+                    "Server [{0}] preparing to reallocate jobs".format(server.get('_id'))
+                )
+                # TODO: job culling
         return retVal
 
     def getServers(self):
@@ -142,6 +154,8 @@ class NodeMonitoring(object):
                     }
                 }
         ).modified_count < 1:
+            self.ioc.getLogger().warning("Server [{0}] failed to be deactivated".format(serverId))
             return False
         else:
+            self.ioc.getLogger().warning("Server [{0}] deactivated".format(serverId))
             return True

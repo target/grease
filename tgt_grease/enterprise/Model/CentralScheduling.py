@@ -115,7 +115,6 @@ class Scheduling(object):
             bool: If scheduling was successful
 
         """
-        # TODO: Usage in Cluster management to re-trigger job scheduling
         server, jobCount = self.determineSchedulingServer()
         if not server:
             self.ioc.getLogger().error("Failed to find scheduling server", notify=False)

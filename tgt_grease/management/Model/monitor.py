@@ -202,7 +202,7 @@ class NodeMonitoring(object):
             {
                 'grease_data.detection.server': ObjectId(serverId),
                 'grease_data.detection.start': None,
-                'grease_data.detection.end': None,
+                'grease_data.detection.end': None
             }
         ):
             job = dict(job)

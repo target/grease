@@ -3,6 +3,8 @@ from tgt_grease.core.Types import Command
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
 from tgt_grease.core import ImportTool
+from tgt_grease.management.Model import NodeMonitoring
+import datetime
 
 
 class BridgeCommand(object):
@@ -10,6 +12,7 @@ class BridgeCommand(object):
 
     Attributes:
         imp (ImportTool): Import Tool Instance
+        monitor (NodeMonitoring): Node Monitoring Model Instance
 
     """
 
@@ -19,6 +22,7 @@ class BridgeCommand(object):
         else:
             self.ioc = GreaseContainer()
         self.imp = ImportTool(self.ioc.getLogger())
+        self.monitor = NodeMonitoring(self.ioc)
 
     def action_register(self):
         """Ensures Registration of server
@@ -258,3 +262,107 @@ Return Data: {6}
             print("Prototype Unassignment Failed!")
             self.ioc.getLogger().info("Prototype [{0}] unassignment failed from server [{1}]".format(prototype, serverId))
             return False
+
+    def action_cull(self, node=None):
+        """Culls a server from the active cluster
+
+        Args:
+            node (str): MongoDB ObjectId to cull; defaults to local node
+
+        """
+        if not self.ioc.ensureRegistration():
+            self.ioc.getLogger().error("Server not registered with MongoDB")
+            print("Unregistered servers cannot talk to the cluster")
+            return False
+        if node:
+            try:
+                server = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(str(node))})
+            except InvalidId:
+                print("Invalid ObjectID")
+                self.ioc.getLogger().error("Invalid ObjectID passed to bridge info [{0}]".format(node))
+                return False
+            if server:
+                serverId = dict(server).get('_id')
+            else:
+                self.ioc.getLogger().error("Failed to find server [{0}] in the database".format(node))
+                return False
+        else:
+            serverId = self.ioc.getConfig().NodeIdentity
+        if not self.monitor.deactivateServer(serverId):
+            self.ioc.getLogger().error(
+                "Failed deactivating server [{0}]".format(serverId)
+            )
+            print("Failed deactivating server [{0}]".format(serverId))
+            return False
+        self.ioc.getLogger().warning(
+            "Server [{0}] preparing to reallocate detect jobs".format(serverId)
+        )
+        if not self.monitor.rescheduleDetectJobs(serverId):
+            self.ioc.getLogger().error(
+                "Failed rescheduling detect jobs [{0}]".format(serverId)
+            )
+            print("Failed rescheduling detect jobs [{0}]".format(serverId))
+            return False
+        self.ioc.getLogger().warning(
+            "Server [{0}] preparing to reallocate schedule jobs".format(serverId)
+        )
+        if not self.monitor.rescheduleScheduleJobs(serverId):
+            self.ioc.getLogger().error(
+                "Failed rescheduling detect jobs [{0}]".format(serverId)
+            )
+            print("Failed rescheduling detect jobs [{0}]".format(serverId))
+            return False
+        self.ioc.getLogger().warning(
+            "Server [{0}] preparing to reallocate jobs".format(serverId)
+        )
+        if not self.monitor.rescheduleJobs(serverId):
+            self.ioc.getLogger().error(
+                "Failed rescheduling detect jobs [{0}]".format(serverId)
+            )
+            print("Failed rescheduling detect jobs [{0}]".format(serverId))
+            return False
+        print("Server Deactivated")
+        return True
+
+    def action_activate(self, node=None):
+        """activates server in cluster
+
+        Args:
+            node (str): MongoDB ObjectId to activate; defaults to local node
+
+        Returns:
+            bool: If activation is successful
+
+        """
+        if not self.ioc.ensureRegistration():
+            self.ioc.getLogger().error("Server not registered with MongoDB")
+            print("Unregistered servers cannot talk to the cluster")
+            return False
+        if node:
+            try:
+                server = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(str(node))})
+            except InvalidId:
+                print("Invalid ObjectID")
+                self.ioc.getLogger().error("Invalid ObjectID passed to bridge info [{0}]".format(node))
+                return False
+            if server:
+                serverId = dict(server).get('_id')
+            else:
+                self.ioc.getLogger().error("Failed to find server [{0}] in the database".format(node))
+                return False
+        else:
+            serverId = self.ioc.getConfig().NodeIdentity
+        if self.ioc.getCollection('JobServer').update_one(
+                {'_id': ObjectId(serverId)},
+                {
+                    '$set': {
+                        'active': True,
+                        'activationTime': datetime.datetime.utcnow()
+                    }
+                }
+        ).modified_count < 1:
+            self.ioc.getLogger().warning("Server [{0}] failed to be activated".format(serverId))
+            return False
+        else:
+            self.ioc.getLogger().warning("Server [{0}] activated".format(serverId))
+            return True

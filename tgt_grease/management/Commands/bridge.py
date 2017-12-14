@@ -38,6 +38,12 @@ class Bridge(Command):
                 !NOTE! THIS MUST BE SEPARATED BY COLON OR EQUAL SIGN
             --node:<ObjectID>
                 !Optional! remote node to unassign job to
+        cull
+            --node:<ObjectID>
+                !Optional! parameter to cull a remote node. Defaults to look at self
+        activate
+            --node:<ObjectID>
+                !Optional! parameter to activate a remote node. Defaults to look at self
         --foreground
             If set will print log messages to the commandline
     
@@ -70,6 +76,10 @@ class Bridge(Command):
             retVal = self.bridge.action_assign(context.get('prototype'), context.get('node'))
         elif 'unassign' in context.get('grease_other_args', []):
             retVal = self.bridge.action_unassign(context.get('prototype'), context.get('node'))
+        elif 'cull' in context.get('grease_other_args', []):
+            retVal = self.bridge.action_cull(context.get('node'))
+        elif 'activate' in context.get('grease_other_args', []):
+            retVal = self.bridge.action_activate(context.get('node'))
         else:
             print("Sub-command Not Found! Here is the help information:")
             print(self.help)

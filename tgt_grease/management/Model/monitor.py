@@ -1,6 +1,7 @@
 from tgt_grease.core import GreaseContainer
 from tgt_grease.enterprise.Model import Scheduling
 from tgt_grease.enterprise.Model import Scheduler
+from tgt_grease.enterprise.Model import Deduplication
 from bson.objectid import ObjectId
 import datetime
 
@@ -74,6 +75,58 @@ class NodeMonitoring(object):
                     retVal = False
                     break
         return retVal
+
+    def scanComplete(self):
+        """Enters a completed source so that this local server is alive next run
+
+        This method is so that the server's 'heart' beats after each run. It will insert a completed SourceData document
+        and increments the job counter in the JobServer Document
+
+        Returns:
+            None: Writes a MongoDB Document
+
+        """
+        self.ioc.getCollection('SourceData').insert_one({
+            'grease_data': {
+                'sourcing': {
+                    'server': ObjectId(self.ioc.getConfig().NodeIdentity)
+                },
+                'detection': {
+                    'server': ObjectId(self.ioc.getConfig().NodeIdentity),
+                    'start': datetime.datetime.utcnow(),
+                    'end': datetime.datetime.utcnow(),
+                    'detection': {}
+                },
+                'scheduling': {
+                    'server': ObjectId(self.ioc.getConfig().NodeIdentity),
+                    'start': datetime.datetime.utcnow(),
+                    'end': datetime.datetime.utcnow()
+                },
+                'execution': {
+                    'server': ObjectId(self.ioc.getConfig().NodeIdentity),
+                    'assignmentTime': datetime.datetime.utcnow(),
+                    'completeTime': datetime.datetime.utcnow(),
+                    'returnData': {},
+                    'executionSuccess': True,
+                    'commandSuccess': True,
+                    'failures': 0
+                }
+            },
+            'source': None,
+            'configuration': None,
+            'data': {},
+            'createTime': datetime.datetime.utcnow(),
+            'expiry': Deduplication.generate_max_expiry_time(1)
+        })
+        server = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(self.ioc.getConfig().NodeIdentity)})
+        if not server:
+            self.ioc.getLogger().critical(
+                "Failed to find server [{0}] after monitoring occurred!".format(self.ioc.getConfig().NodeIdentity)
+            )
+        self.ioc.getCollection('JobServer').update_one({
+            '_id': ObjectId(self.ioc.getConfig().NodeIdentity)},
+            {'$set': {'jobs': dict(server).get('jobs', 0) + 1}}
+        )
 
     def getServers(self):
         """Returns the servers to be monitored this cycle

@@ -39,18 +39,22 @@ class ClusterMonitor(Command):
         """
         if context.get('foreground'):
             self.ioc.getLogger().foreground = True
-        mgr = NodeMonitoring(self.ioc)
+        monitor = NodeMonitoring(self.ioc)
         if context.get('loop'):
             i = 0
             while i < int(context.get('loop', 0)):
-                if not mgr.monitor():
+                if not monitor.monitor():
                     self.ioc.getLogger().error("Monitoring Process Failed", notify=False)
+                else:
+                    monitor.scanComplete()
                 i += 1
                 time.sleep(5)
         else:
             while True:
-                if not mgr.monitor():
+                if not monitor.monitor():
                     self.ioc.getLogger().error("Monitoring Process Failed", notify=False)
+                else:
+                    monitor.scanComplete()
                 # sleep for a random interval to ensure not all nodes poll at the same time
                 time.sleep(int(str(random.choice(range(1, 5))) + str(random.choice(range(0, 9)))))
         if context.get('foreground'):

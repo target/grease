@@ -2,6 +2,7 @@ from unittest import TestCase
 from tgt_grease.management.Model import NodeMonitoring
 from tgt_grease.enterprise.Model import Deduplication
 from tgt_grease.enterprise.Model import PrototypeConfig
+from bson.objectid import ObjectId
 import datetime
 import platform
 
@@ -136,6 +137,33 @@ class TestNodeMonitoring(TestCase):
         n.ioc.getCollection('SourceData').delete_one({'_id': source})
         n.ioc.getCollection('Configuration').delete_one({'_id': config})
         n.ioc.getCollection('ServerHealth').drop()
+
+    def test_scanComplete(self):
+        n = NodeMonitoring()
+        originalServer = n.ioc.getCollection('JobServer').find_one({'_id': ObjectId(n.ioc.getConfig().NodeIdentity)})
+        self.assertTrue(originalServer)
+        originalServer = dict(originalServer)
+        originalSourcing = n.ioc.getCollection('SourceData').find(
+            {'grease_data.execution.server': ObjectId(originalServer.get('_id'))}
+        ).count()
+        n.scanComplete()
+        newSourcing = n.ioc.getCollection('SourceData').find(
+            {'grease_data.execution.server': ObjectId(originalServer.get('_id'))}
+        ).count()
+        newServer = n.ioc.getCollection('JobServer').find_one({'_id': ObjectId(n.ioc.getConfig().NodeIdentity)})
+        self.assertTrue(newServer)
+        newServer = dict(newServer)
+        self.assertGreaterEqual(newSourcing, originalSourcing)
+        self.assertGreaterEqual(newServer.get('jobs'), originalServer.get('jobs'))
+        n.ioc.getCollection('SourceData').drop()
+        n.ioc.getCollection('JobServer').update_one(
+            {'_id': ObjectId(originalServer.get('_id'))},
+            {
+                '$set': {
+                    'jobs': originalServer.get('jobs', 0)
+                }
+            }
+        )
 
     def test_serverAliveNewServerGood(self):
         n = NodeMonitoring()

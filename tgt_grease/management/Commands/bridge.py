@@ -1,10 +1,16 @@
 from tgt_grease.core.Types import Command
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
+from tgt_grease.core import ImportTool
 
 
 class Bridge(Command):
-    """CLI tool for cluster administration"""
+    """CLI tool for cluster administration
+
+    Attributes:
+        imp (ImportTool): Import Tool Instance
+
+    """
 
     __author__ = "James E. Bell Jr."
     __version__ = "2.0.0"
@@ -17,11 +23,23 @@ class Bridge(Command):
             register this node with a GREASE Cluster as provided in the configuration file
         info
             --node:<ObjectID>
-                Optional parameter to observe a remote node. Defaults to look at self
+                !Optional! parameter to observe a remote node. Defaults to look at self
             --jobs
-                if set will list jobs executed
+                !Optional! if set will list jobs executed
             --pJobs
-                include Prototype Jobs in list of jobs
+                !Optional! include Prototype Jobs in list of jobs
+        assign
+            --prototype:<string>
+                !mandatory! prototype to assign
+                !NOTE! THIS MUST BE SEPARATED BY COLON OR EQUAL SIGN
+            --node:<ObjectID>
+                !Optional! remote node to assign job to
+        unassign
+            --prototype:<string>
+                !mandatory! prototype to unassign
+                !NOTE! THIS MUST BE SEPARATED BY COLON OR EQUAL SIGN
+            --node:<ObjectID>
+                !Optional! remote node to unassign job to
         --foreground
             If set will print log messages to the commandline
     
@@ -29,6 +47,7 @@ class Bridge(Command):
 
     def __init__(self):
         super(Bridge, self).__init__()
+        self.imp = ImportTool(self.ioc.getLogger())
 
     def execute(self, context):
         """This method monitors the environment
@@ -49,6 +68,10 @@ class Bridge(Command):
             retVal = self.action_register()
         elif 'info' in context.get('grease_other_args', []):
             retVal = self.action_info(context.get('node'), context.get('jobs'), context.get('pJobs'))
+        elif 'assign' in context.get('grease_other_args', []):
+            retVal = self.action_assign(context.get('prototype'), context.get('node'))
+        elif 'unassign' in context.get('grease_other_args', []):
+            retVal = self.action_unassign(context.get('prototype'), context.get('node'))
         else:
             print("Sub-command Not Found! Here is the help information:")
             print(self.help)
@@ -194,4 +217,104 @@ Return Data: {6}
         else:
             print("Unable to locate server")
             self.ioc.getLogger().error("Unable to load [{0}] server for information".format(serverId))
+            return False
+
+    def action_assign(self, prototype, node=None):
+        """Assign prototypes to a node either local or remote
+
+        Args:
+            prototype (str): Prototype Job to assign
+            node (str): MongoDB ObjectId of node to assign to, if not provided will default to the local node
+
+        Returns:
+            bool: If successful true else false
+
+        """
+        job = self.imp.load(str(prototype))
+        if not job or not isinstance(job, Command):
+            print("Cannot find prototype [{0}] to assign check search path!".format(prototype))
+            self.ioc.getLogger().error("Cannot find prototype [{0}] to assign check search path!".format(prototype))
+            return False
+        # Cleanup job
+        job.__del__()
+        del job
+        if node:
+            try:
+                server = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(str(node))})
+            except InvalidId:
+                print("Invalid ObjectID")
+                self.ioc.getLogger().error("Invalid ObjectID passed to bridge info [{0}]".format(node))
+                return False
+            if server:
+                serverId = dict(server).get('_id')
+            else:
+                self.ioc.getLogger().error("Failed to find server [{0}] in the database".format(node))
+                return False
+        else:
+            serverId = self.ioc.getConfig().NodeIdentity
+        updated = self.ioc.getCollection('JobServer').update_one(
+            {'_id': ObjectId(serverId)},
+            {
+                '$push': {
+                    'prototypes': prototype
+                }
+            }
+        ).acknowledged
+        if updated:
+            print("Prototype Assigned")
+            self.ioc.getLogger().info("Prototype [{0}] assigned to server [{1}]".format(prototype, serverId))
+            return True
+        else:
+            print("Prototype Assignment Failed!")
+            self.ioc.getLogger().info("Prototype [{0}] assignment failed to server [{1}]".format(prototype, serverId))
+            return False
+
+    def action_unassign(self, prototype, node=None):
+        """Unassign prototypes to a node either local or remote
+
+        Args:
+            prototype (str): Prototype Job to unassign
+            node (str): MongoDB ObjectId of node to unassign to, if not provided will default to the local node
+
+        Returns:
+            bool: If successful true else false
+
+        """
+        job = self.imp.load(str(prototype))
+        if not job or not isinstance(job, Command):
+            print("Cannot find prototype [{0}] to unassign check search path!".format(prototype))
+            self.ioc.getLogger().error("Cannot find prototype [{0}] to unassign check search path!".format(prototype))
+            return False
+        # Cleanup job
+        job.__del__()
+        del job
+        if node:
+            try:
+                server = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(str(node))})
+            except InvalidId:
+                print("Invalid ObjectID")
+                self.ioc.getLogger().error("Invalid ObjectID passed to bridge info [{0}]".format(node))
+                return False
+            if server:
+                serverId = dict(server).get('_id')
+            else:
+                self.ioc.getLogger().error("Failed to find server [{0}] in the database".format(node))
+                return False
+        else:
+            serverId = self.ioc.getConfig().NodeIdentity
+        updated = self.ioc.getCollection('JobServer').update_one(
+            {'_id': ObjectId(serverId)},
+            {
+                '$pull': {
+                    'prototypes': prototype
+                }
+            }
+        ).acknowledged
+        if updated:
+            print("Prototype Assignment Removed")
+            self.ioc.getLogger().info("Prototype [{0}] unassigned from server [{1}]".format(prototype, serverId))
+            return True
+        else:
+            print("Prototype Unassignment Failed!")
+            self.ioc.getLogger().info("Prototype [{0}] unassignment failed from server [{1}]".format(prototype, serverId))
             return False

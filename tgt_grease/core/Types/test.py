@@ -26,6 +26,23 @@ class AutomationTest(TestCase):
         expected_data (dict): data you expect context for your command to look like
         enabled (bool): set to true to enable your test to run
 
+    Here is an example::
+
+        class TestAutomationTest(AutomationTest):
+
+            def __init__(self, *args, **kwargs):
+                AutomationTest.__init__(self, *args, **kwargs)
+                self.configuration = "mongo://test_automation_test"
+                self.mock_data = {'ver': 'var'}
+                self.expected_data = {'ver': ['var']}
+                self.enabled = True
+
+            def test_command(self):
+                myCommand = myCommand()
+                self.assertTrue(myCommand.execute({'hostname': 'localhost'}))
+
+    This is a pretty basic example but it will help you get started automatically testing your automation!
+
     Note:
         **YOU MUST SET THE PROPERTY `ENABLED` TO BOOLEAN TRUE IN ORDER FOR YOUR TEST TO BE PICKED UP**
     Note:
@@ -39,17 +56,14 @@ class AutomationTest(TestCase):
 
     """
 
-    configuration = None
-
-    enabled = False
-
-    mock_data = {}
-
-    expected_data = {}
-
-    ioc = GreaseContainer()
-
-    detect = Detect(ioc)
+    def __init__(self, *args, **kwargs):
+        TestCase.__init__(self, *args, **kwargs)
+        self.configuration = None
+        self.enabled = False
+        self.mock_data = {}
+        self.expected_data = {}
+        self.ioc = GreaseContainer()
+        self.detect = Detect(self.ioc)
 
     def test_configuration(self):
         """Configuration Test
@@ -102,5 +116,11 @@ class AutomationTest(TestCase):
         self.assertDictEqual(context, self.expected_data, "validating context expected")
 
     def test_command(self):
+        """This method is for **you** to fill out to test your command
+
+        Note:
+            The more tests the better! Make sure to add as many tests as you need to ensure your automation is always successful
+
+        """
         if not self.enabled:
             raise SkipTest

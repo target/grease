@@ -112,7 +112,7 @@ class NodeMonitoring(object):
                     'failures': 0
                 }
             },
-            'source': None,
+            'source': 'grease_internal_node_monitoring',
             'configuration': None,
             'data': {},
             'createTime': datetime.datetime.utcnow(),

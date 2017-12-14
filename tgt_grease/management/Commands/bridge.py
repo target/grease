@@ -5,6 +5,42 @@ from tgt_grease.management.Model import BridgeCommand
 class Bridge(Command):
     """CLI tool for cluster administration
 
+    The command palate is listed here::
+
+        Args:
+            register
+                register this node with a GREASE Cluster as provided in the configuration file
+            info
+                --node:<ObjectID>
+                    !Optional! parameter to observe a remote node. Defaults to look at self
+                --jobs
+                    !Optional! if set will list jobs executed
+                --pJobs
+                    !Optional! include Prototype Jobs in list of jobs
+            assign
+                --prototype:<string>
+                    !mandatory! prototype to assign
+                    !NOTE! THIS MUST BE SEPARATED BY COLON OR EQUAL SIGN
+                --node:<ObjectID>
+                    !Optional! remote node to assign job to
+            unassign
+                --prototype:<string>
+                    !mandatory! prototype to unassign
+                    !NOTE! THIS MUST BE SEPARATED BY COLON OR EQUAL SIGN
+                --node:<ObjectID>
+                    !Optional! remote node to unassign job to
+            cull
+                --node:<ObjectID>
+                    !Optional! parameter to cull a remote node. Defaults to look at self
+            activate
+                --node:<ObjectID>
+                    !Optional! parameter to activate a remote node. Defaults to look at self
+            --foreground
+                If set will print log messages to the commandline
+
+    Note:
+        This tool is ever evolving! If you need something more feel free to create an issue!
+
     Attributes:
         bridge (BridgeCommand): Model Instance
 

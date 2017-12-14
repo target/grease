@@ -43,6 +43,100 @@ class TestNodeMonitoring(TestCase):
         )
         n.ioc.getCollection('ServerHealth').drop()
 
+    def test_monitor(self):
+        n = NodeMonitoring()
+        p = PrototypeConfig(n.ioc)
+        server1 = n.ioc.getCollection('JobServer').insert_one({
+            'jobs': 9,
+            'os': platform.system().lower(),
+            'roles': [],
+            'prototypes': [],
+            'active': True,
+            'activationTime': datetime.datetime.utcnow()
+        }).inserted_id
+        server2 = n.ioc.getCollection('JobServer').insert_one({
+            'jobs': 9,
+            'os': platform.system().lower(),
+            'roles': ['test'],
+            'prototypes': ['detect', 'schedule'],
+            'active': True,
+            'activationTime': datetime.datetime.utcnow()
+        }).inserted_id
+        config = n.ioc.getCollection('Configuration').insert_one(
+            {
+                'active': True,
+                'type': 'prototype_config',
+                "name": "test",
+                "job": "help",
+                "exe_env": "test",
+                "source": "test",
+                "logic": {
+                    "Regex": [
+                        {
+                            "field": "url",
+                            "pattern": ".*",
+                            'variable': True,
+                            'variable_name': 'url'
+                        }
+                    ],
+                    'Range': [
+                        {
+                            'field': 'status_code',
+                            'min': 199,
+                            'max': 201
+                        }
+                    ]
+                },
+                'constants': {
+                    'test': 'ver'
+                }
+            }
+        ).inserted_id
+        p.load(reloadConf=True)
+        source = n.ioc.getCollection('SourceData').insert_one({
+            'grease_data': {
+                'sourcing': {
+                    'server': server1
+                },
+                'detection': {
+                    'server': server1,
+                    'start': datetime.datetime.utcnow(),
+                    'end': datetime.datetime.utcnow(),
+                    'detection': {}
+                },
+                'scheduling': {
+                    'server': server1,
+                    'start': datetime.datetime.utcnow(),
+                    'end': datetime.datetime.utcnow(),
+                },
+                'execution': {
+                    'server': server1,
+                    'assignmentTime': datetime.datetime.utcnow(),
+                    'completeTime': None,
+                    'returnData': {},
+                    'executionSuccess': False,
+                    'commandSuccess': False,
+                    'failures': 0
+                }
+            },
+            'source': 'test',
+            'configuration': 'test',
+            'createTime': datetime.datetime.utcnow(),
+            'expiry': Deduplication.generate_max_expiry_time(1)
+        }).inserted_id
+        self.assertTrue(n.monitor())
+        self.assertEqual(
+            n.ioc.getCollection('JobServer').delete_one({'_id': server1}).deleted_count,
+            1
+        )
+        self.assertEqual(
+            n.ioc.getCollection('JobServer').delete_one({'_id': server2}).deleted_count,
+            1
+        )
+        n.ioc.getCollection('SourceData').delete_one({'_id': source})
+        n.ioc.getCollection('Configuration').delete_one({'_id': config})
+        n.ioc.getCollection('ServerHealth').drop()
+
     def test_serverAliveNewServerGood(self):
         n = NodeMonitoring()
         server = n.ioc.getCollection('JobServer').insert_one({

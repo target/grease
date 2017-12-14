@@ -64,20 +64,10 @@ class BridgeCommand(object):
             self.ioc.getLogger().error("Server not registered with MongoDB")
             print("Unregistered servers cannot talk to the cluster")
             return False
-        if node:
-            try:
-                server = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(str(node))})
-            except InvalidId:
+        valid, serverId = self.valid_server(node)
+        if not valid:
                 print("Invalid ObjectID")
-                self.ioc.getLogger().error("Invalid ObjectID passed to bridge info [{0}]".format(node))
                 return False
-            if server:
-                serverId = dict(server).get('_id')
-            else:
-                self.ioc.getLogger().error("Failed to find server [{0}] in the database".format(node))
-                return False
-        else:
-            serverId = self.ioc.getConfig().NodeIdentity
         server = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(str(serverId))})
         if server:
             server = dict(server)
@@ -182,20 +172,10 @@ Return Data: {6}
         # Cleanup job
         job.__del__()
         del job
-        if node:
-            try:
-                server = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(str(node))})
-            except InvalidId:
+        valid, serverId = self.valid_server(node)
+        if not valid:
                 print("Invalid ObjectID")
-                self.ioc.getLogger().error("Invalid ObjectID passed to bridge info [{0}]".format(node))
                 return False
-            if server:
-                serverId = dict(server).get('_id')
-            else:
-                self.ioc.getLogger().error("Failed to find server [{0}] in the database".format(node))
-                return False
-        else:
-            serverId = self.ioc.getConfig().NodeIdentity
         updated = self.ioc.getCollection('JobServer').update_one(
             {'_id': ObjectId(serverId)},
             {
@@ -232,20 +212,10 @@ Return Data: {6}
         # Cleanup job
         job.__del__()
         del job
-        if node:
-            try:
-                server = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(str(node))})
-            except InvalidId:
+        valid, serverId = self.valid_server(node)
+        if not valid:
                 print("Invalid ObjectID")
-                self.ioc.getLogger().error("Invalid ObjectID passed to bridge info [{0}]".format(node))
                 return False
-            if server:
-                serverId = dict(server).get('_id')
-            else:
-                self.ioc.getLogger().error("Failed to find server [{0}] in the database".format(node))
-                return False
-        else:
-            serverId = self.ioc.getConfig().NodeIdentity
         updated = self.ioc.getCollection('JobServer').update_one(
             {'_id': ObjectId(serverId)},
             {
@@ -274,20 +244,10 @@ Return Data: {6}
             self.ioc.getLogger().error("Server not registered with MongoDB")
             print("Unregistered servers cannot talk to the cluster")
             return False
-        if node:
-            try:
-                server = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(str(node))})
-            except InvalidId:
+        valid, serverId = self.valid_server(node)
+        if not valid:
                 print("Invalid ObjectID")
-                self.ioc.getLogger().error("Invalid ObjectID passed to bridge info [{0}]".format(node))
                 return False
-            if server:
-                serverId = dict(server).get('_id')
-            else:
-                self.ioc.getLogger().error("Failed to find server [{0}] in the database".format(node))
-                return False
-        else:
-            serverId = self.ioc.getConfig().NodeIdentity
         if not self.monitor.deactivateServer(serverId):
             self.ioc.getLogger().error(
                 "Failed deactivating server [{0}]".format(serverId)
@@ -338,20 +298,10 @@ Return Data: {6}
             self.ioc.getLogger().error("Server not registered with MongoDB")
             print("Unregistered servers cannot talk to the cluster")
             return False
-        if node:
-            try:
-                server = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(str(node))})
-            except InvalidId:
+        valid, serverId = self.valid_server(node)
+        if not valid:
                 print("Invalid ObjectID")
-                self.ioc.getLogger().error("Invalid ObjectID passed to bridge info [{0}]".format(node))
                 return False
-            if server:
-                serverId = dict(server).get('_id')
-            else:
-                self.ioc.getLogger().error("Failed to find server [{0}] in the database".format(node))
-                return False
-        else:
-            serverId = self.ioc.getConfig().NodeIdentity
         if self.ioc.getCollection('JobServer').update_one(
                 {'_id': ObjectId(serverId)},
                 {
@@ -366,3 +316,27 @@ Return Data: {6}
         else:
             self.ioc.getLogger().warning("Server [{0}] activated".format(serverId))
             return True
+
+    def valid_server(self, node=None):
+        """Validates node is in the MongoDB instance connected to
+
+        Args:
+            node (str): MongoDB Object ID to validate; defaults to local node
+
+        Returns:
+            tuple: first element is boolean if valid second is objectId as string
+
+        """
+        if node:
+            try:
+                server = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(str(node))})
+            except InvalidId:
+                self.ioc.getLogger().error("Invalid ObjectID passed to bridge info [{0}]".format(node))
+                return False, ""
+            if server:
+                return True, dict(server).get('_id')
+            else:
+                self.ioc.getLogger().error("Failed to find server [{0}] in the database".format(node))
+                return False, ""
+        else:
+            return True, self.ioc.getConfig().NodeIdentity

@@ -43,3 +43,15 @@ class TestBridge(TestCase):
             'active': True
         }).count())
 
+    def test_node_validation(self):
+        b = BridgeCommand()
+        valid, server = b.valid_server()
+        self.assertTrue(valid)
+        valid, server = b.valid_server(b.ioc.getConfig().NodeIdentity)
+        self.assertTrue(valid)
+
+    def test_node_validation_failed(self):
+        b = BridgeCommand()
+        valid, server = b.valid_server('45u32890JKLdsfikojnf')
+        self.assertFalse(valid)
+

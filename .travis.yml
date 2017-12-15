@@ -78,7 +78,6 @@ script:
   - python setup.py test
 # Run twice to ensure state management is successful
   - python setup.py test
-# TODO: Redo Node Tests
   - grease bridge register --foreground
   - grease help
   - grease daemon run --loop:5 --foreground

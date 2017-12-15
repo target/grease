@@ -86,11 +86,14 @@ script:
   - grease detect --loop:5 --foreground
   - grease schedule --loop:5 --foreground
   - grease monitor --loop:5 --foreground
-#  - grease enterprise bridge enable-detection
-#  - grease enterprise bridge enable-scheduling
-#  - grease enterprise bridge disable-detection
-#  - grease enterprise bridge disable-scheduling
-#  - grease enterprise bridge kill-server
+  - grease bridge assign --prototype:scan
+  - grease bridge assign --prototype:detect
+  - grease bridge assign --prototype:schedule
+  - grease bridge info --jobs --pJobs
+  - grease bridge unassign --prototype:scan
+  - grease bridge unassign --prototype:detect
+  - grease bridge unassign --prototype:schedule
+  - grease bridge cull
 
 deploy:
   on:

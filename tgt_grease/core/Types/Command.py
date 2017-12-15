@@ -89,6 +89,9 @@ class Command(object):
     def safe_execute(self, context=None):
         """Attempt execution and prevent MOST exceptions
 
+        Args:
+            context (dict): context for the command to use
+
         Returns:
             None: Void method to attempt exceptions
 

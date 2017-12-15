@@ -94,7 +94,7 @@ class GreaseContainer(object):
                 'jobs': 0,
                 'os': platform.system().lower(),
                 'roles': ["general"],
-                'prototypes': [],
+                'prototypes': ["monitor"],
                 'active': True,
                 'activationTime': datetime.utcnow()
             }).inserted_id

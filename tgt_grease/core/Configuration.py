@@ -186,11 +186,12 @@ class Configuration(object):
             },
             'Import': {
                 'searchPath': [
-                    'tgt_grease.core',
                     'tgt_grease.router.Commands',
                     'tgt_grease.enterprise.Prototype',
+                    'tgt_grease.management.Commands',
                     'tgt_grease.enterprise.Sources',
                     'tgt_grease.enterprise.Detectors',
+                    'tgt_grease.core',
                     'tgt_grease'
                 ]
             },

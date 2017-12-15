@@ -79,18 +79,21 @@ script:
 # Run twice to ensure state management is successful
   - python setup.py test
 # TODO: Redo Node Tests
+  - grease bridge register --foreground
   - grease help
   - grease daemon run --loop:5 --foreground
   - grease scan --loop:5 --foreground
   - grease detect --loop:5 --foreground
   - grease schedule --loop:5 --foreground
-#  - grease enterprise bridge list-pjobs
-#  - grease enterprise bridge list-jobs
-#  - grease enterprise bridge enable-detection
-#  - grease enterprise bridge enable-scheduling
-#  - grease enterprise bridge disable-detection
-#  - grease enterprise bridge disable-scheduling
-#  - grease enterprise bridge kill-server
+  - grease monitor --loop:5 --foreground
+  - grease bridge assign --prototype:scan
+  - grease bridge assign --prototype:detect
+  - grease bridge assign --prototype:schedule
+  - grease bridge info --jobs --pJobs
+  - grease bridge unassign --prototype:scan
+  - grease bridge unassign --prototype:detect
+  - grease bridge unassign --prototype:schedule
+  - grease bridge cull
 
 deploy:
   on:

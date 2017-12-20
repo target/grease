@@ -407,10 +407,10 @@ class Section31(GreaseDaemonCommand):
         # type: (int, int, int) -> None
         # first lets deduct from the bad server
         stmt1 = update(JobServers)\
-            .where(id=old_server)\
+            .where(id==old_server)\
             .values(jobs_assigned=JobServers.jobs_assigned - job_count)
         stmt2 = update(JobServers)\
-            .where(id=new_server)\
+            .where(id==new_server)\
             .values(jobs_assigned=JobServers.jobs_assigned + job_count)
         self._sql.get_session().execute(stmt1)
         self._sql.get_session().execute(stmt2)

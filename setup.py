@@ -4,12 +4,18 @@ import os
 
 setup(
     name='tgt_grease',
-    version='1.5.7',
+    version='2.0.0',
+    license="MIT",
     description='GRE Application Service Engine',
-    long_description="Automation Engine for operations",
+    long_description="""
+    GREASE is an automation tool for SRE like teams. Rather than providing every solution under the sun, GREASE
+    offers developers a framework to develop automation for their needs. GREASE offers a suite of tools and services
+    to make automation easy.
+    """,
     classifiers=[
         'Development Status :: 5 - Production/Stable',
-        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 2',
+        'Programming Language :: Python :: 3',
         'Intended Audience :: System Administrators',
         'Intended Audience :: Information Technology',
         'Topic :: System',
@@ -19,11 +25,11 @@ setup(
         'Operating System :: Microsoft :: Windows :: Windows 8',
         'Operating System :: Microsoft :: Windows :: Windows 8.1',
         'Operating System :: Microsoft :: Windows :: Windows 10',
-        'Operating System :: POSIX',
-        'Programming Language :: Python :: 2.7'
+        'Operating System :: POSIX'
     ],
-    keywords='python automated recovery incident',
-    author='james.e.bell@target.com',
+    keywords='python automated recovery',
+    author='James E. Bell Jr.',
+    author_email="james.e.bell@target.com",
     packages=find_packages(),
     test_suite='nose.collector',
     tests_require=['nose', 'nose-cover3'],
@@ -31,9 +37,8 @@ setup(
         'psycopg2',
         'requests',
         'pymongo',
-        'sqlalchemy',
-        'python-dotenv',
-        'psutil'
+        'psutil',
+        'elasticsearch'
     ] + (
          ["pypiwin32"] if "nt" == os.name else []
         ),
@@ -41,8 +46,6 @@ setup(
     zip_safe=False,
     scripts=[
         'bin/grease',
-        'bin/grease-daemon',
-        'bin/greasectl.py',
-        'bin/greasectl.ps1'
+        'bin/grease.ps1'
     ]
 )

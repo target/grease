@@ -1,6 +1,6 @@
 FROM python:2.7
 
-RUN pip install psycopg2 requests pymongo
+RUN pip install requests pymongo psutil
 
 ADD . /tgt_grease_core
 

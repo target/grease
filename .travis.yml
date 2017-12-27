@@ -1,37 +1,98 @@
 language: python
 
-python:
-  - "2.7" #what we built it for originally
-  - "nightly" #whatever 3.x is hemorrhaging-edge
+matrix:
+  include:
+    - os: linux
+      sudo: required
+      dist: trusty
+      python: "2.7"
+    - os: linux
+      sudo: required
+      dist: trusty
+      python: "3.3"
+    - os: linux
+      sudo: required
+      dist: trusty
+      python: "3.4"
+    - os: linux
+      sudo: required
+      dist: trusty
+      python: "3.5"
+    - os: linux
+      sudo: required
+      dist: trusty
+      python: "3.5"
+    - os: linux
+      sudo: required
+      dist: trusty
+      python: "3.6"
+    - os: linux
+      sudo: required
+      dist: trusty
+      python: "nightly"
+# Still Borken
+#    - os: osx
+#      sudo: required
+#      osx_image: xcode9.1
+#      rvm: 2.3
+#      python: "2.7"
+#      env:
+##      Literally taken from the travis folks https://github.com/travis-ci/travis-ci/issues/8552
+#        - HOMEBREW_DEVELOPER="Not really, but let's pretend I am until this travis bug gets fixed, ok?"
+#      before_install:
+#        - rvm install "ruby-2.3.4"
+#        - export HOMEBREW_RUBY_PATH="/Users/travis/.rvm/rubies/ruby-2.3.4/bin/ruby"
+#        - rvm use 2.3
+    - os: osx
+      sudo: required
+      osx_image: xcode9.1
+      rvm: 2.3
+      python: "nightly"
+      env:
+#      Literally taken from the travis folks https://github.com/travis-ci/travis-ci/issues/8552
+        - HOMEBREW_DEVELOPER="Not really, but let's pretend I am until this travis bug gets fixed, ok?"
+      before_install:
+        - rvm install "ruby-2.3.4"
+        - export HOMEBREW_RUBY_PATH="/Users/travis/.rvm/rubies/ruby-2.3.4/bin/ruby"
+        - rvm use 2.3
 
 services:
+  - mongodb
   - postgresql
 
 before_script:
-  - pip install psycopg2 pymongo requests sqlalchemy
-  - export GREASE_DB_USER="postgres"
-  - export GREASE_DB_PASSWORD=""
-  - export GREASE_VERBOSE_LOGGING=1
+  - pip install pymongo requests psycopg2 psutil elasticsearch
+  - sudo mkdir /opt/grease/
+  - sudo chmod 777 /opt/grease/
+  - if [ $TRAVIS_OS_NAME = linux ]; then true; else brew install mongo; fi
+  - if [ $TRAVIS_OS_NAME = linux ]; then true; else brew services start mongodb; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then rm -rf /usr/local/var/postgres; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then initdb /usr/local/var/postgres; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then pg_ctl -D /usr/local/var/postgres start; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then createuser -s postgres; fi
 
 install:
   - python setup.py install
   
 script:
   - python setup.py test
-  - grease enterprise bridge load-db
-  - grease enterprise bridge list-pjobs
-  - grease enterprise bridge list-jobs
-  - grease enterprise bridge enable-detection
-  - grease enterprise bridge enable-scheduling
-  - grease enterprise bridge assign-task system_heartbeat
-  - grease enterprise bridge assign-task engage_sensor_array
-  - grease enterprise bridge assign-task engage_lcars
-  - grease enterprise bridge assign-task engage_warp
-  - grease enterprise bridge list-pjobs
-  - grease enterprise bridge list-jobs
-  - grease enterprise bridge disable-detection
-  - grease enterprise bridge disable-scheduling
-  - grease enterprise bridge kill-server
+# Run twice to ensure state management is successful
+  - python setup.py test
+  - grease bridge register --foreground
+  - grease help
+  - grease daemon run --loop:5 --foreground
+  - grease scan --loop:5 --foreground
+  - grease detect --loop:5 --foreground
+  - grease schedule --loop:5 --foreground
+  - grease monitor --loop:5 --foreground
+  - grease bridge assign --prototype:scan
+  - grease bridge assign --prototype:detect
+  - grease bridge assign --prototype:schedule
+  - grease bridge info --jobs --pJobs
+  - grease bridge unassign --prototype:scan
+  - grease bridge unassign --prototype:detect
+  - grease bridge unassign --prototype:schedule
+  - grease bridge cull
 
 deploy:
   on:

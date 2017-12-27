@@ -45,14 +45,26 @@ can be anything you can do in python.
 Out of the box GREASE is very minimal, it is but an engine. Similar
 to Django, you write your application, GREASE just serves it. 
 
-## Installation & Requirements
+## Getting the Docs
 
-### Requirements
+  1. Install sphinx `pip install sphinx`
+  2. generate the docs by running `make html`
+  3. Use a web browser to read the docs starting at `<project root>/docs/_build/index.html`
+
+## Requirements
   1. Python2.7
   2. Pip
-     * psycopg2
      * requests
      * pymongo
-     * sqlalchemy
-     * python-dotenv
      * psutil
+     
+## Installing
+  
+### Via PIP
+
+Simply run `pip install tgt_grease`
+
+### Manually
+
+  1. Clone this repo to your machine
+  2. from the created directory run `python setup.py install`

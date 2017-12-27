@@ -1,0 +1,58 @@
+environment:
+  GREASE_TEST_DSN: "host=localhost user=postgres password=Password12!"
+
+  matrix:
+
+    # For Python versions available on Appveyor, see
+    # http://www.appveyor.com/docs/installed-software#python
+    # The list here is complete (excluding Python 2.6, which
+    # isn't covered by this document) at the time of writing.
+
+    - PYTHON: "C:\\Python27"
+    - PYTHON: "C:\\Python33"
+    - PYTHON: "C:\\Python34"
+    - PYTHON: "C:\\Python35"
+    - PYTHON: "C:\\Python36"
+    - PYTHON: "C:\\Python27-x64"
+    - PYTHON: "C:\\Python34-x64"
+    - PYTHON: "C:\\Python35-x64"
+    - PYTHON: "C:\\Python36-x64"
+
+services:
+  - mongodb
+  - postgresql
+
+install:
+  # We need wheel installed to build wheels
+  - "%PYTHON%\\python.exe -m pip install wheel pymongo requests psycopg2 psutil pypiwin32 elasticsearch nose nose-cover3"
+
+build: off
+
+test_script:
+  # Put your test command here.
+  # If you don't need to build C extensions on 64-bit Python 3.3 or 3.4,
+  # you can remove "build.cmd" from the front of the command, as it's
+  # only needed to support those cases.
+  # Note that you must use the environment variable %PYTHON% to refer to
+  # the interpreter you're using - Appveyor does not do anything special
+  # to put the Python version you want to use on PATH.
+  - "%PYTHON%\\python.exe setup.py test"
+  - "%PYTHON%\\python.exe setup.py install"
+  - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease bridge register"
+  - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease daemon install"
+  - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease daemon start"
+  - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease daemon stop"
+  - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease daemon run --loop:5 --foreground"
+  - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease help"
+  - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease scan --loop:5 --foreground"
+  - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease detect --loop:5 --foreground"
+  - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease schedule --loop:5 --foreground"
+  - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease monitor --loop:5 --foreground"
+  - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease bridge assign --prototype:scan"
+  - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease bridge assign --prototype:detect"
+  - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease bridge assign --prototype:schedule"
+  - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease bridge info --jobs --pJobs"
+  - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease bridge unassign --prototype:scan"
+  - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease bridge unassign --prototype:detect"
+  - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease bridge unassign --prototype:schedule"
+  - "%PYTHON%\\python.exe %PYTHON%\\Scripts\\grease bridge cull"

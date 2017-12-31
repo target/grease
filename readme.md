@@ -8,7 +8,7 @@
 [![AppVeyor](https://img.shields.io/appveyor/ci/lemoney/grease.svg)](https://ci.appveyor.com/project/lemoney/grease)
 [![Current Version](https://badge.fury.io/py/tgt-grease.svg)](https://pypi.python.org/pypi/tgt-grease)
 [![Read the Docs](https://img.shields.io/readthedocs/pip.svg)](https://grease.readthedocs.io/)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/target/grease/blob/master/LICENSE)
+[![License](https://img.shields.io/badge/license-MIT-brightgreen.svg)](https://github.com/target/grease/blob/master/LICENSE)
 
 
 ## GREASE

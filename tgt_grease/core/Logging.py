@@ -286,18 +286,18 @@ class Logging(object):
 
         """
         global GREASE_LOG_HANDLER
+        self._logger = logging.getLogger('GREASE')
+        self._logger.setLevel(logging.DEBUG)
+        self._formatter = logging.Formatter(
+            "{"
+            "\"timestamp\": \"%(asctime)s.%(msecs)03d\", "
+            "\"thread\": \"%(threadName)s\", "
+            "\"level\" : \"%(levelname)s\", "
+            "\"message\" : \"%(message)s\"}",
+            "%Y-%m-%d %H:%M:%S"
+        )
+        self._formatter.converter = time.gmtime
         if not GREASE_LOG_HANDLER:
-            self._logger = logging.getLogger('GREASE')
-            self._logger.setLevel(logging.DEBUG)
-            self._formatter = logging.Formatter(
-                "{"
-                "\"timestamp\": \"%(asctime)s.%(msecs)03d\", "
-                "\"thread\": \"%(threadName)s\", "
-                "\"level\" : \"%(levelname)s\", "
-                "\"message\" : \"%(message)s\"}",
-                "%Y-%m-%d %H:%M:%S"
-            )
-            self._formatter.converter = time.gmtime
             if os.path.isdir(self._conf.greaseDir):
                 GREASE_LOG_HANDLER = logging.FileHandler(self._conf.get('Logging', 'file'))
                 GREASE_LOG_HANDLER.setLevel(logging.DEBUG)

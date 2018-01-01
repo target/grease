@@ -44,8 +44,12 @@ Node Configuration
 
 .. _nodeconfig:
 
-Node configuration is the local file the running instance uses to execute GREASE operations. The default configuration
-looks like this::
+Node configuration is the local file the running instance uses to execute GREASE operations. It is stored in a file
+called :code:`grease.conf.json`. This is stored in the GREASE directory. On Unix-like operating systems is found at
+:code:`/opt/grease/` and for Windows :code:`C:\\grease\\`. You can override this behavior using the environment variable
+:code:`GREASE_DIR`.
+
+The default configuration looks like this::
 
     {
         'Connectivity': {

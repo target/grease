@@ -21,6 +21,19 @@ class TestSQLSource(TestCase):
         with psycopg2.connect(os.environ['GREASE_TEST_DSN']) as conn:
             conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
             with conn.cursor() as cursor:
+                # just to make sure nothing exists
+                try:
+                    cursor.execute("""
+                      SELECT  
+                        pg_terminate_backend(pid) 
+                        FROM pg_stat_activity 
+                        WHERE datname='test_data'
+                    """)
+                    cursor.execute("""
+                        DROP DATABASE test_data;
+                    """)
+                except:
+                    print("Exception occurred during ensure schema... most of the time this is fine")
                 try:
                     cursor.execute("""
                         CREATE DATABASE test_data;

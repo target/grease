@@ -131,7 +131,7 @@ class TestUrlParser(TestCase):
             'job': 'example_job',
             'exe_env': 'general',
             'source': 'url_source',
-            'minute': (datetime.datetime.utcnow() + datetime.timedelta(minutes=10)).minute,
+            'minute': (datetime.datetime.utcnow() + datetime.timedelta(minutes=10)).minute + 7,
             'url': ['google.com'],
             'logic': {}
         }))
@@ -146,7 +146,7 @@ class TestUrlParser(TestCase):
             'exe_env': 'general',
             'source': 'url_source',
             'hour': (datetime.datetime.utcnow() + datetime.timedelta(hours=6)).hour,
-            'minute': (datetime.datetime.utcnow() + datetime.timedelta(minutes=10)).minute,
+            'minute': (datetime.datetime.utcnow() + datetime.timedelta(minutes=10)).minute + 7,
             'url': ['google.com'],
             'logic': {}
         }))

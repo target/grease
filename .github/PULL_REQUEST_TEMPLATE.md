@@ -15,13 +15,6 @@ Use this space to explain what you expect to happen when if this PR
 is merged.
   
 ### Checklist
- - [ ] Local test from submitter [link to any relevant results]()
+ - [ ] Tests
+ - [ ] Documentation
  - [ ] Maintainer Code Review
- - [ ] Added To Wiki
- 
- 
-### Optional Additional Checklist
-###### This is for external dependencies you have also need before your PR is merged
-
- - [ ] If you have no external things just delete this checkbox
- 

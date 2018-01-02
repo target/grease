@@ -1,7 +1,9 @@
+
+.. _userguide:
+
 The GREASE User Guide
 ***********************
 
-.. _userguide:
 
 
 .. _ugconfig:

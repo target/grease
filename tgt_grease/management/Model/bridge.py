@@ -153,85 +153,141 @@ Return Data: {6}
             self.ioc.getLogger().error("Unable to load [{0}] server for information".format(serverId))
             return False
 
-    def action_assign(self, prototype, node=None):
-        """Assign prototypes to a node either local or remote
+    def action_assign(self, prototype=None, role=None, node=None):
+        """Assign prototypes/roles to a node either local or remote
 
         Args:
             prototype (str): Prototype Job to assign
+            role (str): Role to assign
             node (str): MongoDB ObjectId of node to assign to, if not provided will default to the local node
 
         Returns:
             bool: If successful true else false
 
         """
-        job = self.imp.load(str(prototype))
-        if not job or not isinstance(job, Command):
-            print("Cannot find prototype [{0}] to assign check search path!".format(prototype))
-            self.ioc.getLogger().error("Cannot find prototype [{0}] to assign check search path!".format(prototype))
-            return False
-        # Cleanup job
-        job.__del__()
-        del job
-        valid, serverId = self.valid_server(node)
-        if not valid:
-                print("Invalid ObjectID")
+        assigned = False
+        if prototype:
+            job = self.imp.load(str(prototype))
+            if not job or not isinstance(job, Command):
+                print("Cannot find prototype [{0}] to assign check search path!".format(prototype))
+                self.ioc.getLogger().error("Cannot find prototype [{0}] to assign check search path!".format(prototype))
                 return False
-        updated = self.ioc.getCollection('JobServer').update_one(
-            {'_id': ObjectId(serverId)},
-            {
-                '$push': {
-                    'prototypes': prototype
+            # Cleanup job
+            job.__del__()
+            del job
+            valid, serverId = self.valid_server(node)
+            if not valid:
+                    print("Invalid ObjectID")
+                    return False
+            updated = self.ioc.getCollection('JobServer').update_one(
+                {'_id': ObjectId(serverId)},
+                {
+                    '$push': {
+                        'prototypes': prototype
+                    }
                 }
-            }
-        ).acknowledged
-        if updated:
-            print("Prototype Assigned")
-            self.ioc.getLogger().info("Prototype [{0}] assigned to server [{1}]".format(prototype, serverId))
-            return True
-        else:
-            print("Prototype Assignment Failed!")
-            self.ioc.getLogger().info("Prototype [{0}] assignment failed to server [{1}]".format(prototype, serverId))
-            return False
+            ).acknowledged
+            if updated:
+                print("Prototype Assigned")
+                self.ioc.getLogger().info("Prototype [{0}] assigned to server [{1}]".format(prototype, serverId))
+                assigned = True
+            else:
+                print("Prototype Assignment Failed!")
+                self.ioc.getLogger().info("Prototype [{0}] assignment failed to server [{1}]".format(prototype, serverId))
+                return False
+        if role:
+            valid, serverId = self.valid_server(node)
+            if not valid:
+                    print("Invalid ObjectID")
+                    return False
+            updated = self.ioc.getCollection('JobServer').update_one(
+                {'_id': ObjectId(serverId)},
+                {
+                    '$push': {
+                        'roles': role
+                    }
+                }
+            ).acknowledged
+            if updated:
+                print("Role Assigned")
+                self.ioc.getLogger().info("Role [{0}] assigned to server [{1}]".format(prototype, serverId))
+                assigned = True
+            else:
+                print("Role Assignment Failed!")
+                self.ioc.getLogger().info(
+                    "Role [{0}] assignment failed to server [{1}]".format(prototype, serverId))
+                return False
+        if not assigned:
+            print("Assignment failed, please check logs for details")
+        return assigned
 
-    def action_unassign(self, prototype, node=None):
+    def action_unassign(self, prototype=None, role=None, node=None):
         """Unassign prototypes to a node either local or remote
 
         Args:
             prototype (str): Prototype Job to unassign
+            role (str): Role to unassign
             node (str): MongoDB ObjectId of node to unassign to, if not provided will default to the local node
 
         Returns:
             bool: If successful true else false
 
         """
-        job = self.imp.load(str(prototype))
-        if not job or not isinstance(job, Command):
-            print("Cannot find prototype [{0}] to unassign check search path!".format(prototype))
-            self.ioc.getLogger().error("Cannot find prototype [{0}] to unassign check search path!".format(prototype))
-            return False
-        # Cleanup job
-        job.__del__()
-        del job
-        valid, serverId = self.valid_server(node)
-        if not valid:
-                print("Invalid ObjectID")
+        unassigned = False
+        if prototype:
+            job = self.imp.load(str(prototype))
+            if not job or not isinstance(job, Command):
+                print("Cannot find prototype [{0}] to unassign check search path!".format(prototype))
+                self.ioc.getLogger().error("Cannot find prototype [{0}] to unassign check search path!".format(prototype))
                 return False
-        updated = self.ioc.getCollection('JobServer').update_one(
-            {'_id': ObjectId(serverId)},
-            {
-                '$pull': {
-                    'prototypes': prototype
+            # Cleanup job
+            job.__del__()
+            del job
+            valid, serverId = self.valid_server(node)
+            if not valid:
+                    print("Invalid ObjectID")
+                    return False
+            updated = self.ioc.getCollection('JobServer').update_one(
+                {'_id': ObjectId(serverId)},
+                {
+                    '$pull': {
+                        'prototypes': prototype
+                    }
                 }
-            }
-        ).acknowledged
-        if updated:
-            print("Prototype Assignment Removed")
-            self.ioc.getLogger().info("Prototype [{0}] unassigned from server [{1}]".format(prototype, serverId))
-            return True
-        else:
-            print("Prototype Unassignment Failed!")
-            self.ioc.getLogger().info("Prototype [{0}] unassignment failed from server [{1}]".format(prototype, serverId))
-            return False
+            ).acknowledged
+            if updated:
+                print("Prototype Assignment Removed")
+                self.ioc.getLogger().info("Prototype [{0}] unassigned from server [{1}]".format(prototype, serverId))
+                unassigned = True
+            else:
+                print("Prototype Unassignment Failed!")
+                self.ioc.getLogger().info("Prototype [{0}] unassignment failed from server [{1}]".format(prototype, serverId))
+                return False
+        if role:
+            valid, serverId = self.valid_server(node)
+            if not valid:
+                    print("Invalid ObjectID")
+                    return False
+            updated = self.ioc.getCollection('JobServer').update_one(
+                {'_id': ObjectId(serverId)},
+                {
+                    '$pull': {
+                        'roles': role
+                    }
+                }
+            ).acknowledged
+            if updated:
+                print("Role Removed")
+                self.ioc.getLogger().info("Role [{0}] removed to server [{1}]".format(prototype, serverId))
+                unassigned = True
+            else:
+                print("Role Removal Failed!")
+                self.ioc.getLogger().info(
+                    "Role [{0}] removal failed to server [{1}]".format(prototype, serverId))
+                return False
+        if not unassigned:
+            print("Unassignment failed, please check logs for details")
+        return unassigned
 
     def action_cull(self, node=None):
         """Culls a server from the active cluster

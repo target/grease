@@ -59,6 +59,10 @@ to Django, you write your application, GREASE just serves it.
      * requests
      * pymongo
      * psutil
+     * psycopg2
+     * elasticsearch
+     * psutil
+     * **FOR WINDOWS ONLY** pypiwin32
      
 ## Installing
   

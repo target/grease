@@ -19,13 +19,19 @@ class Bridge(Command):
                     !Optional! include Prototype Jobs in list of jobs
             assign
                 --prototype:<string>
-                    !mandatory! prototype to assign
+                    !mandatory if assigning a prototype! prototype to assign
+                    !NOTE! THIS MUST BE SEPARATED BY COLON OR EQUAL SIGN
+                --role:<string>
+                    !mandatory if assigning a role! role to assign
                     !NOTE! THIS MUST BE SEPARATED BY COLON OR EQUAL SIGN
                 --node:<ObjectID>
                     !Optional! remote node to assign job to
             unassign
                 --prototype:<string>
-                    !mandatory! prototype to unassign
+                    !mandatory if unassigning a prototype! prototype to unassign
+                    !NOTE! THIS MUST BE SEPARATED BY COLON OR EQUAL SIGN
+                --role:<string>
+                    !mandatory if unassigning a role! role to unassign
                     !NOTE! THIS MUST BE SEPARATED BY COLON OR EQUAL SIGN
                 --node:<ObjectID>
                     !Optional! remote node to unassign job to
@@ -64,13 +70,19 @@ class Bridge(Command):
                 !Optional! include Prototype Jobs in list of jobs
         assign
             --prototype:<string>
-                !mandatory! prototype to assign
+                !mandatory if assigning a prototype! prototype to assign
+                !NOTE! THIS MUST BE SEPARATED BY COLON OR EQUAL SIGN
+            --role:<string>
+                !mandatory if assigning a role! role to assign
                 !NOTE! THIS MUST BE SEPARATED BY COLON OR EQUAL SIGN
             --node:<ObjectID>
                 !Optional! remote node to assign job to
         unassign
             --prototype:<string>
-                !mandatory! prototype to unassign
+                !mandatory if unassigning a prototype! prototype to unassign
+                !NOTE! THIS MUST BE SEPARATED BY COLON OR EQUAL SIGN
+            --role:<string>
+                !mandatory if unassigning a role! role to unassign
                 !NOTE! THIS MUST BE SEPARATED BY COLON OR EQUAL SIGN
             --node:<ObjectID>
                 !Optional! remote node to unassign job to
@@ -109,9 +121,9 @@ class Bridge(Command):
         elif 'info' in context.get('grease_other_args', []):
             retVal = self.bridge.action_info(context.get('node'), context.get('jobs'), context.get('pJobs'))
         elif 'assign' in context.get('grease_other_args', []):
-            retVal = self.bridge.action_assign(context.get('prototype'), context.get('node'))
+            retVal = self.bridge.action_assign(context.get('prototype'), context.get('role'), context.get('node'))
         elif 'unassign' in context.get('grease_other_args', []):
-            retVal = self.bridge.action_unassign(context.get('prototype'), context.get('node'))
+            retVal = self.bridge.action_unassign(context.get('prototype'), context.get('role'), context.get('node'))
         elif 'cull' in context.get('grease_other_args', []):
             retVal = self.bridge.action_cull(context.get('node'))
         elif 'activate' in context.get('grease_other_args', []):

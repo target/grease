@@ -1,4 +1,10 @@
-FROM python:2.7
+FROM python:3-alpine
+
+RUN apk update
+
+RUN apk add --virtual deps gcc python-dev linux-headers musl-dev postgresql-dev
+
+RUN apk add libpq
 
 RUN pip install requests pymongo psutil
 

@@ -7,7 +7,7 @@ Welcome to GREASE's documentation!
 ******************************************
 
 Welcome to GREASE. Target's operations automation platform! Here lies all the documentation on the project! Make sure
-to checkout the :doc:`GREASE_Guide` for more information!
+to checkout the :doc:`GREASE_Guide` for more information! Be sure if you're a new user to checkout the User Guide: :ref:`userguide`
 
 .. toctree::
    :maxdepth: 3

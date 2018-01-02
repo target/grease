@@ -6,4 +6,4 @@ foreach($arg in $args){
 
 $loc = split-path $SCRIPT:MyInvocation.MyCommand.Path -parent
 
-Invoke-Expression "python $loc\grease $argsString"
+python "$loc\grease" $argsString

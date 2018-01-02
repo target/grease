@@ -146,7 +146,7 @@ class TestUrlParser(TestCase):
             'exe_env': 'general',
             'source': 'url_source',
             'hour': (datetime.datetime.utcnow() + datetime.timedelta(hours=6)).hour,
-            'minute': (datetime.datetime.utcnow() + datetime.timedelta(minutes=2)).minute,
+            'minute': (datetime.datetime.utcnow() + datetime.timedelta(minutes=10)).minute,
             'url': ['google.com'],
             'logic': {}
         }))

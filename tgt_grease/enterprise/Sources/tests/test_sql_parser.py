@@ -14,6 +14,41 @@ class TestSQLSource(TestCase):
         inst = sql_source()
         self.assertTrue(isinstance(inst, sql_source))
 
+    def __ensure_schema(self):
+        # Helper function
+        if not os.environ.get('GREASE_TEST_DSN'):
+            os.environ['GREASE_TEST_DSN'] = "host=localhost user=postgres"
+        with psycopg2.connect(os.environ['GREASE_TEST_DSN']) as conn:
+            conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+            with conn.cursor() as cursor:
+                try:
+                    cursor.execute("""
+                        CREATE DATABASE test_data;
+                    """)
+                except psycopg2.ProgrammingError as e:
+                    print("Schema Exists: {0}".format(e.pgerror))
+        if not os.environ.get('GREASE_TEST_DSN_ORIGINAL'):
+            os.environ['GREASE_TEST_DSN_ORIGINAL'] = os.environ.get('GREASE_TEST_DSN')
+        os.environ['GREASE_TEST_DSN'] = os.environ['GREASE_TEST_DSN'] + " dbname=test_data"
+
+    def __cleanup_schema(self):
+        with psycopg2.connect(os.environ['GREASE_TEST_DSN_ORIGINAL']) as conn:
+            conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
+            with conn.cursor() as cursor:
+                cursor.execute("""
+                  SELECT  
+                    pg_terminate_backend(pid) 
+                    FROM pg_stat_activity 
+                    WHERE datname='test_data'
+                """)
+                try:
+                    cursor.execute("""
+                        DROP DATABASE test_data;
+                    """)
+                except psycopg2.ProgrammingError as e:
+                    print("Schema Does Not Exist: {0}".format(e.pgerror))
+        os.environ['GREASE_TEST_DSN'] = os.environ['GREASE_TEST_DSN_ORIGINAL']
+
     def test_sql_parser_mock(self):
         source = sql_source()
         conf = Configuration()
@@ -34,16 +69,7 @@ class TestSQLSource(TestCase):
         os.remove(conf.greaseDir + 'etc' + conf.fs_sep + 'test.mock.sql.json')
 
     def test_sql_parser(self):
-        if not os.environ.get('GREASE_TEST_DSN'):
-            os.environ['GREASE_TEST_DSN'] = "host=localhost user=postgres"
-        with psycopg2.connect(os.environ['GREASE_TEST_DSN']) as conn:
-            conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    CREATE DATABASE test_data;
-                """)
-        original_str = os.environ.get('GREASE_TEST_DSN')
-        os.environ['GREASE_TEST_DSN'] = os.environ['GREASE_TEST_DSN'] + " dbname=test_data"
+        self.__ensure_schema()
         with psycopg2.connect(os.environ['GREASE_TEST_DSN']) as conn:
             with conn.cursor() as cursor:
                 source = sql_source()
@@ -85,13 +111,7 @@ class TestSQLSource(TestCase):
                 cursor.execute("""
                     DROP TABLE public.test_data
                 """)
-        with psycopg2.connect(original_str) as conn:
-            conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    DROP DATABASE test_data;
-                """)
-        os.environ['GREASE_TEST_DSN'] = original_str
+        self.__cleanup_schema()
 
     def test_sql_parser_bad_type(self):
         source = sql_source()
@@ -110,16 +130,7 @@ class TestSQLSource(TestCase):
         self.assertEqual(len(data), 0)
 
     def test_sql_parser_hour_good(self):
-        if not os.environ.get('GREASE_TEST_DSN'):
-            os.environ['GREASE_TEST_DSN'] = "host=localhost user=postgres"
-        with psycopg2.connect(os.environ['GREASE_TEST_DSN']) as conn:
-            conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    CREATE DATABASE test_data;
-                """)
-        original_str = os.environ.get('GREASE_TEST_DSN')
-        os.environ['GREASE_TEST_DSN'] = os.environ['GREASE_TEST_DSN'] + " dbname=test_data"
+        self.__ensure_schema()
         with psycopg2.connect(os.environ['GREASE_TEST_DSN']) as conn:
             with conn.cursor() as cursor:
                 source = sql_source()
@@ -162,25 +173,10 @@ class TestSQLSource(TestCase):
                 cursor.execute("""
                     DROP TABLE public.test_data
                 """)
-        with psycopg2.connect(original_str) as conn:
-            conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    DROP DATABASE test_data;
-                """)
-        os.environ['GREASE_TEST_DSN'] = original_str
+        self.__cleanup_schema()
 
     def test_sql_parser_minute_good(self):
-        if not os.environ.get('GREASE_TEST_DSN'):
-            os.environ['GREASE_TEST_DSN'] = "host=localhost user=postgres"
-        with psycopg2.connect(os.environ['GREASE_TEST_DSN']) as conn:
-            conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    CREATE DATABASE test_data;
-                """)
-        original_str = os.environ.get('GREASE_TEST_DSN')
-        os.environ['GREASE_TEST_DSN'] = os.environ['GREASE_TEST_DSN'] + " dbname=test_data"
+        self.__ensure_schema()
         with psycopg2.connect(os.environ['GREASE_TEST_DSN']) as conn:
             with conn.cursor() as cursor:
                 source = sql_source()
@@ -223,25 +219,10 @@ class TestSQLSource(TestCase):
                 cursor.execute("""
                     DROP TABLE public.test_data
                 """)
-        with psycopg2.connect(original_str) as conn:
-            conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    DROP DATABASE test_data;
-                """)
-        os.environ['GREASE_TEST_DSN'] = original_str
+        self.__cleanup_schema()
 
     def test_sql_parser_hour_and_minute_good(self):
-        if not os.environ.get('GREASE_TEST_DSN'):
-            os.environ['GREASE_TEST_DSN'] = "host=localhost user=postgres"
-        with psycopg2.connect(os.environ['GREASE_TEST_DSN']) as conn:
-            conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    CREATE DATABASE test_data;
-                """)
-        original_str = os.environ.get('GREASE_TEST_DSN')
-        os.environ['GREASE_TEST_DSN'] = os.environ['GREASE_TEST_DSN'] + " dbname=test_data"
+        self.__ensure_schema()
         with psycopg2.connect(os.environ['GREASE_TEST_DSN']) as conn:
             with conn.cursor() as cursor:
                 source = sql_source()
@@ -285,25 +266,10 @@ class TestSQLSource(TestCase):
                 cursor.execute("""
                     DROP TABLE public.test_data
                 """)
-        with psycopg2.connect(original_str) as conn:
-            conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    DROP DATABASE test_data;
-                """)
-        os.environ['GREASE_TEST_DSN'] = original_str
+        self.__cleanup_schema()
 
     def test_sql_parser_hour_bad(self):
-        if not os.environ.get('GREASE_TEST_DSN'):
-            os.environ['GREASE_TEST_DSN'] = "host=localhost user=postgres"
-        with psycopg2.connect(os.environ['GREASE_TEST_DSN']) as conn:
-            conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    CREATE DATABASE test_data;
-                """)
-        original_str = os.environ.get('GREASE_TEST_DSN')
-        os.environ['GREASE_TEST_DSN'] = os.environ['GREASE_TEST_DSN'] + " dbname=test_data"
+        self.__ensure_schema()
         with psycopg2.connect(os.environ['GREASE_TEST_DSN']) as conn:
             with conn.cursor() as cursor:
                 source = sql_source()
@@ -333,7 +299,7 @@ class TestSQLSource(TestCase):
                     'type': 'postgresql',
                     'dsn': 'GREASE_TEST_DSN',
                     'query': 'select * from test_data;',
-                    'hour': (datetime.datetime.utcnow() + datetime.timedelta(hours=2)).hour,
+                    'hour': (datetime.datetime.utcnow() + datetime.timedelta(hours=6)).hour,
                     'logic': {}
                 }))
                 data = source.get_data()
@@ -342,25 +308,10 @@ class TestSQLSource(TestCase):
                 cursor.execute("""
                     DROP TABLE public.test_data
                 """)
-        with psycopg2.connect(original_str) as conn:
-            conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    DROP DATABASE test_data;
-                """)
-        os.environ['GREASE_TEST_DSN'] = original_str
+        self.__cleanup_schema()
 
     def test_sql_parser_minute_bad(self):
-        if not os.environ.get('GREASE_TEST_DSN'):
-            os.environ['GREASE_TEST_DSN'] = "host=localhost user=postgres"
-        with psycopg2.connect(os.environ['GREASE_TEST_DSN']) as conn:
-            conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    CREATE DATABASE test_data;
-                """)
-        original_str = os.environ.get('GREASE_TEST_DSN')
-        os.environ['GREASE_TEST_DSN'] = os.environ['GREASE_TEST_DSN'] + " dbname=test_data"
+        self.__ensure_schema()
         with psycopg2.connect(os.environ['GREASE_TEST_DSN']) as conn:
             with conn.cursor() as cursor:
                 source = sql_source()
@@ -390,7 +341,7 @@ class TestSQLSource(TestCase):
                     'type': 'postgresql',
                     'dsn': 'GREASE_TEST_DSN',
                     'query': 'select * from test_data;',
-                    'minute': (datetime.datetime.utcnow() + datetime.timedelta(minutes=2)).minute,
+                    'minute': (datetime.datetime.utcnow() + datetime.timedelta(minutes=10)).minute,
                     'logic': {}
                 }))
                 data = source.get_data()
@@ -399,25 +350,10 @@ class TestSQLSource(TestCase):
                 cursor.execute("""
                     DROP TABLE public.test_data
                 """)
-        with psycopg2.connect(original_str) as conn:
-            conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    DROP DATABASE test_data;
-                """)
-        os.environ['GREASE_TEST_DSN'] = original_str
+        self.__cleanup_schema()
 
     def test_sql_parser_hour_and_minute_bad(self):
-        if not os.environ.get('GREASE_TEST_DSN'):
-            os.environ['GREASE_TEST_DSN'] = "host=localhost user=postgres"
-        with psycopg2.connect(os.environ['GREASE_TEST_DSN']) as conn:
-            conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    CREATE DATABASE test_data;
-                """)
-        original_str = os.environ.get('GREASE_TEST_DSN')
-        os.environ['GREASE_TEST_DSN'] = os.environ['GREASE_TEST_DSN'] + " dbname=test_data"
+        self.__ensure_schema()
         with psycopg2.connect(os.environ['GREASE_TEST_DSN']) as conn:
             with conn.cursor() as cursor:
                 source = sql_source()
@@ -447,8 +383,8 @@ class TestSQLSource(TestCase):
                     'type': 'postgresql',
                     'dsn': 'GREASE_TEST_DSN',
                     'query': 'select * from test_data;',
-                    'hour': (datetime.datetime.utcnow() + datetime.timedelta(hours=2)).hour,
-                    'minute': (datetime.datetime.utcnow() + datetime.timedelta(minutes=2)).minute,
+                    'hour': (datetime.datetime.utcnow() + datetime.timedelta(hours=6)).hour,
+                    'minute': (datetime.datetime.utcnow() + datetime.timedelta(minutes=10)).minute,
                     'logic': {}
                 }))
                 data = source.get_data()
@@ -457,10 +393,4 @@ class TestSQLSource(TestCase):
                 cursor.execute("""
                     DROP TABLE public.test_data
                 """)
-        with psycopg2.connect(original_str) as conn:
-            conn.set_isolation_level(ISOLATION_LEVEL_AUTOCOMMIT)
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    DROP DATABASE test_data;
-                """)
-        os.environ['GREASE_TEST_DSN'] = original_str
+        self.__cleanup_schema()

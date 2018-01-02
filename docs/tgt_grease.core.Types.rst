@@ -1,6 +1,8 @@
 GREASE Core Types
 ================================
 
+.. _commandtype:
+
 The GREASE Command
 ----------------------------------------
 
@@ -8,6 +10,8 @@ The GREASE Command
     :members:
     :undoc-members:
     :show-inheritance:
+
+.. _commandtesttype:
 
 The Automation Tester
 ----------------------------------------

@@ -1,7 +1,7 @@
 .. _installing-grease:
 
-GREASE Up & Running
-****************************
+GREASE Administration:  Up & Running
+***************************************
 
 Initial Installation
 =======================
@@ -30,7 +30,7 @@ install GREASE via source follow these steps:
 
 #. Setup your configuration file
 
-Understanding the configuration System
+Understanding & Configuring Your System
 ========================================
 
 There are multiple definitions for configuration in GREASE. The primary ones are:
@@ -145,3 +145,13 @@ Prototype Configuration
 
 Prototype configuration is stored in the MongoDB collection Configuration, in the filesystem or located in the package.
 Check the :ref:`datamodel` for more information about what is stored here and the schema.
+
+Installing the Daemon
+=======================
+
+Installing the GREASE daemon is super easy. **Be sure you are logged in or running a console with administrative privileges**. Now
+install the daemon *on all supported platforms* by running :code:`grease daemon install`. On Unixlike systems you should now
+have a Systemd Service installed with the service file being stored at :code:`/etc/systemd/system/grease.service` and for
+Launchd at :code:`/Library/LaunchDaemons/net.grease.daemon.plist`. For windows you will have a new service installed.
+
+You can now control the operations of your cluster!

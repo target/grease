@@ -202,7 +202,7 @@ arrange state around the command a bit::
 
         def test_command(self):
             d = webserver_check_alive()
-            # Overload the restart_nginx function for testing purposes
+            # Create some state in the database
             for i in range(0, 5):
                 d.variable_storage.insert_one(
                     {
@@ -211,6 +211,7 @@ arrange state around the command a bit::
                         'status_code': context.get('status_code')
                     }
                 )
+            # Overload the restart_nginx function for testing purposes
             d.restart_nginx = lambda: True
             self.assertTrue(d.execute({'status_code': 500}))
             # Now just clean up state

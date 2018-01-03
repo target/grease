@@ -17,13 +17,6 @@ class TestLogging(TestCase):
         log = Logging()
         self.assertTrue(isinstance(log.getConfig(), Configuration))
 
-    def test_trace(self):
-        log = Logging()
-        initial = self._log_line_count()
-        self.assertTrue(log.trace("Test Trace Message", {'key': 'value'}))
-        after = self._log_line_count()
-        self.assertTrue(initial + 1 == after)
-
     def test_debug(self):
         log = Logging()
         initial = self._log_line_count()

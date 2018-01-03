@@ -112,7 +112,7 @@ class Logging(object):
             return bool(self._notifications.SendMessage(message, level))
         return True
 
-    def trace(self, message, additional=None, verbose=False, trace=False, notify=False):
+    def trace(self, message, additional=None, verbose=False, trace=True, notify=False):
         """Trace Messages
 
         Use this method for logging tracing (enhanced debug) statements

@@ -2,6 +2,8 @@ from tgt_grease.core import Configuration
 from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
 from urllib3.exceptions import HTTPError
 import requests
+import json
+
 
 
 class Notifications(object):
@@ -90,6 +92,8 @@ class Notifications(object):
         """
         if channel == "HipChat":
             return self.send_hipchat_message(message, level)
+        elif channel == "Slack":
+            return self.send_slack_message(message)
         else:
             return False
 
@@ -145,3 +149,18 @@ class Notifications(object):
                 return False
         except HTTPError:
             return False
+
+    def send_slack_message(self, message):
+
+        webhook_url = self._conf.get('Notifications', 'Slack').get('webhookURL')
+        slack_data = {'text': message}
+
+        try:
+            response = requests.post(
+                webhook_url, data=json.dumps(slack_data),
+                headers={'Content-Type': 'application/json'}
+            )
+            return True
+        except HTTPError:
+            return False
+

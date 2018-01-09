@@ -173,6 +173,9 @@ class Configuration(object):
                     'enabled': False,
                     'token': None,
                     'room': None
+                },
+                'Slack': {
+                    'webhookURL': ''
                 }
             },
             'Configuration': {

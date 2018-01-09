@@ -151,6 +151,15 @@ class Notifications(object):
             return False
 
     def send_slack_message(self, message):
+        """Send a slack message to slack channel using webhook url in the configuration
+
+        Args:
+            message (str): Message to send to Slack
+
+        Returns:
+            bool: API response status
+
+        """
 
         webhook_url = self._conf.get('Notifications', 'Slack').get('webhookURL')
         slack_data = {'text': message}

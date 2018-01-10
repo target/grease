@@ -39,10 +39,8 @@ class Configuration(object):
     greaseConfigFile = greaseDir + "grease.conf.json"
 
     if os.path.isfile(greaseDir + 'grease.identity'):
-        fil = open(greaseDir + 'grease.identity')
-        NodeIdentity = fil.read().rstrip()
-        fil.close()
-        del fil
+        with open(greaseDir + 'grease.identity', 'r') as fil:
+            NodeIdentity = fil.read().rstrip()
     else:
         NodeIdentity = "Unknown"
 
@@ -74,9 +72,19 @@ class Configuration(object):
             # load defaults
             GREASE_CONFIG = Configuration.DefaultConfig()
             # write config to disk
-            fil = open(Configuration.greaseConfigFile, 'w')
-            fil.write(json.dumps(GREASE_CONFIG, indent=4, sort_keys=True))
-            fil.close()
+            try:
+                with open(Configuration.greaseConfigFile, 'w') as fil:
+                    fil.write(json.dumps(GREASE_CONFIG, indent=4, sort_keys=True))
+            except:
+                print("""
+!!!!!!!!!!!!!!!!!!FAILED TO WRITE CONFIGURATION!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                
+THIS IS CRITICAL! EITHER [{0}] is unavailable or does not exist! log files will not be written and only the
+default configuration is accessible!
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                """.format(Configuration.greaseDir))
+                return
 
     @staticmethod
     def get(section, key=None, default=None):
@@ -139,12 +147,15 @@ class Configuration(object):
             bool: If the FS is in place then True
 
         """
-        if not os.path.isdir(self.greaseDir):
-            os.mkdir(self.greaseDir)
-        for elem in self.FileSystem:
-            if not os.path.isdir(self.greaseDir + elem):
-                os.mkdir(self.greaseDir + elem)
-        return True
+        try:
+            if not os.path.isdir(self.greaseDir):
+                os.mkdir(self.greaseDir)
+            for elem in self.FileSystem:
+                if not os.path.isdir(self.greaseDir + elem):
+                    os.mkdir(self.greaseDir + elem)
+            return True
+        except:
+            return False
 
     @staticmethod
     def DefaultConfig():

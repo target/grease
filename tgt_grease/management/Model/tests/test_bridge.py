@@ -23,12 +23,16 @@ class TestBridge(TestCase):
 
     def test_assignment_operations(self):
         b = BridgeCommand()
-        self.assertTrue(b.action_assign('scan'))
+        self.assertTrue(b.action_assign(prototype='scan'))
+        self.assertTrue(b.action_assign(role='stage'))
+        self.assertTrue(b.action_assign(prototype='detect', role='dev'))
         self.assertTrue(b.ioc.getCollection('JobServer').find({
             '_id': ObjectId(b.ioc.getConfig().NodeIdentity),
             'prototypes': 'scan'
         }).count())
-        self.assertTrue(b.action_unassign('scan'))
+        self.assertTrue(b.action_unassign(prototype='scan'))
+        self.assertTrue(b.action_unassign(role='stage'))
+        self.assertTrue(b.action_unassign(prototype='detect', role='dev'))
 
     def test_culling_operations(self):
         b = BridgeCommand()

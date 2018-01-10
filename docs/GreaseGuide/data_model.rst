@@ -1,3 +1,5 @@
+.. _datamodel:
+
 The GREASE Data Models
 ***************************
 

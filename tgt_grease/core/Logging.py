@@ -112,7 +112,7 @@ class Logging(object):
             return bool(self._notifications.SendMessage(message, level))
         return True
 
-    def trace(self, message, additional=None, verbose=False, trace=False, notify=False):
+    def trace(self, message, additional=None, verbose=False, trace=True, notify=False):
         """Trace Messages
 
         Use this method for logging tracing (enhanced debug) statements
@@ -286,7 +286,6 @@ class Logging(object):
 
         """
         global GREASE_LOG_HANDLER
-        logFilename = self._conf.get('Logging', 'file')
         self._logger = logging.getLogger('GREASE')
         self._logger.setLevel(logging.DEBUG)
         self._formatter = logging.Formatter(
@@ -299,7 +298,13 @@ class Logging(object):
         )
         self._formatter.converter = time.gmtime
         if not GREASE_LOG_HANDLER:
-            GREASE_LOG_HANDLER = logging.FileHandler(logFilename)
-            GREASE_LOG_HANDLER.setLevel(logging.DEBUG)
-            GREASE_LOG_HANDLER.setFormatter(self._formatter)
-            self._logger.addHandler(GREASE_LOG_HANDLER)
+            if os.path.isdir(self._conf.greaseDir):
+                GREASE_LOG_HANDLER = logging.FileHandler(self._conf.get('Logging', 'file'))
+                GREASE_LOG_HANDLER.setLevel(logging.DEBUG)
+                GREASE_LOG_HANDLER.setFormatter(self._formatter)
+                self._logger.addHandler(GREASE_LOG_HANDLER)
+            else:
+                GREASE_LOG_HANDLER = logging.StreamHandler()
+                GREASE_LOG_HANDLER.setLevel(logging.DEBUG)
+                GREASE_LOG_HANDLER.setFormatter(self._formatter)
+                self._logger.addHandler(GREASE_LOG_HANDLER)

@@ -8,6 +8,7 @@ below for more information on how to get started.
    :caption: Contents:
 
    GreaseGuide/what_is_grease
+   GreaseGuide/user_guide
    GreaseGuide/Installation
    GreaseGuide/data_model
 

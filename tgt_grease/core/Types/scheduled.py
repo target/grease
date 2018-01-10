@@ -33,7 +33,7 @@ class ScheduledCommand(Command):
         """Put your code here to run whenever the conditions in timeToRun are defined
 
         Note:
-            We recommend something valuable since the engine logs the result of the method in verbose mode
+            We recommend returning something valuable since the engine logs the result of the method in verbose mode
 
         """
         pass

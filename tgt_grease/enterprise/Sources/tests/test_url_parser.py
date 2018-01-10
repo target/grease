@@ -117,7 +117,7 @@ class TestUrlParser(TestCase):
             'job': 'example_job',
             'exe_env': 'general',
             'source': 'url_source',
-            'hour': (datetime.datetime.utcnow() + datetime.timedelta(hours=2)).hour,
+            'hour': (datetime.datetime.utcnow() + datetime.timedelta(hours=6)).hour,
             'url': ['google.com'],
             'logic': {}
         }))
@@ -131,7 +131,7 @@ class TestUrlParser(TestCase):
             'job': 'example_job',
             'exe_env': 'general',
             'source': 'url_source',
-            'minute': (datetime.datetime.utcnow() + datetime.timedelta(minutes=2)).minute,
+            'minute': (datetime.datetime.utcnow() + datetime.timedelta(minutes=10)).minute + 7,
             'url': ['google.com'],
             'logic': {}
         }))
@@ -145,8 +145,8 @@ class TestUrlParser(TestCase):
             'job': 'example_job',
             'exe_env': 'general',
             'source': 'url_source',
-            'hour': (datetime.datetime.utcnow() + datetime.timedelta(hours=2)).hour,
-            'minute': (datetime.datetime.utcnow() + datetime.timedelta(minutes=2)).minute,
+            'hour': (datetime.datetime.utcnow() + datetime.timedelta(hours=6)).hour,
+            'minute': (datetime.datetime.utcnow() + datetime.timedelta(minutes=10)).minute + 7,
             'url': ['google.com'],
             'logic': {}
         }))

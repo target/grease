@@ -175,6 +175,7 @@ class Configuration(object):
                     'room': None
                 },
                 'Slack': {
+                    'enabled': False,
                     'webhookURL': ''
                 }
             },

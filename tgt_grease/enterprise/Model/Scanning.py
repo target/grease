@@ -55,6 +55,8 @@ class Scan(object):
         self.ioc.getLogger().trace("Starting Parse of Environment", trace=True)
         Configuration = self.generate_config_set(source=source, config=config)
         for conf in Configuration:
+            if conf.get('source') == 'kafka':
+                continue
             inst = self.impTool.load(conf.get('source', str(uuid4())))
             if not isinstance(inst, BaseSourceClass):
                 self.ioc.getLogger().error("Invalid Source [{0}]".format(conf.get('source')), notify=False)

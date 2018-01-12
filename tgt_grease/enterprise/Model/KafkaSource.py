@@ -5,7 +5,6 @@ from .CentralScheduling import Scheduling
 import multiprocessing as mp
 from time import time
 
-
 MIN_BACKLOG = 5
 MAX_BACKLOG = 20
 SLEEP_TIME = 5
@@ -21,6 +20,24 @@ class KafkaSource(object):
         self.impTool = ImportTool(self.ioc.getLogger())
         self.scheduler = Scheduling(self.ioc)
         self.configs = []
+
+    def run(self, config=None):
+        if config:
+            self.configs = [config]
+        else:
+            self.configs = self.get_configs()
+
+        procs = []
+        for conf in self.configs:
+            proc = mp.Process(target=KafkaSource.consumer_manager, args=(self.ioc, conf,))
+            proc.daemon = False
+            proc.start()
+            procs.append(proc)
+
+        while procs:
+            procs = list(filter(lambda x: x.is_alive(), procs))
+        
+        return False
 
     @staticmethod
     def consumer_manager(ioc, config):
@@ -48,15 +65,12 @@ class KafkaSource(object):
     @staticmethod
     def consume(ioc, config, pipe):
         consumer = KafkaSource.make_consumer(ioc, config)
-
         for msg in consumer:
             if not pipe.empty():
                 return
-
             message_dict = KafkaSource.transform_message(ioc, config, msg)
             if message_dict:
                 KafkaSource.send_to_scheduling(ioc, config, message_dict)
-
 
     @staticmethod
     def sleep(sleep_sec):
@@ -101,24 +115,6 @@ class KafkaSource(object):
         else:
             ioc.getLogger().error("Scheduling failed for source document!", notify=False)
             return False
-
-    def run(self, config=None):
-        if config:
-            self.configs = [config]
-        else:
-            self.configs = self.get_configs()
-
-        procs = []
-        for conf in self.configs:
-            proc = mp.Process(target=KafkaSource.consumer_manager, args=(self.ioc, conf,))
-            proc.daemon = False
-            proc.start()
-            procs.append(proc)
-
-        while procs:
-            procs = list(filter(lambda x: x.is_alive(), procs))
-        
-        return False
 
     def get_configs(self):
         return []

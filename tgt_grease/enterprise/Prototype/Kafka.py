@@ -14,7 +14,7 @@ class Kafka(Command):
     purpose = "Listen to the configured Kafka topics and send the chosen keys to detection"
     help = """
     This command scans the environment via the node configuration. This enables GREASE to 'see' its' environment and 
-    schedule jobs a detection node
+    schedule jobs to a detection node
     
     Args:
         --config:<filename>
@@ -33,10 +33,10 @@ class Kafka(Command):
             context (dict): Command Context
 
         Note:
-            This method normally will *never* return. As it is a prototype. So it should continue indefinitely
+            This method normally will *never* return, as it is a prototype. It should continue indefinitely
 
         Returns:
-             bool: True iff no failures occur
+             bool: True iff no failures occur, otherwise False
 
         """
         if context.get('foreground'):

@@ -184,6 +184,10 @@ default configuration is accessible!
                     'enabled': False,
                     'token': None,
                     'room': None
+                },
+                'Slack': {
+                    'enabled': False,
+                    'webhookURL': ''
                 }
             },
             'Configuration': {

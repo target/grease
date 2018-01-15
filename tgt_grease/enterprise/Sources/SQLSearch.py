@@ -50,7 +50,6 @@ class SQLSource(BaseSourceClass):
             bool: If True data will be scheduled for ingestion after deduplication. If False the engine will bail out
 
         """
-        ioc = GreaseContainer()
         if configuration.get('hour'):
             if datetime.datetime.utcnow().hour != int(configuration.get('hour')):
                 # it is not the correct hour
@@ -61,12 +60,14 @@ class SQLSource(BaseSourceClass):
                 return True
         else:
             # Attempt to get the DSN for the connection
+            ioc = GreaseContainer()
             if os.environ.get(configuration.get('dsn')) and configuration.get('query'):
                 # ensure the DSN is setup and the query is present
                 try:
                     DSN = os.environ.get(configuration.get('dsn'))
 
-                    connection_string= "{0};APP=GREASE".format(DSN)
+                    connection_string= "{0}".format(DSN)
+
                     with pyodbc.connect(connection_string) as conn:
                         # See the following:
                         # https://github.com/mkleehammer/pyodbc/wiki/Connecting-to-PostgreSQL
@@ -78,10 +79,10 @@ class SQLSource(BaseSourceClass):
                             if sys.version_info[:2] == (2, 7):
                                 conn.setencoding(unicode, encoding='utf-8', ctype=pyodbc.SQL_CHAR)
 
-                        # Open a cursor and execute a query, then grab the rows as our dat
+                        # Open a cursor and execute a query, then grab the rows as our data
                         with conn.execute(configuration.get('query')) as cursor:
                             # Convert the results from tuples with just values to dicts with column names
-                            # e.g (1, 'Sally', 'Sue') -> {'id': 1, 'name_first': 'Sally', 'name_last': 'Sue'}", '
+                            # e.g (1, 'Sally', 'Sue') -> {'id': 1, 'name_first': 'Sally', 'name_last': 'Sue'}
                             # Adapted from https://stackoverflow.com/questions/16519385/output-pyodbc-cursor-results-as-python-dictionary
                             self._data = [dict(zip([column[0] for column in cursor.description], row)) for row in cursor.fetchall()]
 

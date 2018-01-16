@@ -66,15 +66,28 @@ class KafkaSource(object):
 
         procs = []
         for conf in self.configs:
-            proc = mp.Process(target=KafkaSource.consumer_manager, args=(self.ioc, conf,))
-            proc.daemon = False
-            proc.start()
-            procs.append(proc)
+            procs.append(self.create_consumer_manager_proc(conf))
 
         while procs:
             procs = list(filter(lambda x: x.is_alive(), procs))
         
         return False
+
+    def create_consumer_manager_proc(self, config):
+        """Creates and returns a process running a consumer_manager
+
+        Args:
+            config (dict): Configuration for a Kafka source
+
+        Returns:
+            multiprocessing.Process: The process running consumer_manager
+
+        """
+
+        proc = mp.Process(target=KafkaSource.consumer_manager, args=(self.ioc, config,))
+        proc.daemon = False
+        proc.start()
+        return proc
 
     @staticmethod
     def consumer_manager(ioc, config):
@@ -95,7 +108,7 @@ class KafkaSource(object):
 
         while procs:
             KafkaSource.reallocate_consumers(ioc, config, monitor_consumer, procs)
-            procs = list(filter(lambda x: x.is_alive(), procs))
+            procs = list(filter(lambda x: x[0].is_alive(), procs))
 
         return False
 

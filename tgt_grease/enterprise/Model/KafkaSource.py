@@ -6,6 +6,7 @@ from .DeDuplication import Deduplication
 import multiprocessing as mp
 from time import time
 import kafka
+from kafka import KafkaConsumer, TopicPartition
 
 MIN_BACKLOG = 5     # If the Kafka message backlog falls below this number, we will kill a consumer
 MAX_BACKLOG = 20    # If the Kafka message backlog rises above this number, we will make a consumer
@@ -32,7 +33,7 @@ class KafkaSource(object):
         else:
             self.ioc = GreaseContainer()
         self.conf = PrototypeConfig(self.ioc)
-        self.impTool = ImportTool(self.ioc.getLogger())
+        self.imp_tool = ImportTool(self.ioc.getLogger())
         self.scheduler = Scheduling(self.ioc)
         self.dedup = Deduplication(self.ioc)
         self.configs = []
@@ -179,8 +180,13 @@ class KafkaSource(object):
 
         """
 
+        consumer = KafkaConsumer(
+            group_id=config.get('name'),
+            *config.get('topics'),
+            **{'bootstrap_servers': config.get('servers')}
+        )
         KafkaSource.sleep(SLEEP_TIME)   # Gives the consumer time to initialize
-        return []
+        return consumer
 
     @staticmethod
     def parse_message(ioc, config, message):
@@ -202,7 +208,15 @@ class KafkaSource(object):
             dict: A flat dictionary containing only the keys/values from the message as specified in the config
 
         """
-        return []
+        final = {}
+        for key, alias in config.get("key_aliases", {}).items():
+            pointer = message
+            for sub_key in key.split(config.get("key_sep", ".")):
+                if sub_key not in pointer:
+                    return {}
+                pointer = pointer[sub_key]
+            final[alias] = pointer
+        return final
 
     @staticmethod
     def reallocate_consumers(ioc, config, monitor_consumer, procs):
@@ -240,7 +254,7 @@ class KafkaSource(object):
 
         """
         proc_tup[1].send("STOP")
-        KafkaSource.sleep(SLEEP_TIME)
+        KafkaSource.sleep(SLEEP_TIME) # Give consumer a chance to finish its current message then die
 
     @staticmethod
     def get_backlog(ioc, consumer):
@@ -254,7 +268,20 @@ class KafkaSource(object):
             int: the number of messages in the backlog
 
         """
-        return True
+        ioc.getLogger().error("hello")
+        consumer.poll() # We need to poll the topic to actually get assigned
+        partitions = consumer.assignment()
+        current_offsets = [consumer.position(part) for part in partitions]
+
+        end_offsets = []
+        end_offset_dict = consumer.end_offsets(partitions)
+        for part, offset in end_offset_dict.items():
+            end_offsets.append(offset)
+
+        ioc.getLogger().error(str(end_offsets))
+        ioc.getLogger().error(str(current_offsets))
+        ioc.getLogger().error(str((sum(end_offsets) - sum(current_offsets)) / len(partitions)))
+        return (sum(end_offsets) - sum(current_offsets)) / len(partitions)
 
     @staticmethod
     def send_to_scheduling(ioc, config, message):

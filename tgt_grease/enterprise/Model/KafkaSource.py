@@ -147,11 +147,12 @@ class KafkaSource(object):
         consumer = KafkaSource.make_consumer(ioc, config)
 
         for msg in consumer:
-            if not pipe.empty():    # If the parent sends a signal pipe
+            if pipe.poll():    # If the parent sends a signal
                 return False
             message_dict = KafkaSource.parse_message(ioc, config, msg)
             if message_dict:
                 KafkaSource.send_to_scheduling(ioc, config, message_dict)
+        return False
 
     @staticmethod
     def sleep(sleep_sec):
@@ -201,7 +202,7 @@ class KafkaSource(object):
             dict: A flat dictionary containing only the keys/values from the message as specified in the config
 
         """
-        return {}
+        return []
 
     @staticmethod
     def reallocate_consumers(ioc, config, monitor_consumer, procs):
@@ -213,6 +214,8 @@ class KafkaSource(object):
             monitor_consumer (kafka.KafkaConsumer): KafkaConsumer used solely for measuring message backlog
             procs (list[(multiprocessing.Process, multiprocessing.Pipe)]): List of current consumer process/pipe pairs
 
+        Returns:
+            int: 1 if created a proc, 0 if no action, -1 if killed a proc
         """
 
         backlog1 = KafkaSource.get_backlog(ioc, monitor_consumer)
@@ -221,8 +224,11 @@ class KafkaSource(object):
 
         if backlog1 > MAX_BACKLOG and backlog2 > MAX_BACKLOG:
             procs.append(KafkaSource.create_consumer_proc(ioc, config))
+            return 1
         elif backlog1 <= MIN_BACKLOG and backlog2 <= MIN_BACKLOG and len(procs) > 1:
             KafkaSource.kill_consumer_proc(ioc, procs[0])
+            return -1
+        return 0
 
     @staticmethod
     def kill_consumer_proc(ioc, proc_tup):

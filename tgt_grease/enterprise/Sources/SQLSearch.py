@@ -95,7 +95,6 @@ class SQLSource(BaseSourceClass):
                         # Adapted from https://stackoverflow.com/questions/16519385/output-pyodbc-cursor-results-as-python-dictionary
                         self._data = [dict(zip([column[0] for column in cursor.description], row)) for row in cursor.fetchall()]
 
-                        del ioc
                 except pyodbc.ProgrammingError as e:
                     # It's likely a non-SELECT query was attempted, then fetchall() was called on the results
                     # which will throw this exception
@@ -104,9 +103,10 @@ class SQLSource(BaseSourceClass):
                         .format(configuration.get('query'), e),
                         notify=False
                     )
-                    del ioc
                     return False
+
                 finally:
+                    del ioc
                     conn.rollback()
                     conn.close()
 

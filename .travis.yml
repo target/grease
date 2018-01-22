@@ -61,8 +61,8 @@ before_script:
   - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then sudo apt-get install odbc-postgresql; fi
   - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = mysql ]; then wget https://cdn.mysql.com//Downloads/Connector-ODBC/5.3/mysql-connector-odbc-5.3.9-linux-ubuntu14.04-x86-64bit.tar.gz; fi
   - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = mysql ]; then tar xvfz mysql-connector-odbc-5.3.9-linux-ubuntu14.04-x86-64bit.tar.gz; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = mysql ]; then cp mysql-connector-odbc-5.3.9-linux-ubuntu14.04-x86-64bit/bin/* /usr/local/bin; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = mysql ]; then cp mysql-connector-odbc-5.3.9-linux-ubuntu14.04-x86-64bit/lib/* /usr/local/lib; fi
+  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = mysql ]; then sudo cp mysql-connector-odbc-5.3.9-linux-ubuntu14.04-x86-64bit/bin/* /usr/local/bin; fi
+  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = mysql ]; then sudo cp mysql-connector-odbc-5.3.9-linux-ubuntu14.04-x86-64bit/lib/* /usr/local/lib; fi
   - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = mysql ]; then /usr/local/bin/myodbc-installer -a -d -n "MySQL ODBC 5.3 Driver" -t "Driver=/usr/local/lib/libmyodbc5w.so"; fi
   - if [ $TRAVIS_OS_NAME = osx ]; then brew install unixodbc; fi
   - if [ $TRAVIS_OS_NAME = osx ]; then brew install mongo; fi
@@ -74,8 +74,8 @@ before_script:
   - if [ $TRAVIS_OS_NAME = osx ] && [ $DB = postgres ]; then brew install psqlodbc; fi
   - if [ $TRAVIS_OS_NAME = osx ] && [ $DB = mysql ]; then wget https://cdn.mysql.com//Downloads/Connector-ODBC/5.3/mysql-connector-odbc-5.3.9-macos10.12-x86-64bit.tar.gz; fi
   - if [ $TRAVIS_OS_NAME = osx ] && [ $DB = mysql ]; then tar xvfz mysql-connector-odbc-5.3.9-macos10.12-x86-64bit.tar.gz; fi
-  - if [ $TRAVIS_OS_NAME = osx ] && [ $DB = mysql ]; then cp mysql-connector-odbc-5.3.9-macos10.12-x86-64bit/bin/* /usr/local/bin; fi
-  - if [ $TRAVIS_OS_NAME = osx ] && [ $DB = mysql ]; then cp mysql-connector-odbc-5.3.9-macos10.12-x86-64bit/lib/* /usr/local/lib; fi
+  - if [ $TRAVIS_OS_NAME = osx ] && [ $DB = mysql ]; then sudo cp mysql-connector-odbc-5.3.9-macos10.12-x86-64bit/bin/* /usr/local/bin; fi
+  - if [ $TRAVIS_OS_NAME = osx ] && [ $DB = mysql ]; then sudo cp mysql-connector-odbc-5.3.9-macos10.12-x86-64bit/lib/* /usr/local/lib; fi
   - if [ $TRAVIS_OS_NAME = osx ] && [ $DB = mysql ]; then /usr/local/bin/myodbc-installer -a -d -n "MySQL ODBC 5.3 Driver" -t "Driver=/usr/local/lib/libmyodbc5w.so"; fi
   - if [ $DB = postgres ]; then psql -c 'create database travis_test;' -U postgres; fi
   - if [ $DB = potsgres ]; then export GREASE_TEST_DSN="Driver={PostgreSQL UNICODE};Server=localhost;Database=travis_test;UID=postgres;"; fi

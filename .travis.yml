@@ -18,8 +18,8 @@ sudo:
   - required
 
 env:
-  - DB=postgres GREASE_TEST_DSN=Driver={PostgreSQL Unicode};Server=localhost;Database=travis_test;UID=postgres;
-  - DB=mysql GREASE_TEST_DSN=Driver={MySQL ODBC 5.3 Driver};Sever=localhost;Database=travis_test;UID=travis;
+  - DB=postgres GREASE_TEST_DSN="Driver={PostgreSQL Unicode};Server=localhost;Database=travis_test;UID=postgres;"
+  - DB=mysql GREASE_TEST_DSN="Driver={MySQL ODBC 5.3 Driver};Sever=localhost;Database=travis_test;UID=travis;"
 
 matrix:
   include:

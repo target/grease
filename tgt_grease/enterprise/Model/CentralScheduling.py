@@ -15,7 +15,7 @@ class Scheduling(object):
 
     """
 
-    def __init__(self, ioc):
+    def __init__(self, ioc=None):
         if isinstance(ioc, GreaseContainer):
             self.ioc = ioc
         else:

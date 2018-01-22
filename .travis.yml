@@ -1,35 +1,28 @@
 language: python
 
+python:
+  - "2.7"
+  - "3.3"
+  - "3.4"
+  - "3.5"
+  - "3.6"
+  - "nightly"
+
+os:
+  - linux
+
+dist:
+  - trusty
+
+sudo:
+  - required
+
+env:
+  - DB=postgres
+  - DB=mysql
+
 matrix:
   include:
-    - os: linux
-      sudo: required
-      dist: trusty
-      python: "2.7"
-    - os: linux
-      sudo: required
-      dist: trusty
-      python: "3.3"
-    - os: linux
-      sudo: required
-      dist: trusty
-      python: "3.4"
-    - os: linux
-      sudo: required
-      dist: trusty
-      python: "3.5"
-    - os: linux
-      sudo: required
-      dist: trusty
-      python: "3.5"
-    - os: linux
-      sudo: required
-      dist: trusty
-      python: "3.6"
-    - os: linux
-      sudo: required
-      dist: trusty
-      python: "nightly"
 # Still Borken
 #    - os: osx
 #      sudo: required
@@ -44,7 +37,6 @@ matrix:
 #        - export HOMEBREW_RUBY_PATH="/Users/travis/.rvm/rubies/ruby-2.3.4/bin/ruby"
 #        - rvm use 2.3
     - os: osx
-      sudo: required
       osx_image: xcode9.1
       rvm: 2.3
       python: "nightly"
@@ -59,17 +51,37 @@ matrix:
 services:
   - mongodb
   - postgresql
+  - mysql
 
 before_script:
-  - pip install pymongo requests psycopg2 psutil elasticsearch
+  - pip install pymongo requests psutil elasticsearch pyodbc
   - sudo mkdir /opt/grease/
   - sudo chmod 777 /opt/grease/
-  - if [ $TRAVIS_OS_NAME = linux ]; then true; else brew install mongo; fi
-  - if [ $TRAVIS_OS_NAME = linux ]; then true; else brew services start mongodb; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then rm -rf /usr/local/var/postgres; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then initdb /usr/local/var/postgres; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then pg_ctl -D /usr/local/var/postgres start; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then createuser -s postgres; fi
+  - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get install unixodbc; fi
+  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then sudo apt-get install odbc-postgresql; fi
+  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = mysql ]; then wget https://cdn.mysql.com//Downloads/Connector-ODBC/5.3/mysql-connector-odbc-5.3.9-linux-ubuntu14.04-x86-64bit.tar.gz; fi
+  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = mysql ]; then tar xvfz mysql-connector-odbc-5.3.9-linux-ubuntu14.04-x86-64bit.tar.gz; fi
+  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = mysql ]; then cp mysql-connector-odbc-5.3.9-linux-ubuntu14.04-x86-64bit/bin/* /usr/local/bin; fi
+  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = mysql ]; then cp mysql-connector-odbc-5.3.9-linux-ubuntu14.04-x86-64bit/lib/* /usr/local/lib; fi
+  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = mysql ]; then /usr/local/bin/myodbc-installer -a -d -n "MySQL ODBC 5.3 Driver" -t "Driver=/usr/local/lib/libmyodbc5w.so"; fi
+  - if [ $TRAVIS_OS_NAME = osx ]; then brew install unixodbc; fi
+  - if [ $TRAVIS_OS_NAME = osx ]; then brew install mongo; fi
+  - if [ $TRAVIS_OS_NAME = osx ]; then brew services start mongodb; fi
+  - if [ $TRAVIS_OS_NAME = osx ]; then rm -rf /usr/local/var/postgres; fi
+  - if [ $TRAVIS_OS_NAME = osx ]; then initdb /usr/local/var/postgres; fi
+  - if [ $TRAVIS_OS_NAME = osx ]; then pg_ctl -D /usr/local/var/postgres start; fi
+  - if [ $TRAVIS_OS_NAME = osx ]; then createuser -s postgres; fi
+  - if [ $TRAVIS_OS_NAME = osx ] && [ $DB = postgres ]; then brew install psqlodbc; fi
+  - if [ $TRAVIS_OS_NAME = osx ] && [ $DB = mysql ]; then wget https://cdn.mysql.com//Downloads/Connector-ODBC/5.3/mysql-connector-odbc-5.3.9-macos10.12-x86-64bit.tar.gz; fi
+  - if [ $TRAVIS_OS_NAME = osx ] && [ $DB = mysql ]; then tar xvfz mysql-connector-odbc-5.3.9-macos10.12-x86-64bit.tar.gz; fi
+  - if [ $TRAVIS_OS_NAME = osx ] && [ $DB = mysql ]; then cp mysql-connector-odbc-5.3.9-macos10.12-x86-64bit/bin/* /usr/local/bin; fi
+  - if [ $TRAVIS_OS_NAME = osx ] && [ $DB = mysql ]; then cp mysql-connector-odbc-5.3.9-macos10.12-x86-64bit/lib/* /usr/local/lib; fi
+  - if [ $TRAVIS_OS_NAME = osx ] && [ $DB = mysql ]; then /usr/local/bin/myodbc-installer -a -d -n "MySQL ODBC 5.3 Driver" -t "Driver=/usr/local/lib/libmyodbc5w.so"; fi
+  - if [ $DB = postgres ]; then psql -c 'create database travis_test;' -U postgres; fi
+  - if [ $DB = potsgres ]; then export GREASE_TEST_DSN="Driver={PostgreSQL UNICODE};Server=localhost;Database=travis_test;UID=postgres;"; fi
+  - if [ $DB = mysql ]; then mysql -e 'CREATE DATABASE IF NOT EXISTS travis_test;'; fi
+  - if [ $DB = mysql ]; then export GREASE_TEST_DSN="Driver={MySQL ODBC 5.3 Driver};Sever=localhost;Database=travis_test;UID=travis;"; fi
+
 
 install:
   - python setup.py install

@@ -13,54 +13,6 @@ class TestSQLSource(TestCase):
         inst = sql_source()
         self.assertTrue(isinstance(inst, sql_source))
 
-    def __ensure_schema(self):
-        # Helper function
-        if not os.environ.get('GREASE_TEST_DSN'):
-            os.environ['GREASE_TEST_DSN'] = "host=localhost user=postgres"
-        with pyodbc.connect(os.environ['GREASE_TEST_DSN']) as conn:
-            with conn.cursor() as cursor:
-                # just to make sure nothing exists
-                try:
-                    cursor.execute("""
-                      SELECT  
-                        pg_terminate_backend(pid) 
-                        FROM pg_stat_activity 
-                        WHERE datname='test_data'
-                    """)
-                    cursor.execute("""
-                        DROP DATABASE test_data;
-                    """)
-                except:
-                    print("Exception occurred during ensure schema... most of the time this is fine")
-                try:
-                    cursor.execute("""
-                        CREATE DATABASE test_data;
-                    """)
-                except Exception as e:
-                    # TODO: Determine correct exceptions to handle here
-                    print("Schema Exists {0}".format(e))
-        if not os.environ.get('GREASE_TEST_DSN_ORIGINAL'):
-            os.environ['GREASE_TEST_DSN_ORIGINAL'] = os.environ.get('GREASE_TEST_DSN')
-        os.environ['GREASE_TEST_DSN'] = os.environ['GREASE_TEST_DSN'] + " dbname=test_data"
-
-    def __cleanup_schema(self):
-        with pyodbc.connect(os.environ['GREASE_TEST_DSN_ORIGINAL']) as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                  SELECT  
-                    pg_terminate_backend(pid) 
-                    FROM pg_stat_activity 
-                    WHERE datname='test_data'
-                """)
-                try:
-                    cursor.execute("""
-                        DROP DATABASE test_data;
-                    """)
-                except Exception as e:
-                    # TODO: Determine correct exceptions to handle here
-                    print("Schema Does Not Exist {0}".format(e))
-        os.environ['GREASE_TEST_DSN'] = os.environ['GREASE_TEST_DSN_ORIGINAL']
-
     def __setup(self, conn):
         with conn.cursor() as cursor:
             cursor.execute("""
@@ -113,7 +65,6 @@ class TestSQLSource(TestCase):
         os.remove(conf.greaseDir + 'etc' + conf.fs_sep + 'test.mock.sql.json')
 
     def test_sql_parser(self):
-        self.__ensure_schema()
         with pyodbc.connect(os.environ['GREASE_TEST_DSN']) as conn:
             source = sql_source()
 
@@ -141,10 +92,8 @@ class TestSQLSource(TestCase):
 
             self.__teardown(conn)
 
-        self.__cleanup_schema()
 
     def test_sql_parser_hour_good(self):
-        self.__ensure_schema()
         with pyodbc.connect(os.environ['GREASE_TEST_DSN']) as conn:
             source = sql_source()
 
@@ -172,10 +121,8 @@ class TestSQLSource(TestCase):
 
             self.__teardown(conn)
 
-        self.__cleanup_schema()
 
     def test_sql_parser_minute_good(self):
-        self.__ensure_schema()
         with pyodbc.connect(os.environ['GREASE_TEST_DSN']) as conn:
             source = sql_source()
 
@@ -203,10 +150,8 @@ class TestSQLSource(TestCase):
 
             self.__teardown(conn)
 
-        self.__cleanup_schema()
 
     def test_sql_parser_hour_and_minute_good(self):
-        self.__ensure_schema()
         with pyodbc.connect(os.environ['GREASE_TEST_DSN']) as conn:
             source = sql_source()
 
@@ -235,10 +180,8 @@ class TestSQLSource(TestCase):
 
             self.__teardown(conn)
 
-        self.__cleanup_schema()
 
     def test_sql_parser_hour_bad(self):
-        self.__ensure_schema()
         with pyodbc.connect(os.environ['GREASE_TEST_DSN']) as conn:
             source = sql_source()
 
@@ -289,10 +232,8 @@ class TestSQLSource(TestCase):
 
             self.__teardown(conn)
 
-        self.__cleanup_schema()
 
     def test_sql_parser_hour_and_minute_bad(self):
-        self.__ensure_schema()
         with pyodbc.connect(os.environ['GREASE_TEST_DSN']) as conn:
             source = sql_source()
 
@@ -316,10 +257,8 @@ class TestSQLSource(TestCase):
 
             self.__teardown(conn)
 
-        self.__cleanup_schema()
 
     def test_sql_parser_insert(self):
-        self.__ensure_schema()
         with pyodbc.connect(os.environ['GREASE_TEST_DSN']) as conn:
             source = sql_source()
 
@@ -357,10 +296,8 @@ class TestSQLSource(TestCase):
 
             self.__teardown(conn)
 
-        self.__cleanup_schema()
 
     def test_sql_parser_update(self):
-        self.__ensure_schema()
         with pyodbc.connect(os.environ['GREASE_TEST_DSN']) as conn:
             source = sql_source()
 
@@ -398,7 +335,4 @@ class TestSQLSource(TestCase):
             cursor.close()
 
             self.__teardown(conn)
-
-        self.__cleanup_schema()
-
 

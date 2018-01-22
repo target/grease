@@ -86,6 +86,7 @@ install:
 script:
   - if [ $DB = potsgres ]; then export GREASE_TEST_DSN="Driver={PostgreSQL UNICODE};Server=localhost;Database=travis_test;UID=postgres;"; fi
   - if [ $DB = mysql ]; then export GREASE_TEST_DSN="Driver={MySQL ODBC 5.3 Driver};Sever=localhost;Database=travis_test;UID=travis;"; fi
+  - source ~/.bashrc
   - python setup.py test
 # Run twice to ensure state management is successful
   - python setup.py test

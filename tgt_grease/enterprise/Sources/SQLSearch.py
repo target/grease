@@ -68,32 +68,50 @@ class SQLSource(BaseSourceClass):
 
                     connection_string= "{0}".format(DSN)
 
-                    with pyodbc.connect(connection_string) as conn:
-                        # See the following:
-                        # https://github.com/mkleehammer/pyodbc/wiki/Connecting-to-PostgreSQL
-                        # https://github.com/mkleehammer/pyodbc/wiki/Connecting-to-MySQL
-                        if configuration.get('type').lower() in ['postgresql', 'mysql']:
-                            conn.setdecoding(pyodbc.SQL_WCHAR, encoding='utf-8')
-                            conn.setencoding(encoding='utf-8')
+                    conn = pyodbc.connect(connection_string)
 
-                            if sys.version_info[:2] == (2, 7):
-                                conn.setencoding(unicode, encoding='utf-8', ctype=pyodbc.SQL_CHAR)
+                    # See the following:
+                    # https://github.com/mkleehammer/pyodbc/wiki/Connecting-to-PostgreSQL
+                    # https://github.com/mkleehammer/pyodbc/wiki/Connecting-to-MySQL
+                    if configuration.get('type').lower() in ['postgresql', 'mysql']:
+                        conn.setdecoding(pyodbc.SQL_WCHAR, encoding='utf-8')
+                        conn.setencoding(encoding='utf-8')
 
-                        # Open a cursor and execute a query, then grab the rows as our data
-                        with conn.execute(configuration.get('query')) as cursor:
-                            # Convert the results from tuples with just values to dicts with column names
-                            # e.g (1, 'Sally', 'Sue') -> {'id': 1, 'name_first': 'Sally', 'name_last': 'Sue'}
-                            # Adapted from https://stackoverflow.com/questions/16519385/output-pyodbc-cursor-results-as-python-dictionary
-                            self._data = [dict(zip([column[0] for column in cursor.description], row)) for row in cursor.fetchall()]
-
-                            del ioc
-                            return True
+                        if sys.version_info[:2] == (2, 7):
+                            conn.setencoding(unicode, encoding='utf-8', ctype=pyodbc.SQL_CHAR)
 
                 except Exception as e:
                     # Naked except to prevent issues around connections
-                    ioc.getLogger().error("Error processing configuration; Error [{0}]".format(e), notify=False)
+                    ioc.getLogger().error("Error connecting to database; Error [{0}]".format(e), notify=False)
                     del ioc
                     return False
+
+                try:
+                    # Open a cursor and execute a query, then grab the rows as our data
+                    with conn.cursor() as cursor:
+                        cursor.execute(configuration.get('query'))
+                        # Convert the results from tuples with just values to dicts with column names
+                        # e.g (1, 'Sally', 'Sue') -> {'id': 1, 'name_first': 'Sally', 'name_last': 'Sue'}
+                        # Adapted from https://stackoverflow.com/questions/16519385/output-pyodbc-cursor-results-as-python-dictionary
+                        self._data = [dict(zip([column[0] for column in cursor.description], row)) for row in cursor.fetchall()]
+
+                        del ioc
+                except pyodbc.ProgrammingError as e:
+                    # It's likely a non-SELECT query was attempted, then fetchall() was called on the results
+                    # which will throw this exception
+                    ioc.getLogger().error(
+                        "Error executing query [{0}]; Error [{1}] - NOTE: Only SELECT queries are allowed"
+                        .format(configuration.get('query'), e),
+                        notify=False
+                    )
+                    del ioc
+                    return False
+                finally:
+                    conn.rollback()
+                    conn.close()
+
+                return True
+
             else:
                 # could not get the DSN
                 ioc.getLogger().error("Failed to locate the DSN environment variable", notify=False)

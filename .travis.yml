@@ -78,15 +78,14 @@ before_script:
   - if [ $TRAVIS_OS_NAME = osx ] && [ $DB = mysql ]; then sudo cp mysql-connector-odbc-5.3.9-macos10.12-x86-64bit/lib/* /usr/local/lib; fi
   - if [ $TRAVIS_OS_NAME = osx ] && [ $DB = mysql ]; then /usr/local/bin/myodbc-installer -a -d -n "MySQL ODBC 5.3 Driver" -t "Driver=/usr/local/lib/libmyodbc5w.so"; fi
   - if [ $DB = postgres ]; then psql -c 'create database travis_test;' -U postgres; fi
-  - if [ $DB = potsgres ]; then export GREASE_TEST_DSN="Driver={PostgreSQL UNICODE};Server=localhost;Database=travis_test;UID=postgres;"; fi
   - if [ $DB = mysql ]; then mysql -e 'CREATE DATABASE IF NOT EXISTS travis_test;'; fi
-  - if [ $DB = mysql ]; then export GREASE_TEST_DSN="Driver={MySQL ODBC 5.3 Driver};Sever=localhost;Database=travis_test;UID=travis;"; fi
-
 
 install:
   - python setup.py install
   
 script:
+  - if [ $DB = potsgres ]; then export GREASE_TEST_DSN="Driver={PostgreSQL UNICODE};Server=localhost;Database=travis_test;UID=postgres;"; fi
+  - if [ $DB = mysql ]; then export GREASE_TEST_DSN="Driver={MySQL ODBC 5.3 Driver};Sever=localhost;Database=travis_test;UID=travis;"; fi
   - python setup.py test
 # Run twice to ensure state management is successful
   - python setup.py test

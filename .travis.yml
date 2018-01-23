@@ -85,6 +85,7 @@ before_script:
   - sudo touch /etc/odbcinst.ini
   - sudo touch /etc/odbc.ini
   - sudo touch /etc/ODBCDataSources
+  - sudo file postmaster psql
   - if [ $DB = postgres ]; then psql -c 'create database travis_test;' -U postgres; fi
   - if [ $DB = mysql ]; then mysql -e 'CREATE DATABASE IF NOT EXISTS travis_test;'; fi
 

@@ -9,7 +9,9 @@ import pyodbc
 
 class TestSQLSource(TestCase):
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
+        # Passing any args passed to __init__ through to the parent class (was getting an error)
+        super(TestSQLSource, self).__init__(*args, **kwargs)
         self._connString = os.environ['GREASE_TEST_DSN'].encode('utf-8')
 
     def test_type(self):

@@ -1,16 +1,18 @@
-from tgt_grease.core import GreaseContainer
-from .Configuration import PrototypeConfig
-from tgt_grease.core import ImportTool
-from .CentralScheduling import Scheduling
-from .DeDuplication import Deduplication
+import json
 import multiprocessing as mp
 from time import time
 import kafka
-from kafka import KafkaConsumer, TopicPartition
+from kafka import KafkaConsumer
+from tgt_grease.core import GreaseContainer
+from tgt_grease.core import ImportTool
+from tgt_grease.enterprise.Model.CentralScheduling import Scheduling
+from .Configuration import PrototypeConfig
+from .DeDuplication import Deduplication
 
-MIN_BACKLOG = 5     # If the Kafka message backlog falls below this number, we will kill a consumer
-MAX_BACKLOG = 20    # If the Kafka message backlog rises above this number, we will make a consumer
-SLEEP_TIME = 5      # Sleep this many seconds after creating a consumer (to wait for initialization) and between reallocating consumers
+MIN_BACKLOG = 50     # If the Kafka message backlog falls below this number, we will kill a consumer
+MAX_BACKLOG = 200    # If the Kafka message backlog rises above this number, we will make a consumer
+SLEEP_TIME = 5      # Sleep this many seconds after creating a consumer (to wait for initialization)
+MAX_CONSUMERS = 32
 
 class KafkaSource(object):
     """Kafka class for sourcing Kafka messages
@@ -84,10 +86,10 @@ class KafkaSource(object):
             multiprocessing.Process: The process running consumer_manager
 
         """
-
         proc = mp.Process(target=KafkaSource.consumer_manager, args=(self.ioc, config,))
         proc.daemon = False
         proc.start()
+        self.ioc.getLogger().trace("Kafka consumer manager process started for config: {0}".format(config.get("name")), trace=True)
         return proc
 
     @staticmethod
@@ -130,6 +132,7 @@ class KafkaSource(object):
         proc = mp.Process(target=KafkaSource.consume, args=(ioc, config, child_conn,))
         proc.daemon = True
         proc.start()
+        ioc.getLogger().trace("Kafka consumer process started for config: {0}".format(config.get("name")), trace=True)
         return proc, parent_conn
 
     @staticmethod
@@ -148,7 +151,8 @@ class KafkaSource(object):
         consumer = KafkaSource.make_consumer(ioc, config)
 
         for msg in consumer:
-            if pipe.poll():    # If the parent sends a signal
+            if pipe.poll():    # If the parent pipe sends a signal
+                ioc.getLogger().trace("Kill signal received, stopping", trace=True)
                 return False
             message_dict = KafkaSource.parse_message(ioc, config, msg)
             if message_dict:
@@ -183,8 +187,9 @@ class KafkaSource(object):
         consumer = KafkaConsumer(
             group_id=config.get('name'),
             *config.get('topics'),
-            **{'bootstrap_servers': config.get('servers')}
+            **{'bootstrap_servers': ",".join(config.get('servers'))}
         )
+        ioc.getLogger().trace("Kafka consumer created under group_id: {0}".format(config.get('name')), trace=True)
         KafkaSource.sleep(SLEEP_TIME)   # Gives the consumer time to initialize
         return consumer
 
@@ -202,20 +207,30 @@ class KafkaSource(object):
         Args:
             ioc (GreaseContainer): Used for logging since we can't use self in procs
             config (dict): Configuration for a Kafka source
-            message (dict): Individual message received from Kafka topic
+            message (bytearray): Individual message received from Kafka topic
 
         Returns:
             dict: A flat dictionary containing only the keys/values from the message as specified in the config
 
         """
+        try:
+            message = json.loads(message, strict=False)
+            ioc.getLogger().trace("Message successfully loaded", trace=True)
+        except json.decoder.JSONDecodeError:
+            ioc.getLogger().trace("Failed to unload message", trace=True)
+            return {}
+
         final = {}
         for key, alias in config.get("key_aliases", {}).items():
             pointer = message
             for sub_key in key.split(config.get("key_sep", ".")):
                 if sub_key not in pointer:
+                    ioc.getLogger().trace("Subkey: {0} missing from message".format(sub_key), trace=True)
                     return {}
                 pointer = pointer[sub_key]
             final[alias] = pointer
+
+        ioc.getLogger().trace("Message succesfully parsed", trace=True)
         return final
 
     @staticmethod
@@ -231,22 +246,28 @@ class KafkaSource(object):
         Returns:
             int: 1 if created a proc, 0 if no action, -1 if killed a proc
         """
+        max_backlog = config.get("max_backlog", MAX_BACKLOG)
+        min_backlog = config.get("min_backlog", MIN_BACKLOG)
+        max_consumers = config.get("max_consumers", MAX_CONSUMERS)
 
         backlog1 = KafkaSource.get_backlog(ioc, monitor_consumer)
         KafkaSource.sleep(SLEEP_TIME)
         backlog2 = KafkaSource.get_backlog(ioc, monitor_consumer)
 
-        if backlog1 > MAX_BACKLOG and backlog2 > MAX_BACKLOG:
+        if backlog1 > max_backlog and backlog2 > max_backlog and len(procs) < max_consumers:
             procs.append(KafkaSource.create_consumer_proc(ioc, config))
+            ioc.getLogger().trace("Backlog max reached, spawning a new consumer for {0}".format(config.get('name')), trace=True)
             return 1
-        elif backlog1 <= MIN_BACKLOG and backlog2 <= MIN_BACKLOG and len(procs) > 1:
+        elif backlog1 <= min_backlog and backlog2 <= min_backlog and len(procs) > 1:
             KafkaSource.kill_consumer_proc(ioc, procs[0])
+            ioc.getLogger().trace("Backlog min reached, killing a consumer for {0}".format(config.get('name')), trace=True)
             return -1
+        ioc.getLogger().trace("No reallocation needed for {0}".format(config.get('name')), trace=True)
         return 0
 
     @staticmethod
     def kill_consumer_proc(ioc, proc_tup):
-        """Sends a kill signal to the first proc in the procs array
+        """Sends a kill signal to the proc's pipe
 
         Args:
             ioc (GreaseContainer): Used for logging since we can't use self in procs
@@ -254,7 +275,7 @@ class KafkaSource(object):
 
         """
         proc_tup[1].send("STOP")
-        KafkaSource.sleep(SLEEP_TIME) # Give consumer a chance to finish its current message then die
+        KafkaSource.sleep(SLEEP_TIME) # Give consumer a chance to finish its current message
 
     @staticmethod
     def get_backlog(ioc, consumer):
@@ -265,22 +286,29 @@ class KafkaSource(object):
             consumer (kafka.KafkaConsumer)
 
         Returns:
-            int: the number of messages in the backlog
+            float: the average number of messages accross all partitions in the backlog. -1. if there is an error and excess consumers should be killed
 
         """
-        ioc.getLogger().error("hello")
-        consumer.poll() # We need to poll the topic to actually get assigned
+        if not consumer.assignment():
+            ioc.getLogger().trace("Assigning consumer to topic", trace=True)
+            consumer.poll() # We need to poll the topic to actually get assigned
         partitions = consumer.assignment()
-        current_offsets = [consumer.position(part) for part in partitions]
+        if not partitions:
+            ioc.getLogger().error("No partitions found for kafka consumer")
+            return -1.
+        try:
+            current_offsets = [consumer.position(part) for part in partitions]
+            end_offsets = list(consumer.end_offsets(partitions).values())
+        except kafka.errors.KafkaTimeoutError:
+            ioc.getLogger().error("KafkaTimeout during backlog check")
+            return -1.
+        except kafka.errors.UnsupportedVersionError:
+            ioc.getLogger().error("This version of kafka does not support backlog lookups")
+            return -1.
 
-        end_offsets = []
-        end_offset_dict = consumer.end_offsets(partitions)
-        for part, offset in end_offset_dict.items():
-            end_offsets.append(offset)
-
-        ioc.getLogger().error(str(end_offsets))
-        ioc.getLogger().error(str(current_offsets))
-        ioc.getLogger().error(str((sum(end_offsets) - sum(current_offsets)) / len(partitions)))
+        if not current_offsets or not end_offsets or len(current_offsets) != len(end_offsets):
+            ioc.getLogger().error("Backlog check failed for kafka consumer - invalid offsets")
+            return -1.
         return (sum(end_offsets) - sum(current_offsets)) / len(partitions)
 
     @staticmethod
@@ -306,7 +334,7 @@ class KafkaSource(object):
             )
             return True
         else:
-            ioc.getLogger().error("Scheduling failed for source document!", notify=False)
+            ioc.getLogger().error("Scheduling failed for kafka source document!", notify=False)
             return False
 
     def get_configs(self):
@@ -316,4 +344,5 @@ class KafkaSource(object):
             list[dict]: A list of all kafka config dicts
 
         """
-        return []
+        self.ioc.getLogger().trace("Kafka configs loaded", trace=True)
+        return self.conf.get_source('kafka')

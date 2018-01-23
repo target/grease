@@ -205,10 +205,7 @@ class TestSQLSource(TestCase):
 
             self.__teardown(conn)
 
-        self.__cleanup_schema()
-
     def test_sql_parser_minute_bad(self):
-        self.__ensure_schema()
         with pyodbc.connect(os.environ['GREASE_TEST_DSN']) as conn:
             source = sql_source()
 

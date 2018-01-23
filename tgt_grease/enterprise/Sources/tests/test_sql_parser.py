@@ -65,6 +65,7 @@ class TestSQLSource(TestCase):
         os.remove(conf.greaseDir + 'etc' + conf.fs_sep + 'test.mock.sql.json')
 
     def test_sql_parser(self):
+        print(os.environ['GREASE_TEST_DSN'])
         with pyodbc.connect(os.environ['GREASE_TEST_DSN']) as conn:
             source = sql_source()
 

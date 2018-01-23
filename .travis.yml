@@ -86,8 +86,8 @@ before_script:
   - sudo touch /etc/odbc.ini
   - sudo touch /etc/ODBCDataSources
   - ls -l /usr/local/lib64/libtdsodbc.so
-  - if [ $DB = postgres]; then file /usr/lib/x86_64-linux-gnu/odbc/psqlodbcw.so
-  - if [ $DB = postgres]; then file `which psql`
+  - if [ $DB = postgres]; then file /usr/lib/x86_64-linux-gnu/odbc/psqlodbcw.so; fi
+  - if [ $DB = postgres]; then file `which psql`; fi
   - if [ $DB = postgres ]; then psql -c 'create database travis_test;' -U postgres; fi
   - if [ $DB = mysql ]; then mysql -e 'CREATE DATABASE IF NOT EXISTS travis_test;'; fi
 

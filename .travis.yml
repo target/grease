@@ -62,7 +62,7 @@ before_script:
   - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then wget https://ftp.postgresql.org/pub/odbc/versions/src/psqlodbc-10.01.0000.tar.gz; fi
   - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then tar xvfz psqlodbc-10.01.0000.tar.gz; fi
   - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then cd psqlodbc-10.01.0000; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then . ./configure; fi
+  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then ./configure; fi
   - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then make; fi
   - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then make install; fi
   - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then cd ..; fi

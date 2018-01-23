@@ -283,12 +283,19 @@ class Daemon(Command):
             self.ioc.getLogger().critical("Node is not registered!")
             return False
         if not loop:
+            rc = 'default'
             while True:
-                if daemon.server():
-                    continue
-                else:
+                # Windows SysCall Monitoring
+                if platform.system().lower().startswith('win'):
+                    if not rc != win32event.WAIT_OBJECT_0:
+                        self.ioc.getLogger().debug("Windows Kill Signal Detected! Closing GREASE")
+                if not daemon.server():
                     daemon.log_once_per_second("Server Process Failed", ERROR)
-                    continue
+            # After all this check for new windows services
+                if platform.system().lower().startswith('win'):
+                    # Block .5ms to listen for exit sig
+                    rc = win32event.WaitForSingleObject(AppServerSvc.hWaitStop, 50)
+
         else:
             self.ioc.getLogger().debug("Daemon in timed mode")
             runs = 0

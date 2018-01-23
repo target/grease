@@ -9,6 +9,9 @@ import pyodbc
 
 class TestSQLSource(TestCase):
 
+    def __init__(self):
+        self._connString = os.environ['GREASE_TEST_DSN'].encode('utf-8')
+
     def test_type(self):
         inst = sql_source()
         self.assertTrue(isinstance(inst, sql_source))
@@ -65,8 +68,7 @@ class TestSQLSource(TestCase):
         os.remove(conf.greaseDir + 'etc' + conf.fs_sep + 'test.mock.sql.json')
 
     def test_sql_parser(self):
-        print(os.environ['GREASE_TEST_DSN'])
-        with pyodbc.connect(os.environ['GREASE_TEST_DSN']) as conn:
+        with pyodbc.connect(self._connString) as conn:
             source = sql_source()
 
             self.__setup(conn)
@@ -95,7 +97,7 @@ class TestSQLSource(TestCase):
 
 
     def test_sql_parser_hour_good(self):
-        with pyodbc.connect(os.environ['GREASE_TEST_DSN']) as conn:
+        with pyodbc.connect(self._connString) as conn:
             source = sql_source()
 
             self.__setup(conn)
@@ -124,7 +126,7 @@ class TestSQLSource(TestCase):
 
 
     def test_sql_parser_minute_good(self):
-        with pyodbc.connect(os.environ['GREASE_TEST_DSN']) as conn:
+        with pyodbc.connect(self._connString) as conn:
             source = sql_source()
 
             self.__setup(conn)
@@ -153,7 +155,7 @@ class TestSQLSource(TestCase):
 
 
     def test_sql_parser_hour_and_minute_good(self):
-        with pyodbc.connect(os.environ['GREASE_TEST_DSN']) as conn:
+        with pyodbc.connect(self._connString) as conn:
             source = sql_source()
 
             self.__setup(conn)
@@ -183,7 +185,7 @@ class TestSQLSource(TestCase):
 
 
     def test_sql_parser_hour_bad(self):
-        with pyodbc.connect(os.environ['GREASE_TEST_DSN']) as conn:
+        with pyodbc.connect(self._connString) as conn:
             source = sql_source()
 
             self.__setup(conn)
@@ -207,7 +209,7 @@ class TestSQLSource(TestCase):
             self.__teardown(conn)
 
     def test_sql_parser_minute_bad(self):
-        with pyodbc.connect(os.environ['GREASE_TEST_DSN']) as conn:
+        with pyodbc.connect(self._connString) as conn:
             source = sql_source()
 
             self.__setup(conn)
@@ -232,7 +234,7 @@ class TestSQLSource(TestCase):
 
 
     def test_sql_parser_hour_and_minute_bad(self):
-        with pyodbc.connect(os.environ['GREASE_TEST_DSN']) as conn:
+        with pyodbc.connect(self._connString) as conn:
             source = sql_source()
 
             self.__setup(conn)
@@ -257,7 +259,7 @@ class TestSQLSource(TestCase):
 
 
     def test_sql_parser_insert(self):
-        with pyodbc.connect(os.environ['GREASE_TEST_DSN']) as conn:
+        with pyodbc.connect(self._connString) as conn:
             source = sql_source()
 
             self.__setup(conn)
@@ -296,7 +298,7 @@ class TestSQLSource(TestCase):
 
 
     def test_sql_parser_update(self):
-        with pyodbc.connect(os.environ['GREASE_TEST_DSN']) as conn:
+        with pyodbc.connect(self._connString) as conn:
             source = sql_source()
 
             self.__setup(conn)

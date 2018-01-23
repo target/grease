@@ -61,11 +61,7 @@ before_script:
   - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get install unixodbc-dev; fi
   - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then wget https://ftp.postgresql.org/pub/odbc/versions/src/psqlodbc-10.01.0000.tar.gz; fi
   - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then tar xvfz psqlodbc-10.01.0000.tar.gz; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then cd psqlodbc-10.01.0000; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then ./configure; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then make; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then make install; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then cd ..; fi
+  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then cd psqlodbc-10.01.0000 && ./configure && make && make install && cd ..; fi
   - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = mysql ]; then sudo apt-get install libmyodbc; fi
   - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = mysql ]; then sudo ln -s /usr/lib/x86_64-linux-gnu/libodbc.so.1 /usr/lib/x86_64-linux-gnu/libodbc.so.2; fi
   - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = mysql ]; then sudo ln -s /usr/lib/x86_64-linux-gnu/libodbcinst.so.1 /usr/lib/x86_64-linux-gnu/libodbcinst.so.2; fi
@@ -88,7 +84,6 @@ before_script:
   - if [ $TRAVIS_OS_NAME = osx ] && [ $DB = mysql ]; then sudo cp mysql-connector-odbc-5.3.9-macos10.12-x86-64bit/lib/* /usr/local/lib; fi
   - if [ $TRAVIS_OS_NAME = osx ] && [ $DB = mysql ]; then /usr/local/bin/myodbc-installer -a -d -n "MySQL ODBC 5.3 Driver" -t "Driver=/usr/local/lib/libmyodbc5w.so"; fi
   - ls /etc/
-  - cat /etc/odbcinst.ini
   - sudo touch /etc/odbcinst.ini
   - sudo touch /etc/odbc.ini
   - sudo touch /etc/ODBCDataSources

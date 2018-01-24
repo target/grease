@@ -5,7 +5,6 @@ from tgt_grease.enterprise.Model import KafkaSource
 import time
 import kafka
 import multiprocessing as mp
-import random
 
 class MockProcess():
     def __init__(self):
@@ -34,7 +33,6 @@ class TestKafka(TestCase):
         ks = KafkaSource()
         mock_validate.return_value = False
         self.assertFalse(ks.run(self.bad_config))
-        self.assertEqual(ks.configs, [])
 
     @patch('tgt_grease.enterprise.Model.KafkaSource.create_consumer_manager_proc')
     @patch('tgt_grease.enterprise.Model.KafkaSource.validate_configs')

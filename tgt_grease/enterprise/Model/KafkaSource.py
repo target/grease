@@ -11,8 +11,8 @@ from .DeDuplication import Deduplication
 
 MIN_BACKLOG = 50     # If the Kafka message backlog falls below this number, we will kill a consumer
 MAX_BACKLOG = 200    # If the Kafka message backlog rises above this number, we will make a consumer
-SLEEP_TIME = 5      # Sleep this many seconds after creating a consumer (to wait for initialization)
-MAX_CONSUMERS = 32
+SLEEP_TIME = 5       # Sleep this many seconds after creating a consumer (to wait for initialization)
+MAX_CONSUMERS = 32   # We wont create more than this number of consumers for any config
 
 class KafkaSource(object):
     """Kafka class for sourcing Kafka messages
@@ -60,9 +60,6 @@ class KafkaSource(object):
 
         """
         if config:
-            if config.get('source') != 'kafka':
-                self.ioc.getLogger().error("Invalid source type: {0} provided to KafkaSource".format(config.get('source', "None")), notify=False)
-                return False
             self.configs = [config]
         else:
             self.configs = self.get_configs()
@@ -279,6 +276,7 @@ class KafkaSource(object):
 
         """
         proc_tup[1].send("STOP")
+        ioc.getLogger().trace("Kill signal sent to consumer process", trace=True)
         KafkaSource.sleep(SLEEP_TIME) # Give consumer a chance to finish its current message
 
     @staticmethod

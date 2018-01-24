@@ -4,7 +4,7 @@ import os
 
 setup(
     name='tgt_grease',
-    version='2.0.8',
+    version='2.1.0',
     license="MIT",
     description='GRE Application Service Engine',
     long_description="""

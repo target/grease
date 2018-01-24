@@ -29,30 +29,49 @@ class TestKafka(TestCase):
         self.bad_config = {"source": "not kafka"}
         self.mock_process = MagicMock()
 
-    def test_run_bad_config(self):
+    @patch('tgt_grease.enterprise.Model.KafkaSource.validate_configs')
+    def test_run_bad_config(self, mock_validate):
         ks = KafkaSource()
+        mock_validate.return_value = False
         self.assertFalse(ks.run(self.bad_config))
         self.assertEqual(ks.configs, [])
 
     @patch('tgt_grease.enterprise.Model.KafkaSource.create_consumer_manager_proc')
-    def test_run_good_config(self, mock_create):
+    @patch('tgt_grease.enterprise.Model.KafkaSource.validate_configs')
+    def test_run_good_config(self, mock_validate, mock_create):
         ks = KafkaSource()
         mock_proc = MockProcess()
         mock_create.return_value = mock_proc
+        mock_validate.return_value = True
         self.assertFalse(ks.run(self.good_config))
         self.assertEqual(ks.configs, [self.good_config])
         self.assertEqual(mock_proc.is_alive_called, 1)
     
     @patch('tgt_grease.enterprise.Model.KafkaSource.get_configs')
     @patch('tgt_grease.enterprise.Model.KafkaSource.create_consumer_manager_proc')
-    def test_run_no_config(self, mock_create, mock_get_configs):
+    @patch('tgt_grease.enterprise.Model.KafkaSource.validate_configs')
+    def test_run_no_config(self, mock_validate, mock_create, mock_get_configs):
         ks = KafkaSource()
         mock_get_configs.return_value = [self.good_config]*5
         mock_proc = MockProcess()
         mock_create.return_value = mock_proc
+        mock_validate.return_value = True
         self.assertFalse(ks.run())
         self.assertEqual(ks.configs, [self.good_config]*5)
         self.assertEqual(mock_proc.is_alive_called, 5)
+
+    @patch('tgt_grease.enterprise.Model.KafkaSource.get_configs')
+    @patch('tgt_grease.enterprise.Model.KafkaSource.create_consumer_manager_proc')
+    @patch('tgt_grease.enterprise.Model.KafkaSource.validate_configs')
+    def test_run_invalid_config(self, mock_validate, mock_create, mock_get_configs):
+        ks = KafkaSource()
+        mock_get_configs.return_value = [self.good_config]*5
+        mock_proc = MockProcess()
+        mock_create.return_value = mock_proc
+        mock_validate.return_value = False
+        self.assertFalse(ks.run())
+        self.assertEqual(ks.configs, [self.good_config]*5)
+        self.assertEqual(mock_proc.is_alive_called, 0)
 
     @patch('tgt_grease.enterprise.Model.KafkaSource.make_consumer')
     @patch('tgt_grease.enterprise.Model.KafkaSource.create_consumer_proc')
@@ -387,3 +406,162 @@ class TestKafka(TestCase):
         self.assertEqual(mockp.is_alive_called, 0)
         self.assertEqual(mockp.start_called, 1)
         self.assertTrue(mockp.daemon)
+
+    def test_validate_configs_happy(self):
+        good_config = {
+            "name": "kafka_config",
+            "source": "kafka",
+            "key_aliases": {
+                "a*b*c": "abc_key",
+                "a*b*d": "abd_key"
+            },
+            "key_sep": "*",         #opt
+            "max_consumers": 32,    #opt
+            "topics": [
+                "topic1",
+                "topic2"
+            ],
+            "servers": [
+                "server.target.com:1234"
+            ],
+            "max_backlog": 200,     #opt
+            "min_backlog": 100      #opt
+        }
+
+        ks = KafkaSource()
+        self.assertTrue(ks.validate_configs([good_config]))
+        self.assertTrue(ks.validate_configs([good_config]*5))
+
+    def test_validate_configs_wrong_source(self):
+        config = {
+            "name": "kafka_config",
+            "source": "not kafka",
+            "key_aliases": {
+                "a*b*c": "abc_key",
+                "a*b*d": "abd_key"
+            },
+            "key_sep": "*",         #opt
+            "max_consumers": 32,    #opt
+            "topics": [
+                "topic1",
+                "topic2"
+            ],
+            "servers": [
+                "server.target.com:1234"
+            ],
+            "max_backlog": 200,     #opt
+            "min_backlog": 100      #opt
+        }
+
+        ks = KafkaSource()
+        self.assertFalse(ks.validate_configs([config]))
+        self.assertFalse(ks.validate_configs([config]*5))
+
+    def test_validate_configs_duplicate_aliases(self):
+        config = {
+            "name": "kafka_config",
+            "source": "kafka",
+            "key_aliases": {
+                "a*b*c": "key",
+                "a*b*d": "key"
+            },
+            "key_sep": "*",         #opt
+            "max_consumers": 32,    #opt
+            "topics": [
+                "topic1",
+                "topic2"
+            ],
+            "servers": [
+                "server.target.com:1234"
+            ],
+            "max_backlog": 200,     #opt
+            "min_backlog": 100      #opt
+        }
+
+        ks = KafkaSource()
+        self.assertFalse(ks.validate_configs([config]))
+        self.assertFalse(ks.validate_configs([config]*5))
+
+    def test_validate_configs_wrong_types(self):
+        config = {
+            "name": "kafka_config",
+            "source": "kafka",
+            "key_aliases": {
+                "a*b*c": "abc_key",
+                "a*b*d": "abd_key"
+            },
+            "key_sep": 11,         #opt
+            "max_consumers": "32",    #opt
+            "topics": [
+                "topic1",
+                "topic2"
+            ],
+            "servers": [
+                "server.target.com:1234"
+            ],
+            "max_backlog": 200,     #opt
+            "min_backlog": 100      #opt
+        }
+
+        ks = KafkaSource()
+        self.assertFalse(ks.validate_configs([config]))
+        self.assertFalse(ks.validate_configs([config]*5))
+
+    def test_validate_configs_key_missing(self):
+        config = {
+            "name": "kafka_config",
+            "source": "kafka",
+            "key_sep": "*",         #opt
+            "max_consumers": 32,    #opt
+            "topics": [
+                "topic1",
+                "topic2"
+            ],
+            "servers": [
+                "server.target.com:1234"
+            ],
+            "max_backlog": 200,     #opt
+            "min_backlog": 100      #opt
+        }
+
+        ks = KafkaSource()
+        self.assertFalse(ks.validate_configs([config]))
+        self.assertFalse(ks.validate_configs([config]*5))
+
+    def test_validate_configs_empty_keys(self):
+        config = {
+            "name": "kafka_config",
+            "source": "kafka",
+            "key_aliases": {},
+            "key_sep": "*",         #opt
+            "max_consumers": 32,    #opt
+            "topics": [],
+            "servers": [],
+            "max_backlog": 200,     #opt
+            "min_backlog": 100      #opt
+        }
+
+        ks = KafkaSource()
+        self.assertFalse(ks.validate_configs([config]))
+        self.assertFalse(ks.validate_configs([config]*5))
+
+    def test_validate_configs_no_opt(self):
+        config = {
+            "name": "kafka_config",
+            "source": "kafka",
+            "key_aliases": {
+                "a*b*c": "abc_key",
+                "a*b*d": "abd_key"
+            },
+            "topics": [
+                "topic1",
+                "topic2"
+            ],
+            "servers": [
+                "server.target.com:1234"
+            ]
+        }
+
+        ks = KafkaSource()
+        self.assertTrue(ks.validate_configs([config]))
+        self.assertTrue(ks.validate_configs([config]*5))

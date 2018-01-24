@@ -67,6 +67,10 @@ class KafkaSource(object):
         else:
             self.configs = self.get_configs()
 
+        if not self.validate_configs(self.configs):
+            self.ioc.getLogger().error("One or more Kafka Configs are invalid, stopping.", notify=False)
+            return False
+
         procs = []
         for conf in self.configs:
             procs.append(self.create_consumer_manager_proc(conf))
@@ -346,3 +350,65 @@ class KafkaSource(object):
         """
         self.ioc.getLogger().trace("Kafka configs loaded", trace=True)
         return self.conf.get_source('kafka')
+
+    def validate_configs(self, configs):
+        """Checks if configs all have the required keys and that there are no duplicate aliases
+
+        Note:
+        Example Config:
+        {
+            "name": "kafka_config",
+            "source": "kafka",
+            "key_aliases": {
+                "a*b*c": "abc_key",
+                "a*b*d": "abd_key"
+            },
+            "key_sep": "*",         #opt
+            "max_consumers": 32,    #opt
+            "topics": [
+                "topic1",
+                "topic2"
+            ],
+            "servers": [
+                "server.target.com:1234"
+            ],
+            "max_backlog": 200,     #opt
+            "min_backlog": 100      #opt
+        }
+
+        Args:
+             configs (list[dict]): A list of configs to validate
+        Returns:
+            bool: True iff all configs are formatted correctly
+
+        """
+        required_keys = {"name": str, "source": str, "topics": list, "servers": list, "key_aliases": dict}
+        opt_keys = {"key_sep": str, "max_consumers": int, "min_backlog": int, "max_backlog": int}
+        for config in configs:
+            for key, key_type in required_keys.items():
+                if not config.get(key) and not isinstance(config.get(key), key_type):
+                    self.ioc.getLogger().error("Config: {0} has an invalid key: {1}".format(config.get('name'), key), notify=True)
+                    return False
+                if key_type in (list, dict) and len(config.get(key)) == 0:
+                    self.ioc.getLogger().error("Config: {0} has an invalid key: {1}".format(config.get('name'), key), notify=True)
+                    return False
+
+            for key, key_type in opt_keys.items():
+                if config.get(key) and not isinstance(config.get(key), key_type):
+                    self.ioc.getLogger().error("Config: {0} has an invalid key: {1}".format(config.get('name'), key), notify=True)
+                    return False
+                if config.get(key) and key_type in (list, dict) and len(config.get(key)) == 0:
+                    self.ioc.getLogger().error("Config: {0} has an invalid key: {1}".format(config.get('name'), key), notify=True)
+                    return False
+            
+            if config.get("source") != "kafka":
+                self.ioc.getLogger().error("Config: {0} is not a kafka config, but it has been loaded by KafkaSource".format(config.get('name')), notify=True)
+                return False
+
+            aliases = list(config.get("key_aliases").values())
+            if len(aliases) != len(list(set(aliases))): # if there is a duplicate alias, it is an invalid config
+                self.ioc.getLogger().error("Config: {0} has duplicate key_aliases".format(config.get('name')), notify=True)
+                return False
+
+        return True
+                

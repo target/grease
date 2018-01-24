@@ -19,6 +19,7 @@ if platform.system().lower().startswith("win"):
         _svc_name_ = "GreaseDaemon"
         _svc_display_name_ = "GREASE Daemon Server"
         _svc_description_ = "GREASE Async Daemon Server for Automation Work"
+        hWaitStop = win32event.CreateEvent(None, 0, 0, None)
 
         def __init__(self, args):
             win32serviceutil.ServiceFramework.__init__(self, args)
@@ -291,10 +292,10 @@ class Daemon(Command):
                         self.ioc.getLogger().debug("Windows Kill Signal Detected! Closing GREASE")
                 if not daemon.server():
                     daemon.log_once_per_second("Server Process Failed", ERROR)
-            # After all this check for new windows services
+                # After all this check for new windows services
                 if platform.system().lower().startswith('win'):
                     # Block .5ms to listen for exit sig
-                    rc = win32event.WaitForSingleObject(AppServerSvc.hWaitStop, 50)
+                    rc = win32event.WaitForSingleObject(AppServerSvc.hWaitStop, 5)
 
         else:
             self.ioc.getLogger().debug("Daemon in timed mode")

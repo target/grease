@@ -255,8 +255,10 @@ class PrototypeConfig(object):
                 matches.append(os.path.join(root, filename))
         for doc in matches:
             self.ioc.getLogger().trace("Attempting to load [{0}]".format(doc), trace=True)
-            with open(doc) as current_file:
-                content = current_file.read().replace('\r\n', '')
+            with open(doc, 'rb') as current_file:
+                content = current_file.read()
+                if isinstance(content, bytes):
+                    content = content.decode()
             try:
                 intermediate.append(json.loads(content))
                 self.ioc.getLogger().trace("Successfully loaded [{0}]".format(doc), trace=True)

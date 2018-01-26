@@ -4,53 +4,58 @@ from time import time
 import kafka
 from kafka import KafkaConsumer
 from tgt_grease.core import GreaseContainer
-from tgt_grease.core import ImportTool
 from tgt_grease.enterprise.Model.CentralScheduling import Scheduling
 from .Configuration import PrototypeConfig
-from .DeDuplication import Deduplication
 
 MIN_BACKLOG = 50     # If the Kafka message backlog falls below this number, we will kill a consumer
 MAX_BACKLOG = 200    # If the Kafka message backlog rises above this number, we will make a consumer
-SLEEP_TIME = 5       # Sleep this many seconds after creating a consumer (to wait for initialization)
+SLEEP_TIME = 5       # Sleep this many seconds after creating or deleting a consumer.
 MAX_CONSUMERS = 32   # We wont create more than this number of consumers for any config
 
 class KafkaSource(object):
     """Kafka class for sourcing Kafka messages
 
-    This Source will create and dynamically scale the number of Kafka consumers for the topics specified in the Config, and 
-    then sends the parsed messages (containing only the keys/values specified in the Config) to Scheduling.
+    This Source will create and dynamically scale the number of Kafka consumers for the topics
+    in the Config, and then sends the parsed messages (containing only the keys/values specified
+    in the Config) to Scheduling.
+
+    This Source is designed around the Configs. Each Config gets its own config_manager process,
+    which means Configs also get their own dedicated consumer. It was designed so that any
+    "magic numbers" (such as MIN_BACKLOG, MAX_CONSUMERS, etc.) are overwriteable in the Config,
+    with the exception of SLEEP_TIME, which can be constant accross Configs.
+
+    Currently, the class only supports Kafka topics which contain JSON, however this functionality
+    can easily be expanded on inside of the parse_message method.
 
     Attributes:
         ioc (GreaseContainer): IOC for scanning
         conf (PrototypeConfig): Prototype configuration instance
-        impTool (ImportTool): Import Utility Instance
-        dedup (Deduplication): Deduplication instance to be used
         configs (List[dict]): List of Kafka Configs
 
-    """
+    Note:
+        Currently, only json messages can be decoded from kafka topics
 
+    """
     def __init__(self, ioc=None):
         if ioc and isinstance(ioc, GreaseContainer):
             self.ioc = ioc
         else:
             self.ioc = GreaseContainer()
         self.conf = PrototypeConfig(self.ioc)
-        self.imp_tool = ImportTool(self.ioc.getLogger())
-        self.scheduler = Scheduling(self.ioc)
-        self.dedup = Deduplication(self.ioc)
         self.configs = []
 
     def run(self, config=None):
-        """This will load all Kafka configs (unless a specific one is provided) and spin up consumer processes for all of them.
+        """This will load all Kafka configs (unless a specific one is provided) and spin up consumer
+        processes for all of them.
 
         It should never return anything unless something goes wrong with Kafka consumption.
 
-        Creates a process for each Kafka config to begin parsing messages. This parent process then monitors its children, 
-        and prunes dead processes. Once all children are dead, we return False.
+        Creates a process for each Kafka config to begin parsing messages. This parent process then
+        monitors its children, and prunes dead processes. Once all are dead, we return False.
 
         Note:
-            If a configuration is set then *only* that configuration is parsed. If both are provided then the configuration
-            will *only* be parsed if it is of the source provided.
+            If a configuration is set then *only* that configuration is parsed. If both are provided
+            then the configuration will *only* be parsed if it is of the source provided.
 
         Args:
             config (dict): If set will only parse the specified config
@@ -65,7 +70,7 @@ class KafkaSource(object):
             self.configs = self.get_configs()
 
         if not self.validate_configs(self.configs):
-            self.ioc.getLogger().error("One or more Kafka Configs are invalid, stopping.", notify=False)
+            self.ioc.getLogger().error("One or more Kafka Configs are invalid, stopping.")
             return False
 
         procs = []
@@ -74,7 +79,8 @@ class KafkaSource(object):
 
         while procs:
             procs = list(filter(lambda x: x.is_alive(), procs))
-        
+
+        self.ioc.getLogger().error("All Kafka consumer managers have died, stopping.")
         return False
 
     def create_consumer_manager_proc(self, config):
@@ -106,9 +112,7 @@ class KafkaSource(object):
 
         """
         monitor_consumer = KafkaSource.make_consumer(ioc, config)
-
-        procs = []
-        procs.append(KafkaSource.create_consumer_proc(ioc, config))
+        procs = [KafkaSource.create_consumer_proc(ioc, config)]
 
         while procs:
             KafkaSource.reallocate_consumers(ioc, config, monitor_consumer, procs)
@@ -158,6 +162,7 @@ class KafkaSource(object):
             message_dict = KafkaSource.parse_message(ioc, config, msg)
             if message_dict:
                 KafkaSource.send_to_scheduling(ioc, config, message_dict)
+
         return False
 
     @staticmethod
@@ -184,7 +189,6 @@ class KafkaSource(object):
             kafka.KafkaConsumer: KafkaConsumer object initialized with params from config
 
         """
-
         consumer = KafkaConsumer(
             group_id=config.get('name'),
             *config.get('topics'),
@@ -225,7 +229,7 @@ class KafkaSource(object):
         for key, alias in config.get("key_aliases", {}).items():
             pointer = message
             for sub_key in key.split(config.get("key_sep", ".")):
-                if sub_key not in pointer:
+                if not isinstance(pointer, dict) or sub_key not in pointer:
                     ioc.getLogger().trace("Subkey: {0} missing from message".format(sub_key), trace=True)
                     return {}
                 pointer = pointer[sub_key]
@@ -245,14 +249,14 @@ class KafkaSource(object):
             procs (list[(multiprocessing.Process, multiprocessing.Pipe)]): List of current consumer process/pipe pairs
 
         Returns:
-            int: 1 if created a proc, 0 if no action, -1 if killed a proc
+            int: Number of processes created (Negative value if a process was killed)
         """
-        max_backlog = config.get("max_backlog", MAX_BACKLOG)
         min_backlog = config.get("min_backlog", MIN_BACKLOG)
+        max_backlog = config.get("max_backlog", MAX_BACKLOG)
         max_consumers = config.get("max_consumers", MAX_CONSUMERS)
 
         backlog1 = KafkaSource.get_backlog(ioc, monitor_consumer)
-        KafkaSource.sleep(SLEEP_TIME)
+        KafkaSource.sleep(SLEEP_TIME) # We want to wait before checking again in case there is a message spike
         backlog2 = KafkaSource.get_backlog(ioc, monitor_consumer)
 
         if backlog1 > max_backlog and backlog2 > max_backlog and len(procs) < max_consumers:
@@ -288,16 +292,18 @@ class KafkaSource(object):
             consumer (kafka.KafkaConsumer)
 
         Returns:
-            float: the average number of messages accross all partitions in the backlog. -1. if there is an error and excess consumers should be killed
+            float: the average number of messages accross all partitions in the backlog. -1 if there is an error and excess consumers should be killed
 
         """
         if not consumer.assignment():
             ioc.getLogger().trace("Assigning consumer to topic", trace=True)
             consumer.poll() # We need to poll the topic to actually get assigned
+
         partitions = consumer.assignment()
         if not partitions:
             ioc.getLogger().error("No partitions found for kafka consumer")
             return -1.
+
         try:
             current_offsets = [consumer.position(part) for part in partitions]
             end_offsets = list(consumer.end_offsets(partitions).values())
@@ -311,6 +317,7 @@ class KafkaSource(object):
         if not current_offsets or not end_offsets or len(current_offsets) != len(end_offsets):
             ioc.getLogger().error("Backlog check failed for kafka consumer - invalid offsets")
             return -1.
+
         return (sum(end_offsets) - sum(current_offsets)) / len(partitions)
 
     @staticmethod
@@ -352,27 +359,26 @@ class KafkaSource(object):
     def validate_configs(self, configs):
         """Checks if configs all have the required keys and that there are no duplicate aliases
 
-        Note:
-        Example Config:
-        {
-            "name": "kafka_config",
-            "source": "kafka",
-            "key_aliases": {
-                "a*b*c": "abc_key",
-                "a*b*d": "abd_key"
-            },
-            "key_sep": "*",         #opt
-            "max_consumers": 32,    #opt
-            "topics": [
-                "topic1",
-                "topic2"
-            ],
-            "servers": [
-                "server.target.com:1234"
-            ],
-            "max_backlog": 200,     #opt
-            "min_backlog": 100      #opt
-        }
+        Example Config::   
+            {
+                "name": "kafka_config",
+                "source": "kafka",
+                "key_aliases": {
+                    "a*b*c": "abc_key",
+                    "a*b*d": "abd_key"
+                },
+                "key_sep": "*",         #opt, defaults "."
+                "max_consumers": 32,    #opt, defaults 32
+                "topics": [
+                    "topic1",
+                    "topic2"
+                ],
+                "servers": [
+                    "server.target.com:1234"
+                ],
+                "max_backlog": 200,     #opt, defaults 200
+                "min_backlog": 100      #opt, defaults 50
+            }
 
         Args:
              configs (list[dict]): A list of configs to validate
@@ -404,9 +410,9 @@ class KafkaSource(object):
                 return False
 
             aliases = list(config.get("key_aliases").values())
-            if len(aliases) != len(list(set(aliases))): # if there is a duplicate alias, it is an invalid config
+            if len(aliases) != len(set(aliases)): # if there is a duplicate alias, it is an invalid config
                 self.ioc.getLogger().error("Config: {0} has duplicate key_aliases".format(config.get('name')), notify=True)
                 return False
 
         return True
-                
+   

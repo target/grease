@@ -10,11 +10,10 @@ class Kafka(Command):
     """
 
     __author__ = "Ronald Queensen, Dustin Gundrum"
-    __version__ = "2.0.0"
+    __version__ = "1.0.0"
     purpose = "Listen to the configured Kafka topics and send the chosen keys to detection"
     help = """
-    This command scans the environment via the node configuration. This enables GREASE to 'see' its' environment and 
-    schedule jobs to a detection node
+    This command spins up a KafkaConsumer object, and runs KafkaSource.run, which will load all the kafka configs and begin consuming messages.
     
     Args:
         --config:<filename>

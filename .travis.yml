@@ -60,7 +60,7 @@ before_script:
   - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get install unixodbc; fi
   - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get install unixodbc-dev; fi
   - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then sudo apt-get install odbc-postgresql; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then echo "[Postgres]" >> /etc/odbc.ini
+  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then echo "[Postgres]" >> /etc/odbc.ini; fi
   - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then echo "Driver=PostreSQL Unicode" >> /etc/odbc.ini; fi
   - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then echo "Database=travis_test" >> /etc/odbc.ini; fi
   - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then echo "UserName=postgres" >> /etc/odbc.ini; fi

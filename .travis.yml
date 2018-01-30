@@ -60,13 +60,13 @@ before_script:
   - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get install unixodbc; fi
   - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get install unixodbc-dev; fi
   - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then sudo apt-get install odbc-postgresql; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then echo "[Postgres]" >> /etc/odbc.ini; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then echo "Driver=PostreSQL Unicode" >> /etc/odbc.ini; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then echo "Database=travis_test" >> /etc/odbc.ini; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then echo "UserName=postgres" >> /etc/odbc.ini; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then echo "Password=" >> /etc/odbc.ini; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then echo "Port=5432" >> /etc/odbc.ini; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then echo "Servername=localhost" >> /etc/odbc.ini; fi
+  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then sudo echo "[Postgres]" >> /etc/odbc.ini; fi
+  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then sudo echo "Driver=PostreSQL Unicode" >> /etc/odbc.ini; fi
+  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then sudo echo "Database=travis_test" >> /etc/odbc.ini; fi
+  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then sudo echo "UserName=postgres" >> /etc/odbc.ini; fi
+  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then sudo echo "Password=" >> /etc/odbc.ini; fi
+  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then sudo echo "Port=5432" >> /etc/odbc.ini; fi
+  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then sudo echo "Servername=localhost" >> /etc/odbc.ini; fi
   - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = mysql ]; then sudo apt-get install libmyodbc; fi
   - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = mysql ]; then sudo ln -s /usr/lib/x86_64-linux-gnu/libodbc.so.1 /usr/lib/x86_64-linux-gnu/libodbc.so.2; fi
   - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = mysql ]; then sudo ln -s /usr/lib/x86_64-linux-gnu/libodbcinst.so.1 /usr/lib/x86_64-linux-gnu/libodbcinst.so.2; fi

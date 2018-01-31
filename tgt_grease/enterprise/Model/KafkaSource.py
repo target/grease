@@ -1,8 +1,9 @@
 import json
-import multiprocessing as mp
 from time import time
 import kafka
 from kafka import KafkaConsumer
+import threading
+from multiprocessing import Pipe
 from tgt_grease.core import GreaseContainer
 from tgt_grease.enterprise.Model.CentralScheduling import Scheduling
 from .Configuration import PrototypeConfig
@@ -93,7 +94,8 @@ class KafkaSource(object):
             multiprocessing.Process: The process running consumer_manager
 
         """
-        proc = mp.Process(target=KafkaSource.consumer_manager, args=(self.ioc, config,))
+        KafkaSource.sleep(SLEEP_TIME)
+        proc = threading.Thread(target=KafkaSource.consumer_manager, args=(self.ioc, config,))
         proc.daemon = False
         proc.start()
         self.ioc.getLogger().trace("Kafka consumer manager process started for config: {0}".format(config.get("name")), trace=True)
@@ -133,8 +135,9 @@ class KafkaSource(object):
             multiprocessing.Pipe: The parent end of the Pipe used to send a kill signal to the consumer process
 
         """
-        parent_conn, child_conn = mp.Pipe()
-        proc = mp.Process(target=KafkaSource.consume, args=(ioc, config, child_conn,))
+        KafkaSource.sleep(SLEEP_TIME)
+        parent_conn, child_conn = Pipe()
+        proc = threading.Thread(target=KafkaSource.consume, args=(ioc, config, child_conn,))
         proc.daemon = True
         proc.start()
         ioc.getLogger().trace("Kafka consumer process started for config: {0}".format(config.get("name")), trace=True)
@@ -189,11 +192,17 @@ class KafkaSource(object):
             kafka.KafkaConsumer: KafkaConsumer object initialized with params from config
 
         """
-        consumer = KafkaConsumer(
-            group_id=config.get('name'),
-            *config.get('topics'),
-            **{'bootstrap_servers': ",".join(config.get('servers'))}
-        )
+        consumer = None
+        while not consumer:
+            try:
+                consumer = KafkaConsumer(
+                    group_id=config.get('name'),
+                    *config.get('topics'),
+                    **{'bootstrap_servers': ",".join(config.get('servers'))}
+                )
+            except kafka.errors.NoBrokersAvailable:
+                pass
+
         ioc.getLogger().trace("Kafka consumer created under group_id: {0}".format(config.get('name')), trace=True)
         KafkaSource.sleep(SLEEP_TIME)   # Gives the consumer time to initialize
         return consumer
@@ -212,14 +221,14 @@ class KafkaSource(object):
         Args:
             ioc (GreaseContainer): Used for logging since we can't use self in procs
             config (dict): Configuration for a Kafka source
-            message (bytearray): Individual message received from Kafka topic
+            message (kafka.ConsumerRecord): Individual message received from Kafka topic
 
         Returns:
             dict: A flat dictionary containing only the keys/values from the message as specified in the config
 
         """
         try:
-            message = json.loads(message, strict=False)
+            message = json.loads(message.value, strict=False)
             ioc.getLogger().trace("Message successfully loaded", trace=True)
         except json.decoder.JSONDecodeError:
             ioc.getLogger().trace("Failed to unload message", trace=True)
@@ -273,6 +282,15 @@ class KafkaSource(object):
     @staticmethod
     def kill_consumer_proc(ioc, proc_tup):
         """Sends a kill signal to the proc's pipe
+
+        Note:
+            Despite being from the multiprocessing library, Pipes are thread safe in this implementation as we don't share the same
+            end of the Pipe to more than one thread. From the multiprocessing documentation:
+
+                The two connection objects returned by Pipe() represent the two ends of the pipe. Each connection object has
+                send() and recv() methods (among others). Note that data in a pipe may become corrupted if two processes
+                (or threads) try to read from or write to the same end of the pipe at the same time. Of course there is no
+                risk of corruption from processes using different ends of the pipe at the same time.
 
         Args:
             ioc (GreaseContainer): Used for logging since we can't use self in procs
@@ -415,4 +433,3 @@ class KafkaSource(object):
                 return False
 
         return True
-   

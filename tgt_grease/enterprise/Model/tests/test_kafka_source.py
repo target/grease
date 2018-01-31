@@ -24,7 +24,7 @@ class TestKafka(TestCase):
 
     def setUp(self):
         self.ioc = GreaseContainer()
-        self.good_config = {"source": "kafka", "max_backlog": 20, "min_backlog": 5}
+        self.good_config = {"source": "kafka", "max_backlog": 20, "min_backlog": 5, "servers": ["server"], "topics": ["topic"]}
         self.bad_config = {"source": "not kafka"}
         self.mock_process = MagicMock()
 
@@ -118,7 +118,8 @@ class TestKafka(TestCase):
             "source": "kafka",
             "key_aliases": {"a.b.c": "key"}
         }
-        message = '{"a": {"b": {"c": "value"}}}'
+        message = MagicMock()
+        MagicMock.value = '{"a": {"b": {"c": "value"}}}'
         expected = {"key": "value"}
         ks = KafkaSource()
         self.assertEqual(ks.parse_message(self.ioc, parse_config, message), expected)
@@ -128,7 +129,8 @@ class TestKafka(TestCase):
             "source": "kafka",
             "key_aliases": {"a.b.c": "key"}
         }
-        message = '{"a": {"b": {"c": "value"'
+        message = MagicMock()
+        MagicMock.value = '{"a": {"b": {"c": "value"'
         expected = {}
         ks = KafkaSource()
         self.assertEqual(ks.parse_message(self.ioc, parse_config, message), expected)
@@ -139,7 +141,8 @@ class TestKafka(TestCase):
             "key_sep": "@@", 
             "key_aliases": {"a@@b@@c": "key"}
         }
-        message = '{"a": {"b": {"c": "value"}}}'
+        message = MagicMock()
+        MagicMock.value = '{"a": {"b": {"c": "value"}}}'
 
         expected = {"key": "value"}
         ks = KafkaSource()
@@ -150,7 +153,8 @@ class TestKafka(TestCase):
             "source": "kafka",
             "key_aliases": {"a.b.c": "key"}
         }
-        message = '{"a": {"b": {"d": "value"}}}'
+        message = MagicMock()
+        MagicMock.value = '{"a": {"b": {"d": "value"}}}'
         expected = {}
         ks = KafkaSource()
         self.assertEqual(ks.parse_message(self.ioc, parse_config, message), expected)
@@ -161,7 +165,8 @@ class TestKafka(TestCase):
             "split_char": "@@", 
             "key_aliases": {"a@@b@@c": "key"}
         }
-        message = '{"a": {"b": {"d": "value"}}}'
+        message = MagicMock()
+        MagicMock.value = '{"a": {"b": {"d": "value"}}}'
         expected = {}
         ks = KafkaSource()
         self.assertEqual(ks.parse_message(self.ioc, parse_config, message), expected)
@@ -174,7 +179,8 @@ class TestKafka(TestCase):
                             "aa": "aa_key"
                             }
         }
-        message = '{"a": {"b": {"c": "cvalue", "d":"dvalue"}}, "aa": "aavalue"}'
+        message = MagicMock()
+        MagicMock.value = '{"a": {"b": {"c": "cvalue", "d":"dvalue"}}, "aa": "aavalue"}'
         expected = {"abc_key": "cvalue", "abd_key": "dvalue", "aa_key": "aavalue"}
         ks = KafkaSource()
         self.assertEqual(ks.parse_message(self.ioc, parse_config, message), expected)
@@ -187,7 +193,8 @@ class TestKafka(TestCase):
                             "aa": "aa_key"
                             }
         }
-        message = '{"a": {"b": {"c": "cvalue"}}, "aa": "aavalue"}'
+        message = MagicMock()
+        MagicMock.value = '{"a": {"b": {"c": "cvalue"}}, "aa": "aavalue"}'
         expected = {}
         ks = KafkaSource()
         self.assertEqual(ks.parse_message(self.ioc, parse_config, message), expected)
@@ -383,7 +390,7 @@ class TestKafka(TestCase):
         self.assertFalse(ks.send_to_scheduling(self.ioc, config, mock_msg))
         mock_scheduling.assert_called_once_with("kafka", "test_config", mock_msg)
 
-    @patch("multiprocessing.Process")
+    @patch("threading.Thread")
     def test_create_consumer_manager_proc(self, mock_proc):
         ks = KafkaSource()
         mockp = MockProcess()
@@ -393,7 +400,7 @@ class TestKafka(TestCase):
         self.assertEqual(mockp.start_called, 1)
         self.assertFalse(mockp.daemon)
 
-    @patch("multiprocessing.Process")
+    @patch("threading.Thread")
     def test_create_consumer_proc(self, mock_proc):
         ks = KafkaSource()
         mockp = MockProcess()

@@ -1,9 +1,9 @@
 import json
 from time import time
-import kafka
-from kafka import KafkaConsumer
 import threading
 from multiprocessing import Pipe
+import kafka
+from kafka import KafkaConsumer
 from tgt_grease.core import GreaseContainer
 from tgt_grease.enterprise.Model.CentralScheduling import Scheduling
 from .Configuration import PrototypeConfig
@@ -76,7 +76,7 @@ class KafkaSource(object):
 
         procs = []
         for conf in self.configs:
-            procs.append(self.create_consumer_manager_proc(conf))
+            procs.append(self.create_consumer_manager_thread(conf))
 
         while procs:
             procs = list(filter(lambda x: x.is_alive(), procs))
@@ -84,7 +84,7 @@ class KafkaSource(object):
         self.ioc.getLogger().error("All Kafka consumer managers have died, stopping.")
         return False
 
-    def create_consumer_manager_proc(self, config):
+    def create_consumer_manager_thread(self, config):
         """Creates and returns a process running a consumer_manager
 
         Args:
@@ -98,7 +98,7 @@ class KafkaSource(object):
         proc = threading.Thread(target=KafkaSource.consumer_manager, args=(self.ioc, config,))
         proc.daemon = False
         proc.start()
-        self.ioc.getLogger().trace("Kafka consumer manager process started for config: {0}".format(config.get("name")), trace=True)
+        self.ioc.getLogger().info("Kafka consumer manager process started for config: {0}".format(config.get("name")))
         return proc
 
     @staticmethod
@@ -113,8 +113,8 @@ class KafkaSource(object):
             bool: False if all consumers are stopped
 
         """
-        monitor_consumer = KafkaSource.make_consumer(ioc, config)
-        procs = [KafkaSource.create_consumer_proc(ioc, config)]
+        monitor_consumer = KafkaSource.create_consumer(ioc, config)
+        procs = [KafkaSource.create_consumer_thread(ioc, config)]
 
         while procs:
             KafkaSource.reallocate_consumers(ioc, config, monitor_consumer, procs)
@@ -123,7 +123,7 @@ class KafkaSource(object):
         return False
 
     @staticmethod
-    def create_consumer_proc(ioc, config):
+    def create_consumer_thread(ioc, config):
         """Creates a consumer process, pipe pair for a given config
 
         Args:
@@ -140,7 +140,7 @@ class KafkaSource(object):
         proc = threading.Thread(target=KafkaSource.consume, args=(ioc, config, child_conn,))
         proc.daemon = True
         proc.start()
-        ioc.getLogger().trace("Kafka consumer process started for config: {0}".format(config.get("name")), trace=True)
+        ioc.getLogger().info("Kafka consumer process started for config: {0}".format(config.get("name")))
         return proc, parent_conn
 
     @staticmethod
@@ -156,7 +156,7 @@ class KafkaSource(object):
             bool: False if kill signal is received
 
         """
-        consumer = KafkaSource.make_consumer(ioc, config)
+        consumer = KafkaSource.create_consumer(ioc, config)
 
         for msg in consumer:
             if pipe.poll():    # If the parent pipe sends a signal
@@ -181,7 +181,7 @@ class KafkaSource(object):
             continue
 
     @staticmethod
-    def make_consumer(ioc, config):
+    def create_consumer(ioc, config):
         """Creates a KafkaConsumer object from the params in config
 
         Args:
@@ -201,9 +201,10 @@ class KafkaSource(object):
                     **{'bootstrap_servers': ",".join(config.get('servers'))}
                 )
             except kafka.errors.NoBrokersAvailable:
-                pass
+                ioc.getLogger().error("No Kafka brokers available for config: {0}, retrying.".format(config.get('name')))
+                KafkaSource.sleep(SLEEP_TIME)
 
-        ioc.getLogger().trace("Kafka consumer created under group_id: {0}".format(config.get('name')), trace=True)
+        ioc.getLogger().info("Kafka consumer created under group_id: {0}".format(config.get('name')))
         KafkaSource.sleep(SLEEP_TIME)   # Gives the consumer time to initialize
         return consumer
 
@@ -269,18 +270,18 @@ class KafkaSource(object):
         backlog2 = KafkaSource.get_backlog(ioc, monitor_consumer)
 
         if backlog1 > max_backlog and backlog2 > max_backlog and len(procs) < max_consumers:
-            procs.append(KafkaSource.create_consumer_proc(ioc, config))
-            ioc.getLogger().trace("Backlog max reached, spawning a new consumer for {0}".format(config.get('name')), trace=True)
+            procs.append(KafkaSource.create_consumer_thread(ioc, config))
+            ioc.getLogger().info("Backlog max reached, spawning a new consumer for {0}".format(config.get('name')))
             return 1
         elif backlog1 <= min_backlog and backlog2 <= min_backlog and len(procs) > 1:
-            KafkaSource.kill_consumer_proc(ioc, procs[0])
-            ioc.getLogger().trace("Backlog min reached, killing a consumer for {0}".format(config.get('name')), trace=True)
+            KafkaSource.kill_consumer_thread(ioc, procs[0])
+            ioc.getLogger().info("Backlog min reached, killing a consumer for {0}".format(config.get('name')))
             return -1
-        ioc.getLogger().trace("No reallocation needed for {0}".format(config.get('name')), trace=True)
+        ioc.getLogger().info("No reallocation needed for {0}".format(config.get('name')))
         return 0
 
     @staticmethod
-    def kill_consumer_proc(ioc, proc_tup):
+    def kill_consumer_thread(ioc, proc_tup):
         """Sends a kill signal to the proc's pipe
 
         Note:
@@ -307,7 +308,7 @@ class KafkaSource(object):
 
         Args:
             ioc (GreaseContainer): Used for logging since we can't use self in procs
-            consumer (kafka.KafkaConsumer)
+            consumer (kafka.KafkaConsumer): The consumer used to poll backlog offsets
 
         Returns:
             float: the average number of messages accross all partitions in the backlog. -1 if there is an error and excess consumers should be killed
@@ -355,7 +356,7 @@ class KafkaSource(object):
         if not message:
             return False
         if scheduler.scheduleDetection(config.get('source'), config.get('name'), message):
-            ioc.getLogger().info(
+            ioc.getLogger().trace(
                 "Data scheduled for detection from source [{0}]".format(config.get('source')),
                 trace=True
             )
@@ -371,7 +372,7 @@ class KafkaSource(object):
             list[dict]: A list of all kafka config dicts
 
         """
-        self.ioc.getLogger().trace("Kafka configs loaded", trace=True)
+        self.ioc.getLogger().info("Kafka configs loaded")
         return self.conf.get_source('kafka')
 
     def validate_configs(self, configs):
@@ -422,7 +423,7 @@ class KafkaSource(object):
                 if config.get(key) and key_type in (list, dict) and len(config.get(key)) == 0:
                     self.ioc.getLogger().error("Config: {0} has an invalid key: {1}".format(config.get('name'), key), notify=True)
                     return False
-            
+
             if config.get("source") != "kafka":
                 self.ioc.getLogger().error("Config: {0} is not a kafka config, but it has been loaded by KafkaSource".format(config.get('name')), notify=True)
                 return False

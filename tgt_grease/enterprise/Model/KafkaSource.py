@@ -20,7 +20,7 @@ class KafkaSource(object):
     in the Config, and then sends the parsed messages (containing only the keys/values specified
     in the Config) to Scheduling.
 
-    This Source is designed around the Configs. Each Config gets its own config_manager process,
+    This Source is designed around the Configs. Each Config gets its own config_manager thread,
     which means Configs also get their own dedicated consumer. It was designed so that any
     "magic numbers" (such as MIN_BACKLOG, MAX_CONSUMERS, etc.) are overwriteable in the Config,
     with the exception of SLEEP_TIME, which can be constant accross Configs.
@@ -47,12 +47,12 @@ class KafkaSource(object):
 
     def run(self, config=None):
         """This will load all Kafka configs (unless a specific one is provided) and spin up consumer
-        processes for all of them.
+        threads for all of them.
 
         It should never return anything unless something goes wrong with Kafka consumption.
 
-        Creates a process for each Kafka config to begin parsing messages. This parent process then
-        monitors its children, and prunes dead processes. Once all are dead, we return False.
+        Creates a thread for each Kafka config to begin parsing messages. This parent thread then
+        monitors its children, and prunes dead threads. Once all are dead, we return False.
 
         Note:
             If a configuration is set then *only* that configuration is parsed. If both are provided
@@ -74,39 +74,39 @@ class KafkaSource(object):
             self.ioc.getLogger().error("One or more Kafka Configs are invalid, stopping.")
             return False
 
-        procs = []
+        threads = []
         for conf in self.configs:
-            procs.append(self.create_consumer_manager_thread(conf))
+            threads.append(self.create_consumer_manager_thread(conf))
 
-        while procs:
-            procs = list(filter(lambda x: x.is_alive(), procs))
+        while threads:
+            threads = list(filter(lambda x: x.is_alive(), threads))
 
         self.ioc.getLogger().error("All Kafka consumer managers have died, stopping.")
         return False
 
     def create_consumer_manager_thread(self, config):
-        """Creates and returns a process running a consumer_manager
+        """Creates and returns a thread running a consumer_manager
 
         Args:
             config (dict): Configuration for a Kafka source
 
         Returns:
-            multiprocessing.Process: The process running consumer_manager
+            threading.Thread: The thread running consumer_manager
 
         """
         KafkaSource.sleep(SLEEP_TIME)
-        proc = threading.Thread(target=KafkaSource.consumer_manager, args=(self.ioc, config,))
-        proc.daemon = False
-        proc.start()
-        self.ioc.getLogger().info("Kafka consumer manager process started for config: {0}".format(config.get("name")))
-        return proc
+        thread = threading.Thread(target=KafkaSource.consumer_manager, args=(self.ioc, config,))
+        thread.daemon = False
+        thread.start()
+        self.ioc.getLogger().info("Kafka consumer manager thread started for config: {0}".format(config.get("name")))
+        return thread
 
     @staticmethod
     def consumer_manager(ioc, config):
-        """Creates and reallocates consumer processes within the same consumer group for a single config
+        """Creates and reallocates consumer threads within the same consumer group for a single config
 
         Args:
-            ioc (GreaseContainer): Used for logging since we can't use self in procs
+            ioc (GreaseContainer): Used for logging since we can't use self in threads
             config (dict): Configuration for a Kafka source
 
         Returns:
@@ -114,43 +114,43 @@ class KafkaSource(object):
 
         """
         monitor_consumer = KafkaSource.create_consumer(ioc, config)
-        procs = [KafkaSource.create_consumer_thread(ioc, config)]
+        threads = [KafkaSource.create_consumer_thread(ioc, config)]
 
-        while procs:
-            KafkaSource.reallocate_consumers(ioc, config, monitor_consumer, procs)
-            procs = list(filter(lambda x: x[0].is_alive(), procs))
+        while threads:
+            KafkaSource.reallocate_consumers(ioc, config, monitor_consumer, threads)
+            threads = list(filter(lambda x: x[0].is_alive(), threads))
 
         return False
 
     @staticmethod
     def create_consumer_thread(ioc, config):
-        """Creates a consumer process, pipe pair for a given config
+        """Creates a consumer thread, pipe pair for a given config
 
         Args:
-            ioc (GreaseContainer): Used for logging since we can't use self in procs
+            ioc (GreaseContainer): Used for logging since we can't use self in threads
             config (dict): Configuration for a Kafka source
 
         Returns:
-            multiprocessing.Process: The Process running the Kafka consumer
-            multiprocessing.Pipe: The parent end of the Pipe used to send a kill signal to the consumer process
+            threading.Thread: The Thread running the Kafka consumer
+            multiprocessing.Pipe: The parent end of the Pipe used to send a kill signal to the consumer thread
 
         """
         KafkaSource.sleep(SLEEP_TIME)
         parent_conn, child_conn = Pipe()
-        proc = threading.Thread(target=KafkaSource.consume, args=(ioc, config, child_conn,))
-        proc.daemon = True
-        proc.start()
-        ioc.getLogger().info("Kafka consumer process started for config: {0}".format(config.get("name")))
-        return proc, parent_conn
+        thread = threading.Thread(target=KafkaSource.consume, args=(ioc, config, child_conn,))
+        thread.daemon = True
+        thread.start()
+        ioc.getLogger().info("Kafka consumer thread started for config: {0}".format(config.get("name")))
+        return thread, parent_conn
 
     @staticmethod
     def consume(ioc, config, pipe):
         """The Kafka consumer in charge of parsing messages according to the config, then sends the parsed dict to Scheduling
 
         Args:
-            ioc (GreaseContainer): Used for logging since we can't use self in procs
+            ioc (GreaseContainer): Used for logging since we can't use self in threads
             config (dict): Configuration for a Kafka source
-            pipe (multiprocessing.Pipe): Child end of the pipe used to receive signals from parent process
+            pipe (multiprocessing.Pipe): Child end of the pipe used to receive signals from parent thread
 
         Returns:
             bool: False if kill signal is received
@@ -170,7 +170,7 @@ class KafkaSource(object):
 
     @staticmethod
     def sleep(sleep_sec):
-        """Multiprocessing safe sleep function that waits sleep_sec seconds without affecting child processes
+        """Thread safe sleep function that waits sleep_sec seconds without affecting child threads
 
         Args:
             sleep_sec (int): Number of seconds to idle
@@ -185,7 +185,7 @@ class KafkaSource(object):
         """Creates a KafkaConsumer object from the params in config
 
         Args:
-            ioc (GreaseContainer): Used for logging since we can't use self in procs
+            ioc (GreaseContainer): Used for logging since we can't use self in threads
             config (dict): Configuration for a Kafka source
 
         Returns:
@@ -220,7 +220,7 @@ class KafkaSource(object):
             specified in the config. 
 
         Args:
-            ioc (GreaseContainer): Used for logging since we can't use self in procs
+            ioc (GreaseContainer): Used for logging since we can't use self in threads
             config (dict): Configuration for a Kafka source
             message (kafka.ConsumerRecord): Individual message received from Kafka topic
 
@@ -249,17 +249,17 @@ class KafkaSource(object):
         return final
 
     @staticmethod
-    def reallocate_consumers(ioc, config, monitor_consumer, procs):
+    def reallocate_consumers(ioc, config, monitor_consumer, threads):
         """Determines whether to create or kill a consumer based on current message backlog, then performs that action
 
         Args:
-            ioc (GreaseContainer): Used for logging since we can't use self in procs
+            ioc (GreaseContainer): Used for logging since we can't use self in threads
             config (dict): Configuration for a Kafka source
             monitor_consumer (kafka.KafkaConsumer): KafkaConsumer used solely for measuring message backlog
-            procs (list[(multiprocessing.Process, multiprocessing.Pipe)]): List of current consumer process/pipe pairs
+            threads (list[(threading.Thread, multiprocessing.Pipe)]): List of current consumer thread/pipe pairs
 
         Returns:
-            int: Number of processes created (Negative value if a process was killed)
+            int: Number of threads created (Negative value if a thread was killed)
         """
         min_backlog = config.get("min_backlog", MIN_BACKLOG)
         max_backlog = config.get("max_backlog", MAX_BACKLOG)
@@ -269,37 +269,37 @@ class KafkaSource(object):
         KafkaSource.sleep(SLEEP_TIME) # We want to wait before checking again in case there is a message spike
         backlog2 = KafkaSource.get_backlog(ioc, monitor_consumer)
 
-        if backlog1 > max_backlog and backlog2 > max_backlog and len(procs) < max_consumers:
-            procs.append(KafkaSource.create_consumer_thread(ioc, config))
+        if backlog1 > max_backlog and backlog2 > max_backlog and len(threads) < max_consumers:
+            threads.append(KafkaSource.create_consumer_thread(ioc, config))
             ioc.getLogger().info("Backlog max reached, spawning a new consumer for {0}".format(config.get('name')))
             return 1
-        elif backlog1 <= min_backlog and backlog2 <= min_backlog and len(procs) > 1:
-            KafkaSource.kill_consumer_thread(ioc, procs[0])
+        elif backlog1 <= min_backlog and backlog2 <= min_backlog and len(threads) > 1:
+            KafkaSource.kill_consumer_thread(ioc, threads[0])
             ioc.getLogger().info("Backlog min reached, killing a consumer for {0}".format(config.get('name')))
             return -1
         ioc.getLogger().info("No reallocation needed for {0}".format(config.get('name')))
         return 0
 
     @staticmethod
-    def kill_consumer_thread(ioc, proc_tup):
-        """Sends a kill signal to the proc's pipe
+    def kill_consumer_thread(ioc, thread_tup):
+        """Sends a kill signal to the thread's pipe
 
         Note:
             Despite being from the multiprocessing library, Pipes are thread safe in this implementation as we don't share the same
             end of the Pipe to more than one thread. From the multiprocessing documentation:
 
                 The two connection objects returned by Pipe() represent the two ends of the pipe. Each connection object has
-                send() and recv() methods (among others). Note that data in a pipe may become corrupted if two processes
+                send() and recv() methods (among others). Note that data in a pipe may become corrupted if two threads
                 (or threads) try to read from or write to the same end of the pipe at the same time. Of course there is no
-                risk of corruption from processes using different ends of the pipe at the same time.
+                risk of corruption from threads using different ends of the pipe at the same time.
 
         Args:
-            ioc (GreaseContainer): Used for logging since we can't use self in procs
-            proc_tup ((multiprocessing.Process, multiprocessing.Pipe)): Process/Pipe tuple to be killed
+            ioc (GreaseContainer): Used for logging since we can't use self in threads
+            thread_tup ((threading.Thread, multiprocessing.Pipe)): Thread/Pipe tuple to be killed
 
         """
-        proc_tup[1].send("STOP")
-        ioc.getLogger().trace("Kill signal sent to consumer process", trace=True)
+        thread_tup[1].send("STOP")
+        ioc.getLogger().trace("Kill signal sent to consumer thread", trace=True)
         KafkaSource.sleep(SLEEP_TIME) # Give consumer a chance to finish its current message
 
     @staticmethod
@@ -307,7 +307,7 @@ class KafkaSource(object):
         """Gets the current message backlog for a given consumer
 
         Args:
-            ioc (GreaseContainer): Used for logging since we can't use self in procs
+            ioc (GreaseContainer): Used for logging since we can't use self in threads
             consumer (kafka.KafkaConsumer): The consumer used to poll backlog offsets
 
         Returns:
@@ -344,7 +344,7 @@ class KafkaSource(object):
         """Sends a parsed message dictionary to scheduling
 
         Args:
-            ioc (GreaseContainer): Used for logging since we can't use self in procs
+            ioc (GreaseContainer): Used for logging since we can't use self in threads
             config (dict): Configuration for a Kafka source
             message (dict): Individual parsed message received from Kafka topic
 

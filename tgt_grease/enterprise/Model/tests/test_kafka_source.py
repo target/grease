@@ -26,7 +26,7 @@ class TestKafka(TestCase):
         self.ioc = GreaseContainer()
         self.good_config = {"source": "kafka", "max_backlog": 20, "min_backlog": 5, "servers": ["server"], "topics": ["topic"]}
         self.bad_config = {"source": "not kafka"}
-        self.mock_process = MagicMock()
+        self.mock_thread = MagicMock()
 
     @patch('tgt_grease.enterprise.Model.KafkaSource.validate_configs')
     def test_run_bad_config(self, mock_validate):
@@ -38,12 +38,12 @@ class TestKafka(TestCase):
     @patch('tgt_grease.enterprise.Model.KafkaSource.validate_configs')
     def test_run_good_config(self, mock_validate, mock_create):
         ks = KafkaSource()
-        mock_proc = MockThread()
-        mock_create.return_value = mock_proc
+        mock_thread = MockThread()
+        mock_create.return_value = mock_thread
         mock_validate.return_value = True
         self.assertFalse(ks.run(self.good_config))
         self.assertEqual(ks.configs, [self.good_config])
-        self.assertEqual(mock_proc.is_alive_called, 1)
+        self.assertEqual(mock_thread.is_alive_called, 1)
 
     @patch('tgt_grease.enterprise.Model.KafkaSource.get_configs')
     @patch('tgt_grease.enterprise.Model.KafkaSource.create_consumer_manager_thread')
@@ -51,12 +51,12 @@ class TestKafka(TestCase):
     def test_run_no_config(self, mock_validate, mock_create, mock_get_configs):
         ks = KafkaSource()
         mock_get_configs.return_value = [self.good_config]*5
-        mock_proc = MockThread()
-        mock_create.return_value = mock_proc
+        mock_thread = MockThread()
+        mock_create.return_value = mock_thread
         mock_validate.return_value = True
         self.assertFalse(ks.run())
         self.assertEqual(ks.configs, [self.good_config]*5)
-        self.assertEqual(mock_proc.is_alive_called, 5)
+        self.assertEqual(mock_thread.is_alive_called, 5)
 
     @patch('tgt_grease.enterprise.Model.KafkaSource.get_configs')
     @patch('tgt_grease.enterprise.Model.KafkaSource.create_consumer_manager_thread')
@@ -64,23 +64,23 @@ class TestKafka(TestCase):
     def test_run_invalid_config(self, mock_validate, mock_create, mock_get_configs):
         ks = KafkaSource()
         mock_get_configs.return_value = [self.good_config]*5
-        mock_proc = MockThread()
-        mock_create.return_value = mock_proc
+        mock_thread = MockThread()
+        mock_create.return_value = mock_thread
         mock_validate.return_value = False
         self.assertFalse(ks.run())
         self.assertEqual(ks.configs, [self.good_config]*5)
-        self.assertEqual(mock_proc.is_alive_called, 0)
+        self.assertEqual(mock_thread.is_alive_called, 0)
 
     @patch('tgt_grease.enterprise.Model.KafkaSource.create_consumer')
     @patch('tgt_grease.enterprise.Model.KafkaSource.create_consumer_thread')
     @patch('tgt_grease.enterprise.Model.KafkaSource.reallocate_consumers')
     def test_consumer_manager(self, mock_reallocate, mock_create, mock_make):
         mock_make.return_value = []
-        mock_proc = MockThread()
-        mock_create.return_value = (mock_proc, None)
+        mock_thread = MockThread()
+        mock_create.return_value = (mock_thread, None)
         ks = KafkaSource()
         self.assertFalse(ks.consumer_manager(self.ioc, self.good_config))
-        self.assertEqual(mock_proc.is_alive_called, 1)
+        self.assertEqual(mock_thread.is_alive_called, 1)
         mock_reallocate.assert_called_once()
         mock_make.assert_called_once()
         mock_create.assert_called_once()
@@ -206,8 +206,8 @@ class TestKafka(TestCase):
     def test_reallocate_consumers_kill(self, mock_backlog, mock_create, mock_kill, mock_sleep):
         mock_backlog.return_value = 3
         ks = KafkaSource()
-        self.assertEqual(ks.reallocate_consumers(self.ioc, self.good_config, None, ["proc1", "proc2"]), -1)
-        mock_kill.assert_called_once_with(self.ioc, "proc1")
+        self.assertEqual(ks.reallocate_consumers(self.ioc, self.good_config, None, ["thread1", "thread2"]), -1)
+        mock_kill.assert_called_once_with(self.ioc, "thread1")
         self.assertEqual(mock_backlog.call_count, 2)
         mock_create.assert_not_called()
 
@@ -218,7 +218,7 @@ class TestKafka(TestCase):
     def test_reallocate_consumers_kill_1thread(self, mock_backlog, mock_create, mock_kill, mock_sleep):
         mock_backlog.return_value = 3
         ks = KafkaSource()
-        self.assertEqual(ks.reallocate_consumers(self.ioc, self.good_config, None, ["proc1"]), 0)
+        self.assertEqual(ks.reallocate_consumers(self.ioc, self.good_config, None, ["thread1"]), 0)
         mock_kill.assert_not_called()
         self.assertEqual(mock_backlog.call_count, 2)
         mock_create.assert_not_called()
@@ -229,14 +229,14 @@ class TestKafka(TestCase):
     @patch('tgt_grease.enterprise.Model.KafkaSource.get_backlog')
     def test_reallocate_consumers_create(self, mock_backlog, mock_create, mock_kill, mock_sleep):
         mock_backlog.return_value = 21
-        mock_create.return_value = "new_proc"
+        mock_create.return_value = "new_thread"
         ks = KafkaSource()
-        procs = ["proc1"]
-        self.assertEqual(ks.reallocate_consumers(self.ioc, self.good_config, None, procs), 1)
+        threads = ["thread1"]
+        self.assertEqual(ks.reallocate_consumers(self.ioc, self.good_config, None, threads), 1)
         mock_kill.assert_not_called()
         self.assertEqual(mock_backlog.call_count, 2)
         mock_create.assert_called_once_with(self.ioc, self.good_config)
-        self.assertTrue("new_proc" in procs)
+        self.assertTrue("new_thread" in threads)
 
     @patch('tgt_grease.enterprise.Model.KafkaSource.sleep')
     @patch('tgt_grease.enterprise.Model.KafkaSource.kill_consumer_thread')
@@ -245,7 +245,7 @@ class TestKafka(TestCase):
     def test_reallocate_consumers_pass(self, mock_backlog, mock_create, mock_kill, mock_sleep):
         mock_backlog.return_value = 10
         ks = KafkaSource()
-        self.assertEqual(ks.reallocate_consumers(self.ioc, self.good_config, None, ["proc1"]), 0)
+        self.assertEqual(ks.reallocate_consumers(self.ioc, self.good_config, None, ["thread1"]), 0)
         mock_kill.assert_not_called()
         mock_create.assert_not_called()
         self.assertEqual(mock_backlog.call_count, 2)
@@ -258,8 +258,8 @@ class TestKafka(TestCase):
     def test_reallocate_consumers_max_thread(self, mock_backlog, mock_create, mock_kill, mock_sleep):
         mock_backlog.return_value = 30
         ks = KafkaSource()
-        procs = ["proc" for i in range(0, 32)]
-        self.assertEqual(ks.reallocate_consumers(self.ioc, self.good_config, None, procs), 0)
+        threads = ["thread" for i in range(0, 32)]
+        self.assertEqual(ks.reallocate_consumers(self.ioc, self.good_config, None, threads), 0)
         mock_kill.assert_not_called()
         mock_create.assert_not_called()
         self.assertEqual(mock_backlog.call_count, 2)
@@ -268,12 +268,12 @@ class TestKafka(TestCase):
     @patch('tgt_grease.enterprise.Model.KafkaSource.kill_consumer_thread')
     @patch('tgt_grease.enterprise.Model.KafkaSource.create_consumer_thread')
     @patch('tgt_grease.enterprise.Model.KafkaSource.get_backlog')
-    def test_reallocate_consumers_max_proc_create(self, mock_backlog, mock_create, mock_kill, mock_sleep):
+    def test_reallocate_consumers_max_thread_create(self, mock_backlog, mock_create, mock_kill, mock_sleep):
         mock_backlog.return_value = 30
         ks = KafkaSource()
-        procs = ["proc" for i in range(0, 33)]
+        threads = ["thread" for i in range(0, 33)]
         config = {"max_consumers": 35, "max_backlog":20, "min_backlog":5}
-        self.assertEqual(ks.reallocate_consumers(self.ioc, config, None, procs), 1)
+        self.assertEqual(ks.reallocate_consumers(self.ioc, config, None, threads), 1)
         mock_kill.assert_not_called()
         mock_create.assert_called()
         self.assertEqual(mock_backlog.call_count, 2)
@@ -282,12 +282,12 @@ class TestKafka(TestCase):
     @patch('tgt_grease.enterprise.Model.KafkaSource.kill_consumer_thread')
     @patch('tgt_grease.enterprise.Model.KafkaSource.create_consumer_thread')
     @patch('tgt_grease.enterprise.Model.KafkaSource.get_backlog')
-    def test_reallocate_consumers_max_proc_pass(self, mock_backlog, mock_create, mock_kill, mock_sleep):
+    def test_reallocate_consumers_max_thread_pass(self, mock_backlog, mock_create, mock_kill, mock_sleep):
         mock_backlog.return_value = 30
         ks = KafkaSource()
-        procs = ["proc" for i in range(0, 36)]
+        threads = ["thread" for i in range(0, 36)]
         config = {"max_consumers": 35, "max_backlog":20, "min_backlog":5}
-        self.assertEqual(ks.reallocate_consumers(self.ioc, config, None, procs), 0)
+        self.assertEqual(ks.reallocate_consumers(self.ioc, config, None, threads), 0)
         mock_kill.assert_not_called()
         mock_create.assert_not_called()
         self.assertEqual(mock_backlog.call_count, 2)
@@ -392,22 +392,22 @@ class TestKafka(TestCase):
         mock_scheduling.assert_called_once_with("kafka", "test_config", mock_msg)
 
     @patch("threading.Thread")
-    def test_create_consumer_manager_thread(self, mock_proc):
+    def test_create_consumer_manager_thread(self, mock_thread):
         ks = KafkaSource()
         mockp = MockThread()
-        mock_proc.return_value = mockp
+        mock_thread.return_value = mockp
         self.assertEqual(ks.create_consumer_manager_thread(self.good_config), mockp)
         self.assertEqual(mockp.is_alive_called, 0)
         self.assertEqual(mockp.start_called, 1)
         self.assertFalse(mockp.daemon)
 
     @patch("threading.Thread")
-    def test_create_consumer_thread(self, mock_proc):
+    def test_create_consumer_thread(self, mock_thread):
         ks = KafkaSource()
         mockp = MockThread()
-        mock_proc.return_value = mockp
-        proc, pipe = ks.create_consumer_thread(self.ioc, self.good_config)
-        self.assertEqual(proc, mockp)
+        mock_thread.return_value = mockp
+        thread, pipe = ks.create_consumer_thread(self.ioc, self.good_config)
+        self.assertEqual(thread, mockp)
         self.assertEqual(type(pipe), type(mp.Pipe()[0]))
         self.assertEqual(mockp.is_alive_called, 0)
         self.assertEqual(mockp.start_called, 1)

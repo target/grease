@@ -23,5 +23,5 @@
 ### Ryan Murray <ryan.murray@target.com>
 ###### Guest Reliability Engineering :: Target
 
-### Ronald Queensen <ronald.queensen@>
+### Ronald Queensen <ronald.queensen@target.com>
 ###### Guest Reliability Engineering :: Target

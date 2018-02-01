@@ -135,7 +135,6 @@ class KafkaSource(object):
             multiprocessing.Pipe: The parent end of the Pipe used to send a kill signal to the consumer thread
 
         """
-        KafkaSource.sleep(SLEEP_TIME)
         parent_conn, child_conn = Pipe()
         thread = threading.Thread(target=KafkaSource.consume, args=(ioc, config, child_conn,))
         thread.daemon = True

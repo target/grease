@@ -16,11 +16,11 @@ MAX_CONSUMERS = 32   # We wont create more than this number of consumers for any
 class KafkaSource(object):
     """Kafka class for sourcing Kafka messages
 
-    This Source will create and dynamically scale the number of Kafka consumers for the topics
+    This Model will create and dynamically scale the number of Kafka consumers for the topics
     in the Config, and then sends the parsed messages (containing only the keys/values specified
     in the Config) to Scheduling.
 
-    This Source is designed around the Configs. Each Config gets its own config_manager thread,
+    This Model is designed around the Configs. Each Config gets its own config_manager thread,
     which means Configs also get their own dedicated consumer. It was designed so that any
     "magic numbers" (such as MIN_BACKLOG, MAX_CONSUMERS, etc.) are overwriteable in the Config,
     with the exception of SLEEP_TIME, which can be constant accross Configs.
@@ -55,8 +55,7 @@ class KafkaSource(object):
         monitors its children, and prunes dead threads. Once all are dead, we return False.
 
         Note:
-            If a configuration is set then *only* that configuration is parsed. If both are provided
-            then the configuration will *only* be parsed if it is of the source provided.
+            If a configuration is set then *only* that configuration is parsed. If both are provided then the configuration will *only* be parsed if it is of the source provided.
 
         Args:
             config (dict): If set will only parse the specified config
@@ -81,14 +80,14 @@ class KafkaSource(object):
         while threads:
             threads = list(filter(lambda x: x.is_alive(), threads))
 
-        self.ioc.getLogger().error("All Kafka consumer managers have died, stopping.")
+        self.ioc.getLogger().critical("All Kafka consumer managers have died, stopping.")
         return False
 
     def create_consumer_manager_thread(self, config):
         """Creates and returns a thread running a consumer_manager
 
         Args:
-            config (dict): Configuration for a Kafka source
+            config (dict): Configuration for a Kafka Model
 
         Returns:
             threading.Thread: The thread running consumer_manager
@@ -107,7 +106,7 @@ class KafkaSource(object):
 
         Args:
             ioc (GreaseContainer): Used for logging since we can't use self in threads
-            config (dict): Configuration for a Kafka source
+            config (dict): Configuration for a Kafka Model
 
         Returns:
             bool: False if all consumers are stopped
@@ -128,7 +127,7 @@ class KafkaSource(object):
 
         Args:
             ioc (GreaseContainer): Used for logging since we can't use self in threads
-            config (dict): Configuration for a Kafka source
+            config (dict): Configuration for a Kafka Model
 
         Returns:
             threading.Thread: The Thread running the Kafka consumer
@@ -148,7 +147,7 @@ class KafkaSource(object):
 
         Args:
             ioc (GreaseContainer): Used for logging since we can't use self in threads
-            config (dict): Configuration for a Kafka source
+            config (dict): Configuration for a Kafka Model
             pipe (multiprocessing.Pipe): Child end of the pipe used to receive signals from parent thread
 
         Returns:
@@ -185,7 +184,7 @@ class KafkaSource(object):
 
         Args:
             ioc (GreaseContainer): Used for logging since we can't use self in threads
-            config (dict): Configuration for a Kafka source
+            config (dict): Configuration for a Kafka Model
 
         Returns:
             kafka.KafkaConsumer: KafkaConsumer object initialized with params from config
@@ -212,15 +211,11 @@ class KafkaSource(object):
         """Parses a message from Kafka according to the config
 
         Note:
-            transform_message extracts only the keys/values from the message as specified in the config.
-            By default, we split the keys by "." - so if you wanted to access the value stored at 
-            message[a][b][c], your config would contain the key "a.b.c". You can overwrite the "." key
-            splitter explicitly in your Config. These values will be written to their respective alias also 
-            specified in the config. 
+            transform_message extracts only the keys/values from the message as specified in the config. By default, we split the keys by "." - so if you wanted to access the value stored at message[a][b][c], your config would contain the key "a.b.c". You can overwrite the "." key splitter explicitly in your Config. These values will be written to their respective alias also specified in the config. 
 
         Args:
             ioc (GreaseContainer): Used for logging since we can't use self in threads
-            config (dict): Configuration for a Kafka source
+            config (dict): Configuration for a Kafka model
             message (kafka.ConsumerRecord): Individual message received from Kafka topic
 
         Returns:
@@ -253,7 +248,7 @@ class KafkaSource(object):
 
         Args:
             ioc (GreaseContainer): Used for logging since we can't use self in threads
-            config (dict): Configuration for a Kafka source
+            config (dict): Configuration for a Kafka model
             monitor_consumer (kafka.KafkaConsumer): KafkaConsumer used solely for measuring message backlog
             threads (list[(threading.Thread, multiprocessing.Pipe)]): List of current consumer thread/pipe pairs
 
@@ -270,11 +265,11 @@ class KafkaSource(object):
 
         if backlog1 > max_backlog and backlog2 > max_backlog and len(threads) < max_consumers:
             threads.append(KafkaSource.create_consumer_thread(ioc, config))
-            ioc.getLogger().info("Backlog max reached, spawning a new consumer for {0}".format(config.get('name')))
+            ioc.getLogger().info("Backlog max reached, spawning a new consumer for {0}".format(config.get('name')), verbose=True)
             return 1
         elif backlog1 <= min_backlog and backlog2 <= min_backlog and len(threads) > 1:
             KafkaSource.kill_consumer_thread(ioc, threads[0])
-            ioc.getLogger().info("Backlog min reached, killing a consumer for {0}".format(config.get('name')))
+            ioc.getLogger().info("Backlog min reached, killing a consumer for {0}".format(config.get('name')), verbose=True)
             return -1
         ioc.getLogger().info("No reallocation needed for {0}".format(config.get('name')))
         return 0
@@ -344,7 +339,7 @@ class KafkaSource(object):
 
         Args:
             ioc (GreaseContainer): Used for logging since we can't use self in threads
-            config (dict): Configuration for a Kafka source
+            config (dict): Configuration for a Kafka model
             message (dict): Individual parsed message received from Kafka topic
 
         Returns:

@@ -225,7 +225,7 @@ class KafkaSource(object):
         try:
             message = json.loads(message.value, strict=False)
             ioc.getLogger().trace("Message successfully loaded", trace=True)
-        except json.decoder.JSONDecodeError:
+        except ValueError:
             ioc.getLogger().trace("Failed to unload message", trace=True)
             return {}
 
@@ -331,7 +331,7 @@ class KafkaSource(object):
             ioc.getLogger().error("Backlog check failed for kafka consumer - invalid offsets")
             return -1.
 
-        return (sum(end_offsets) - sum(current_offsets)) / len(partitions)
+        return float(sum(end_offsets) - sum(current_offsets)) / len(partitions)
 
     @staticmethod
     def send_to_scheduling(ioc, config, message):

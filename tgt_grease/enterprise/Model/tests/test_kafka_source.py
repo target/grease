@@ -1,5 +1,5 @@
 from unittest import TestCase
-from unittest.mock import MagicMock, patch
+from mock import MagicMock, patch
 from tgt_grease.core import GreaseContainer, Configuration
 from tgt_grease.enterprise.Model import KafkaSource
 import time
@@ -77,9 +77,9 @@ class TestKafka(TestCase):
         mock_create.return_value = (mock_thread, None)
         self.assertFalse(self.ks.consumer_manager(self.ioc, self.good_config))
         self.assertEqual(mock_thread.is_alive_called, 1)
-        mock_reallocate.assert_called_once()
-        mock_make.assert_called_once()
-        mock_create.assert_called_once()
+        self.assertEqual(mock_reallocate.call_count, 1)
+        self.assertEqual(mock_make.call_count, 1)
+        self.assertEqual(mock_create.call_count, 1)
 
     @patch('tgt_grease.enterprise.Model.KafkaSource.create_consumer')
     def test_consume_empty_consumer(self, mock_make):

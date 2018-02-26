@@ -299,7 +299,6 @@ class TestKafka(TestCase):
             assigned["status"] = True
 
         mock_consumer.poll.side_effect = poll
-
         for part_count in range(1, 10):
             for start in range(0, 10):
                 for end in range(start, 10):

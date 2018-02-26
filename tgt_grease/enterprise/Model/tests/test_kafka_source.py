@@ -293,11 +293,10 @@ class TestKafka(TestCase):
 
     def test_get_backlog_not_assigned(self):
         mock_consumer = MagicMock()
-        assigned = False
+        assigned = {"status": False}
 
         def poll():
-            nonlocal assigned
-            assigned = True
+            assigned["status"] = True
 
         mock_consumer.poll.side_effect = poll
 
@@ -306,9 +305,7 @@ class TestKafka(TestCase):
                 for end in range(start, 10):
                     mock_partitions = ["part" + str(part_i) for part_i in range(part_count)] # assignment returns an array of TopicPartitions, but our mocked consumer works with just strings
                     def assignment():
-                        nonlocal assigned
-                        nonlocal mock_partitions
-                        if assigned:
+                        if assigned["status"]:
                             return mock_partitions
                         else:
                             return []

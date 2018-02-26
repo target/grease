@@ -32,15 +32,14 @@ setup(
     author_email="james.e.bell@target.com",
     packages=find_packages(),
     test_suite='nose.collector',
-    tests_require=['nose', 'nose-cover3'],
+    tests_require=['nose', 'nose-cover3', 'mock'],
     install_requires=[
         'psycopg2',
         'requests',
         'pymongo',
         'psutil',
         'elasticsearch',
-        'kafka',
-        'mock'
+        'kafka'
     ] + (
          ["pypiwin32"] if "nt" == os.name else []
         ),

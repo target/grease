@@ -26,10 +26,6 @@ matrix:
       sudo: required
       dist: trusty
       python: "3.6"
-    - os: linux
-      sudo: required
-      dist: trusty
-      python: "nightly"
 # Still Borken
 #    - os: osx
 #      sudo: required
@@ -55,11 +51,6 @@ matrix:
         - rvm install "ruby-2.3.4"
         - export HOMEBREW_RUBY_PATH="/Users/travis/.rvm/rubies/ruby-2.3.4/bin/ruby"
         - rvm use 2.3
-  allowed_failures:
-    - os: linux
-      sudo: required
-      dist: trusty
-      python: "nightly"
 
 services:
   - mongodb

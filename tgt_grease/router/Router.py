@@ -95,7 +95,7 @@ class GreaseRouter(object):
         other = []
         cmd = None
         while i < len(sys.argv):
-            arg = str(sys.argv[i])
+            arg = str(sys.argv[i]).strip().rstrip()
             if arg.startswith("--"):
                 # Found long opt
                 if len(arg.split("=")) > 1:
@@ -124,11 +124,11 @@ class GreaseRouter(object):
                             cmd = possible_imp
                         i += 1
             else:
-                possible_imp = self._importTool.load(sys.argv[i])
+                possible_imp = self._importTool.load(str(sys.argv[i]).strip().rstrip())
                 if isinstance(possible_imp, Command):
                     cmd = possible_imp
                 else:
-                    other.append(arg)
+                    other.append(str(arg).strip().rstrip())
             i += 1
         context['grease_other_args'] = other
         return cmd, context

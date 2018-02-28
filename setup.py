@@ -4,7 +4,7 @@ import os
 
 setup(
     name='tgt_grease',
-    version='2.1.3',
+    version='2.2.0',
     license="MIT",
     description='GRE Application Service Engine',
     long_description="""
@@ -32,13 +32,14 @@ setup(
     author_email="james.e.bell@target.com",
     packages=find_packages(),
     test_suite='nose.collector',
-    tests_require=['nose', 'nose-cover3'],
+    tests_require=['nose', 'nose-cover3', 'mock'],
     install_requires=[
         'psycopg2',
         'requests',
         'pymongo',
         'psutil',
-        'elasticsearch'
+        'elasticsearch',
+        'kafka'
     ] + (
          ["pypiwin32"] if "nt" == os.name else []
         ),

@@ -6,3 +6,4 @@ from .Scanning import Scan
 from .Detection import Detect
 from .Scheduler import Scheduler
 from .Configuration import PrototypeConfig
+from .KafkaSource import KafkaSource

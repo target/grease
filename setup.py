@@ -41,7 +41,7 @@ setup(
         'elasticsearch',
         'kafka'
     ] + (
-         ["pypiwin32"] if "nt" == os.name else []
+         ["piwin32"] if "nt" == os.name else []
         ),
     include_package_data=True,
     zip_safe=False,

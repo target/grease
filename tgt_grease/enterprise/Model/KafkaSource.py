@@ -237,7 +237,7 @@ class KafkaSource(object):
                     ioc.getLogger().trace("Subkey: {0} missing from message".format(sub_key), trace=True)
                     return {}
                 pointer = pointer[sub_key]
-            final[alias] = pointer
+            final[alias] = str(pointer)
 
         ioc.getLogger().trace("Message succesfully parsed", trace=True)
         return final

@@ -4,7 +4,7 @@ import os
 
 setup(
     name='tgt_grease',
-    version='2.2.1',
+    version='2.2.4',
     license="MIT",
     description='GRE Application Service Engine',
     long_description="""
@@ -41,7 +41,7 @@ setup(
         'elasticsearch',
         'kafka'
     ] + (
-         ["pypiwin32"] if "nt" == os.name else []
+         ["pywin32"] if "nt" == os.name else []
         ),
     include_package_data=True,
     zip_safe=False,

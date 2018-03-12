@@ -63,44 +63,48 @@ class Scan(object):
                 del inst
                 continue
             else:
-                # If mock mode enabled
-                if self.ioc.getConfig().get('Sourcing', 'mock'):
-                    data = inst.mock_data(conf)
-                # else actually do sourcing
-                else:
-                    if inst.parse_source(conf):
-                        # deduplicate data
-                        data = self.dedup.Deduplicate(
-                            data=inst.get_data(),
-                            source=conf.get('source'),
-                            configuration=conf.get('name', str(uuid4())),
-                            threshold=inst.deduplication_strength,
-                            expiry_hours=inst.deduplication_expiry,
-                            expiry_max=inst.deduplication_expiry_max,
-                            collection='Dedup_Sourcing',
-                            field_set=inst.field_set
-                        )
+                try:
+                    # If mock mode enabled
+                    if self.ioc.getConfig().get('Sourcing', 'mock'):
+                        data = inst.mock_data(conf)
+                    # else actually do sourcing
                     else:
-                        self.ioc.getLogger().warning(
-                            "Source [{0}] parsing failed".format(conf.get('source')),
-                            notify=False
-                        )
-                        data = []
-                if len(data) > 0:
-                    if self.scheduler.scheduleDetection(conf.get('source'), conf.get('name'), data):
-                        self.ioc.getLogger().info(
-                            "Data scheduled for detection from source [{0}]".format(conf.get('source')),
-                            trace=True
-                        )
+                        if inst.parse_source(conf):
+                            # deduplicate data
+                            data = self.dedup.Deduplicate(
+                                data=inst.get_data(),
+                                source=conf.get('source'),
+                                configuration=conf.get('name', str(uuid4())),
+                                threshold=inst.deduplication_strength,
+                                expiry_hours=inst.deduplication_expiry,
+                                expiry_max=inst.deduplication_expiry_max,
+                                collection='Dedup_Sourcing',
+                                field_set=inst.field_set
+                            )
+                        else:
+                            self.ioc.getLogger().warning(
+                                "Source [{0}] parsing failed".format(conf.get('source')),
+                                notify=False
+                            )
+                            data = []
+                    if len(data) > 0:
+                        if self.scheduler.scheduleDetection(conf.get('source'), conf.get('name'), data):
+                            self.ioc.getLogger().info(
+                                "Data scheduled for detection from source [{0}]".format(conf.get('source')),
+                                trace=True
+                            )
+                            del inst
+                            continue
+                        else:
+                            self.ioc.getLogger().error("Scheduling failed for source document!", notify=False)
+                            del inst
+                            continue
+                    else:
+                        self.ioc.getLogger().trace("Length of data was empty; was not scheduled", trace=True)
                         del inst
                         continue
-                    else:
-                        self.ioc.getLogger().error("Scheduling failed for source document!", notify=False)
-                        del inst
-                        continue
-                else:
-                    self.ioc.getLogger().trace("Length of data was empty; was not scheduled", trace=True)
-                    del inst
+                except BaseException as e:
+                    self.ioc.getLogger().error("Failed parsing message got exception! Configuration [{0}] Got [{1}]".format(conf, e))
                     continue
         return True
 

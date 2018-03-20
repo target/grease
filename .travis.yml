@@ -39,7 +39,8 @@ matrix:
       sudo: required
       osx_image: xcode9.1
       rvm: 2.3
-      python: "3.6"
+      language: generic
+      env: TOXENV=py36
       env:
 #      Literally taken from the travis folks https://github.com/travis-ci/travis-ci/issues/8552
         - HOMEBREW_DEVELOPER="Not really, but let's pretend I am until this travis bug gets fixed, ok?"

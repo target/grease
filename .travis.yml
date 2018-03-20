@@ -9,6 +9,11 @@ os:
   - linux
   - osx
 
+matrix:
+  allow_failures:
+    # Turns out OSX is "unsupported for Python github: travis-ci/travis-ci#2312"
+    - os: osx
+
 services:
   - mongodb
   - postgresql

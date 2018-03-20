@@ -1,6 +1,8 @@
 from abc import ABCMeta, abstractmethod
 from tgt_grease.core import Logging, GreaseContainer
 from datetime import datetime
+import sys
+import os
 
 
 class Command(object):
@@ -99,12 +101,27 @@ class Command(object):
         if not context:
             context = {}
         try:
-            self.exec_data['execVal'] = True
-            self.exec_data['retVal'] = bool(self.execute(context))
+            try:
+                self.exec_data['execVal'] = True
+                self.exec_data['retVal'] = bool(self.execute(context))
+            except BaseException as e:
+                self.exec_data['execVal'] = False
+                exc_type, exc_obj, exc_tb = sys.exc_info()
+                self.ioc.getLogger().error(
+                    "Failed to execute [{0}] execute got exception!".format(self.__class__.__name__),
+                    additional={
+                        'file': os.path.split(exc_tb.tb_frame.f_code.co_filename)[1],
+                        'type': exc_type,
+                        'line': exc_tb.tb_lineno
+                    }
+                )
+            except:
+                self.ioc.getLogger().error(
+                    "Failed to execute [{0}] execute got exception!".format(self.__class__.__name__),
+                )
         except:
-            self.exec_data['execVal'] = False
             self.ioc.getLogger().error(
-                "Failed to execute [{0}] execute got exception!".format(self.__class__.__name__)
+                "Failed to execute [{0}] execute major exception".format(self.__class__.__name__),
             )
 
     @abstractmethod

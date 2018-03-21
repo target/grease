@@ -104,7 +104,7 @@ class Command(object):
             try:
                 self.exec_data['execVal'] = True
                 self.exec_data['retVal'] = bool(self.execute(context))
-            except BaseException as e:
+            except BaseException:
                 self.exec_data['execVal'] = False
                 exc_type, exc_obj, exc_tb = sys.exc_info()
                 self.ioc.getLogger().error(

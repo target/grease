@@ -4,13 +4,13 @@ import os
 
 setup(
     name='tgt_grease',
-    version='2.2.5',
+    version='2.2.6',
     license="MIT",
-    description='GRE Application Service Engine',
+    description='Modern distributed automation engine built with love by Target',
     long_description="""
-    GREASE is an automation tool for SRE like teams. Rather than providing every solution under the sun, GREASE
-    offers developers a framework to develop automation for their needs. GREASE offers a suite of tools and services
-    to make automation easy.
+    GREASE is a general purpose distributed automation engine designed to scale to enterprise workloads. We utilize
+    MongoDB and a plugin architecture to enable broad automation possibilities via one common core of primitives and 
+    services. 
     """,
     classifiers=[
         'Development Status :: 5 - Production/Stable',

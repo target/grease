@@ -54,7 +54,7 @@ class Deduplication(object):
         else:
             self.ioc = GreaseContainer()
 
-    def Deduplicate(self, data, source, threshold, expiry_hours, expiry_max, collection, field_set=None):
+    def Deduplicate(self, data, source, configuration, threshold, expiry_hours, expiry_max, collection, field_set=None):
         """Deduplicate data
 
         This method will deduplicate the `data` object to allow for only unique objects to be returned. The collection
@@ -63,6 +63,7 @@ class Deduplication(object):
         Args:
             data (list[dict]): **list or single dimensional dictionaries** to deduplicate
             source (str): Source of data being deduplicated
+            configuration (str): Configuration Name Provided
             threshold (float): level of duplication allowed in an object (the lower the threshold the more uniqueness is required)
             expiry_hours (int): Hours to retain deduplication data
             expiry_max (int): Maximum days to retain deduplication data
@@ -156,6 +157,7 @@ class Deduplication(object):
                     expiry_max,
                     threshold,
                     source,
+                    configuration,
                     final,
                     collection,
                     data_pointer,
@@ -185,7 +187,7 @@ class Deduplication(object):
         return final
 
     @staticmethod
-    def deduplicate_object(ioc, obj, expiry, expiry_max, threshold, source_name, final, collection, data_pointer=None, data_max=None, field_set=None):
+    def deduplicate_object(ioc, obj, expiry, expiry_max, threshold, source_name, configuration_name, final, collection, data_pointer=None, data_max=None, field_set=None):
         """DeDuplicate Object
 
         This is the method to actually deduplicate an object. The `final` argument is appended to with the obj if it
@@ -198,6 +200,7 @@ class Deduplication(object):
             expiry_max (int): Maximum days to deduplicate for
             threshold (float): level of duplication allowed in an object (the lower the threshold the more uniqueness is required)
             source_name (str): Source of data being deduplicated
+            configuration_name (str): Configuration being deduplicated for
             final (list): List to append `obj` to if unique
             collection (str): Name of deduplication collection
             data_pointer (int): If provided will provide log information relating to thread
@@ -212,7 +215,9 @@ class Deduplication(object):
         """
         # first determine if this object has been seen before
         DeDupCollection = ioc.getCollection(collection)
-        T1Hash = DeDupCollection.find_one({'hash': Deduplication.generate_hash_from_obj(obj)})
+        t1test = obj
+        t1test['grease_internal_configuration'] = configuration_name
+        T1Hash = DeDupCollection.find_one({'hash': Deduplication.generate_hash_from_obj(t1test)})
         if T1Hash:
             # T1 Found Protocol: We have found a fully duplicate object
             # we have a duplicate source document
@@ -235,15 +240,16 @@ class Deduplication(object):
             # Create a T1
             T1ObjectId = DeDupCollection.insert_one({
                 'expiry': Deduplication.generate_expiry_time(int(expiry)),
+                'grease_internal_configuration': configuration_name,
                 'max_expiry': Deduplication.generate_max_expiry_time(int(expiry_max)),
                 'type': 1,
                 'score': 1,
                 'source': str(source_name),
-                'hash': Deduplication.generate_hash_from_obj(obj)
+                'hash': Deduplication.generate_hash_from_obj(t1test)
             }).inserted_id
             # Begin T2 Deduplication
             compositeScore = Deduplication.object_field_score(
-                collection, ioc, source_name, obj, str(T1ObjectId), expiry, expiry_max, field_set
+                collection, ioc, source_name, configuration_name, obj, str(T1ObjectId), expiry, expiry_max, field_set
             )
             if compositeScore < threshold:
                 # unique obj
@@ -263,7 +269,7 @@ class Deduplication(object):
                 return
 
     @staticmethod
-    def object_field_score(collection, ioc, source_name, obj, objectId, expiry, max_expiry, field_set=None):
+    def object_field_score(collection, ioc, source_name, configuration_name, obj, objectId, expiry, max_expiry, field_set=None):
         """Returns T2 average uniqueness
 
         Takes a dictionary and returns the likelihood of that object being unique based on data in the collection
@@ -272,6 +278,7 @@ class Deduplication(object):
             collection (str): Deduplication collection name
             ioc (GreaseContainer): IoC Access
             source_name (str): source of data to be deduplicated
+            configuration_name (str): configuration name to be deduplicated
             obj (dict): Single dimensional list to be compared against collection
             objectId (str): T1 Hash Mongo ObjectId to be used to associate fields to a T1
             expiry (int): Hours for deduplication to wait before removing a field if not seen again
@@ -297,7 +304,7 @@ class Deduplication(object):
                     value = obj.get(field).decode('utf-8', 'ignore')
                 else:
                     value = obj.get(field)
-                T2Object = {'source': source_name, 'field': field, 'value': value}
+                T2Object = {'source': source_name, 'field': field, 'value': value, 'configuration': configuration_name}
                 checkDoc = FieldColl.find_one({'hash': Deduplication.generate_hash_from_obj(T2Object)})
                 if checkDoc:
                     # we found a 100% matching T2 object
@@ -319,7 +326,7 @@ class Deduplication(object):
                     ioc.getLogger().trace("T2 object not found", trace=True)
                     # generate a list to collect similarities to other field objects
                     fieldProbabilityList = []
-                    for record in FieldColl.find({'source': source_name, 'field': field, 'type': 2})\
+                    for record in FieldColl.find({'source': source_name, 'configuration': configuration_name, 'field': field, 'type': 2})\
                             .sort('score', pymongo.ASCENDING).limit(100):
                         if Deduplication.string_match_percentage(record['value'], str(T2Object['value'])) > .95:
                             # We've found a REALLY strong match

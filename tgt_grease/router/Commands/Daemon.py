@@ -175,7 +175,7 @@ class DaemonProcess(object):
                         {'_id': ObjectId(job['_id'])},
                         {
                             '$set': {
-                                'grease_data.execution.failures': job.get('failures', 0) + 1
+                                'grease_data.execution.failures': job.get('grease_data', {}).get('execution', {}).get('failures', 0) + 1
                             }
                         }
                     )

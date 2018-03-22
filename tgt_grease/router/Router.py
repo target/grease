@@ -124,11 +124,11 @@ class GreaseRouter(object):
                             cmd = possible_imp
                         i += 1
             else:
-                possible_imp = self._importTool.load(sys.argv[i])
+                possible_imp = self._importTool.load(str(sys.argv[i]))
                 if isinstance(possible_imp, Command):
                     cmd = possible_imp
                 else:
-                    other.append(arg)
+                    other.append(str(arg))
             i += 1
         context['grease_other_args'] = other
         return cmd, context

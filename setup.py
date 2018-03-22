@@ -4,13 +4,13 @@ import os
 
 setup(
     name='tgt_grease',
-    version='2.0.6',
+    version='2.2.6',
     license="MIT",
-    description='GRE Application Service Engine',
+    description='Modern distributed automation engine built with love by Target',
     long_description="""
-    GREASE is an automation tool for SRE like teams. Rather than providing every solution under the sun, GREASE
-    offers developers a framework to develop automation for their needs. GREASE offers a suite of tools and services
-    to make automation easy.
+    GREASE is a general purpose distributed automation engine designed to scale to enterprise workloads. We utilize
+    MongoDB and a plugin architecture to enable broad automation possibilities via one common core of primitives and 
+    services. 
     """,
     classifiers=[
         'Development Status :: 5 - Production/Stable',
@@ -32,15 +32,16 @@ setup(
     author_email="james.e.bell@target.com",
     packages=find_packages(),
     test_suite='nose.collector',
-    tests_require=['nose', 'nose-cover3'],
+    tests_require=['nose', 'nose-cover3', 'mock'],
     install_requires=[
         'psycopg2',
         'requests',
         'pymongo',
         'psutil',
-        'elasticsearch'
+        'elasticsearch',
+        'kafka'
     ] + (
-         ["pypiwin32"] if "nt" == os.name else []
+         ["pywin32"] if "nt" == os.name else []
         ),
     include_package_data=True,
     zip_safe=False,

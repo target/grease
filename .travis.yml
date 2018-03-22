@@ -2,104 +2,37 @@ language: python
 
 python:
   - "2.7"
-  - "3.3"
-  - "3.4"
   - "3.5"
   - "3.6"
-  - "nightly"
 
 os:
   - linux
-
-dist:
-  - trusty
-
-sudo:
-  - required
-
-env:
-  - DB=postgres GREASE_TEST_DSN="DSN=Postgres;"
-  - DB=mysql GREASE_TEST_DSN="Driver={MySQL ODBC 5.3 Driver};Sever=127.0.0.1;Port=3306;Database=travis_test;UID=travis;"
+  - osx
 
 matrix:
-  include:
-# Still Borken
-#    - os: osx
-#      sudo: required
-#      osx_image: xcode9.1
-#      rvm: 2.3
-#      python: "2.7"
-#      env:
-##      Literally taken from the travis folks https://github.com/travis-ci/travis-ci/issues/8552
-#        - HOMEBREW_DEVELOPER="Not really, but let's pretend I am until this travis bug gets fixed, ok?"
-#      before_install:
-#        - rvm install "ruby-2.3.4"
-#        - export HOMEBREW_RUBY_PATH="/Users/travis/.rvm/rubies/ruby-2.3.4/bin/ruby"
-#        - rvm use 2.3
+  allow_failures:
+    # Turns out OSX is "unsupported for Python github: travis-ci/travis-ci#2312"
     - os: osx
-      osx_image: xcode9.1
-      rvm: 2.3
-      python: "nightly"
-      env:
-#      Literally taken from the travis folks https://github.com/travis-ci/travis-ci/issues/8552
-        - HOMEBREW_DEVELOPER="Not really, but let's pretend I am until this travis bug gets fixed, ok?"
-      before_install:
-        - rvm install "ruby-2.3.4"
-        - export HOMEBREW_RUBY_PATH="/Users/travis/.rvm/rubies/ruby-2.3.4/bin/ruby"
-        - rvm use 2.3
 
 services:
   - mongodb
   - postgresql
-  - mysql
 
 before_script:
-  - pip install pymongo requests psutil elasticsearch pyodbc
+  - pip install pymongo requests psycopg2 psutil elasticsearch
   - sudo mkdir /opt/grease/
   - sudo chmod 777 /opt/grease/
-  - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get install unixodbc; fi
-  - if [ $TRAVIS_OS_NAME = linux ]; then sudo apt-get install unixodbc-dev; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then apt-get install odbc-postgresql; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then echo "[Postgres]" | sudo tee -a /etc/odbc.ini; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then echo "Driver=PostreSQL Unicode" | sudo tee -a /etc/odbc.ini; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then echo "Database=travis_test" | sudo tee -a /etc/odbc.ini; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then echo "UserName=postgres" | sudo tee -a /etc/odbc.ini; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then echo "Password=" | sudo tee -a /etc/odbc.ini; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then echo "Port=5432" | sudo tee -a /etc/odbc.ini; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = postgres ]; then echo "Servername=localhost" | sudo tee -a /etc/odbc.ini; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = mysql ]; then sudo apt-get install libmyodbc; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = mysql ]; then sudo ln -s /usr/lib/x86_64-linux-gnu/libodbc.so.1 /usr/lib/x86_64-linux-gnu/libodbc.so.2; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = mysql ]; then sudo ln -s /usr/lib/x86_64-linux-gnu/libodbcinst.so.1 /usr/lib/x86_64-linux-gnu/libodbcinst.so.2; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = mysql ]; then wget https://cdn.mysql.com//Downloads/Connector-ODBC/5.3/mysql-connector-odbc-5.3.9-linux-ubuntu14.04-x86-64bit.tar.gz; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = mysql ]; then tar xvfz mysql-connector-odbc-5.3.9-linux-ubuntu14.04-x86-64bit.tar.gz; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = mysql ]; then sudo cp mysql-connector-odbc-5.3.9-linux-ubuntu14.04-x86-64bit/bin/* /usr/local/bin; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = mysql ]; then sudo cp mysql-connector-odbc-5.3.9-linux-ubuntu14.04-x86-64bit/lib/* /usr/local/lib; fi
-  - if [ $TRAVIS_OS_NAME = linux ] && [ $DB = mysql ]; then sudo /usr/local/bin/myodbc-installer -a -d -n "MySQL ODBC 5.3 Driver" -t "Driver=/usr/local/lib/libmyodbc5w.so"; fi
-  - if [ $TRAVIS_OS_NAME = osx ]; then brew install unixodbc; fi
-  - if [ $TRAVIS_OS_NAME = osx ]; then brew install mongo; fi
-  - if [ $TRAVIS_OS_NAME = osx ]; then brew services start mongodb; fi
-  - if [ $TRAVIS_OS_NAME = osx ]; then rm -rf /usr/local/var/postgres; fi
-  - if [ $TRAVIS_OS_NAME = osx ]; then initdb /usr/local/var/postgres; fi
-  - if [ $TRAVIS_OS_NAME = osx ]; then pg_ctl -D /usr/local/var/postgres start; fi
-  - if [ $TRAVIS_OS_NAME = osx ]; then createuser -s postgres; fi
-  - if [ $TRAVIS_OS_NAME = osx ] && [ $DB = postgres ]; then brew install psqlodbc; fi
-  - if [ $TRAVIS_OS_NAME = osx ] && [ $DB = mysql ]; then wget https://cdn.mysql.com//Downloads/Connector-ODBC/5.3/mysql-connector-odbc-5.3.9-macos10.12-x86-64bit.tar.gz; fi
-  - if [ $TRAVIS_OS_NAME = osx ] && [ $DB = mysql ]; then tar xvfz mysql-connector-odbc-5.3.9-macos10.12-x86-64bit.tar.gz; fi
-  - if [ $TRAVIS_OS_NAME = osx ] && [ $DB = mysql ]; then sudo cp mysql-connector-odbc-5.3.9-macos10.12-x86-64bit/bin/* /usr/local/bin; fi
-  - if [ $TRAVIS_OS_NAME = osx ] && [ $DB = mysql ]; then sudo cp mysql-connector-odbc-5.3.9-macos10.12-x86-64bit/lib/* /usr/local/lib; fi
-  - if [ $TRAVIS_OS_NAME = osx ] && [ $DB = mysql ]; then /usr/local/bin/myodbc-installer -a -d -n "MySQL ODBC 5.3 Driver" -t "Driver=/usr/local/lib/libmyodbc5w.so"; fi
-  - ls /etc/
-  - sudo touch /etc/odbcinst.ini
-  - sudo touch /etc/odbc.ini
-  - sudo touch /etc/ODBCDataSources
-  - if [ $DB = postgres ]; then psql -c 'create database travis_test;' -U postgres; fi
-  - if [ $DB = mysql ]; then mysql -e 'CREATE DATABASE IF NOT EXISTS travis_test;'; fi
+  - if [ $TRAVIS_OS_NAME = linux ]; then true; else brew install mongo; fi
+  - if [ $TRAVIS_OS_NAME = linux ]; then true; else brew services start mongodb; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then rm -rf /usr/local/var/postgres; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then initdb /usr/local/var/postgres; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then pg_ctl -D /usr/local/var/postgres start; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then createuser -s postgres; fi
 
 install:
   - python setup.py install
-  
+
 script:
-  - source ~/.bashrc
   - python setup.py test
 # Run twice to ensure state management is successful
   - python setup.py test
@@ -124,5 +57,5 @@ deploy:
     branch: master
   provider: pypi
   user: $PYPI_USER
-  password: 
+  password:
     secure: $PYPI_PASSWORD

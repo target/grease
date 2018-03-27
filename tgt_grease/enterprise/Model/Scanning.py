@@ -73,7 +73,16 @@ class Scan(object):
                 continue
             conf = Configuration[i]
             i += 1
+            # ensure no kafka prototypes come into sourcing
             if conf.get('source') == 'kafka':
+                continue
+            # ensure there is an execution environment
+            server, _ = self.scheduler.determineExecutionServer(conf.get('exe_env', 'general'))
+            if not server:
+                self.ioc.getLogger().error('configuration skipped -- execution environment offline', additional={
+                    'execution_environment': conf.get('exe_env', 'general'),
+                    'configuration': conf.get('name')
+                })
                 continue
             inst = self.impTool.load(conf.get('source', str(uuid4())))
             if not isinstance(inst, BaseSourceClass):

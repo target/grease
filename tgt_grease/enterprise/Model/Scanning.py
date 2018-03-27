@@ -79,10 +79,14 @@ class Scan(object):
             # ensure there is an execution environment
             server, _ = self.scheduler.determineExecutionServer(conf.get('exe_env', 'general'))
             if not server:
-                self.ioc.getLogger().error('configuration skipped -- execution environment offline', additional={
-                    'execution_environment': conf.get('exe_env', 'general'),
-                    'configuration': conf.get('name')
-                })
+                self.ioc.getLogger().warning(
+                    'configuration skipped -- execution environment offline',
+                    additional={
+                        'execution_environment': conf.get('exe_env', 'general'),
+                        'configuration': conf.get('name')
+                    },
+                    notify=True
+                )
                 continue
             inst = self.impTool.load(conf.get('source', str(uuid4())))
             if not isinstance(inst, BaseSourceClass):

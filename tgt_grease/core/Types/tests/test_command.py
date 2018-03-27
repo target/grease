@@ -70,7 +70,21 @@ class TestCommand(TestCase):
         self.assertFalse(cmd.getRetVal())
 
     def test_except_cmd(self):
+        def msg(m, additional):
+            self.assertEqual(
+                m,
+                "Failed to execute [TestCmdExcept] execute got exception!"
+            )
+            self.assertDictEqual(
+                additional,
+                {
+                        'file': 'test_command.py',
+                        'type': "<class 'AttributeError'>",
+                        'line': '33'
+                }
+            )
         cmd = TestCmdExcept()
+        cmd.ioc._logger.error = msg
         cmd.safe_execute({})
         self.assertFalse(cmd.getExecVal())
         self.assertFalse(cmd.getRetVal())

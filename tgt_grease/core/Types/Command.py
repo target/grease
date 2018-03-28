@@ -121,7 +121,8 @@ class Command(object):
                 self.ioc.getLogger().error(
                     "Failed to execute [{0}] execute got exception!".format(self.__class__.__name__),
                 )
-        except:
+        except BaseException as e:
+            print(e)
             self.ioc.getLogger().error(
                 "Failed to execute [{0}] execute major exception".format(self.__class__.__name__),
             )

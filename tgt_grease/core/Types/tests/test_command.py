@@ -83,8 +83,8 @@ class TestCommand(TestCase):
                     additional,
                     {
                         'file': 'test_command.py',
-                        'type': "<class 'exceptions.AttributeError'>",
-                        'line': '33'
+                        'type': "<type 'exceptions.AttributeError'>",
+                        'line': '34'
                     }
                 )
             else:
@@ -93,7 +93,7 @@ class TestCommand(TestCase):
                     {
                             'file': 'test_command.py',
                             'type': "<class 'AttributeError'>",
-                            'line': '33'
+                            'line': '34'
                     }
                 )
         cmd = TestCmdExcept()

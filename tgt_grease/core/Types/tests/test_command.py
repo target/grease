@@ -1,6 +1,7 @@
 from unittest import TestCase
 from tgt_grease.core.Types import Command
 from tgt_grease.core import GreaseContainer
+import sys
 
 
 class TestCmd(Command):
@@ -77,14 +78,24 @@ class TestCommand(TestCase):
                 m,
                 "Failed to execute [TestCmdExcept] execute got exception!"
             )
-            self.assertDictEqual(
-                additional,
-                {
+            if sys.version_info[0] < 3:
+                self.assertDictEqual(
+                    additional,
+                    {
                         'file': 'test_command.py',
-                        'type': "<class 'AttributeError'>",
+                        'type': "<class 'exceptions.AttributeError'>",
                         'line': '33'
-                }
-            )
+                    }
+                )
+            else:
+                self.assertDictEqual(
+                    additional,
+                    {
+                            'file': 'test_command.py',
+                            'type': "<class 'AttributeError'>",
+                            'line': '33'
+                    }
+                )
         cmd = TestCmdExcept()
         cmd.ioc._logger.error = msg
         cmd.safe_execute({})

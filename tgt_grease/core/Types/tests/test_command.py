@@ -70,7 +70,9 @@ class TestCommand(TestCase):
         self.assertFalse(cmd.getRetVal())
 
     def test_except_cmd(self):
-        def msg(m, additional):
+        def msg(m, additional=None):
+            if additional is None:
+                additional = {}
             self.assertEqual(
                 m,
                 "Failed to execute [TestCmdExcept] execute got exception!"

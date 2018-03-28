@@ -119,11 +119,14 @@ class Command(object):
                 )
             except:
                 self.ioc.getLogger().error(
-                    "Failed to execute [{0}] execute got exception!".format(self.__class__.__name__),
+                    "Failed to execute [{0}] execute got unknown exception!".format(self.__class__.__name__),
                 )
-        except:
+        except BaseException as e:
             self.ioc.getLogger().error(
-                "Failed to execute [{0}] execute major exception".format(self.__class__.__name__),
+                "Failed to execute [{0}] execute major exception [{1}]".format(
+                    self.__class__.__name__,
+                    type(e)
+                ),
             )
 
     @abstractmethod

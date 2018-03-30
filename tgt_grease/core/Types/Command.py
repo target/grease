@@ -3,6 +3,7 @@ from tgt_grease.core import Logging, GreaseContainer
 from datetime import datetime
 import sys
 import os
+import traceback
 
 
 class Command(object):
@@ -107,12 +108,13 @@ class Command(object):
             except BaseException:
                 self.exec_data['execVal'] = False
                 exc_type, exc_obj, exc_tb = sys.exc_info()
+                tb = traceback.format_exception(exc_type, exc_obj, exc_tb)
                 self.ioc.getLogger().error(
                     "Failed to execute [{0}] execute got exception!".format(self.__class__.__name__),
                     additional={
-                        'file': os.path.split(exc_tb.tb_frame.f_code.co_filename)[1],
-                        'type': exc_type,
-                        'line': exc_tb.tb_lineno
+                        'file': os.path.split(str(str(tb[2]).split('"')[1]))[1],
+                        'type': str(exc_type),
+                        'line': str(str(tb[2]).split(",")[1]).split(' ')[2]
                     }
                 )
             except:

@@ -81,8 +81,8 @@ class Scheduling(object):
                             'failures': 0
                         }
                     },
-                    'source': str(source).encode('utf-8'),
-                    'configuration': str(configName).encode('utf-8'),
+                    'source': str(source),
+                    'configuration': str(configName),
                     'data': elem,
                     'createTime': datetime.datetime.utcnow(),
                     'expiry': Deduplication.generate_max_expiry_time(1)

@@ -31,7 +31,7 @@ before_script:
 
 install:
   - python setup.py install
-  
+
 script:
   - python setup.py test
 # Run twice to ensure state management is successful
@@ -57,5 +57,5 @@ deploy:
     branch: master
   provider: pypi
   user: $PYPI_USER
-  password: 
+  password:
     secure: $PYPI_PASSWORD

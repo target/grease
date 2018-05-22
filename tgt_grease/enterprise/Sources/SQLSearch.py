@@ -1,11 +1,11 @@
 from tgt_grease.enterprise.Model import BaseSourceClass
 from tgt_grease.core import Configuration, GreaseContainer
-import psycopg2
-from psycopg2.extras import RealDictCursor
+import pyodbc
 import datetime
 import fnmatch
 import json
 import os
+import sys
 
 
 class SQLSource(BaseSourceClass):
@@ -50,7 +50,6 @@ class SQLSource(BaseSourceClass):
             bool: If True data will be scheduled for ingestion after deduplication. If False the engine will bail out
 
         """
-        ioc = GreaseContainer()
         if configuration.get('hour'):
             if datetime.datetime.utcnow().hour != int(configuration.get('hour')):
                 # it is not the correct hour
@@ -59,31 +58,63 @@ class SQLSource(BaseSourceClass):
             if datetime.datetime.utcnow().minute != int(configuration.get('minute')):
                 # it is not the correct hour
                 return True
-        if configuration.get('type') != 'postgresql':
-            ioc.getLogger().error("Unsupported SQL Server Type; Currently Only supporting PostgreSQL", notify=False)
-            return False
         else:
             # Attempt to get the DSN for the connection
+            ioc = GreaseContainer()
             if os.environ.get(configuration.get('dsn')) and configuration.get('query'):
                 # ensure the DSN is setup and the query is present
                 try:
                     DSN = os.environ.get(configuration.get('dsn'))
-                    with psycopg2.connect(DSN) as conn:
-                        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                            cursor.execute(configuration.get('query'))
-                            data = cursor.fetchall()
-                            for row in data:
-                                self._data.append(row)
-                            del ioc
-                    return True
+
+                    connection_string= "{0}".format(DSN)
+
+                    conn = pyodbc.connect(connection_string)
+
+                    # See the following:
+                    # https://github.com/mkleehammer/pyodbc/wiki/Connecting-to-PostgreSQL
+                    # https://github.com/mkleehammer/pyodbc/wiki/Connecting-to-MySQL
+                    if configuration.get('type').lower() in ['postgresql', 'mysql']:
+                        conn.setdecoding(pyodbc.SQL_WCHAR, encoding='utf-8')
+                        conn.setencoding(encoding='utf-8')
+
+                        if sys.version_info[:2] == (2, 7):
+                            conn.setencoding(unicode, encoding='utf-8', ctype=pyodbc.SQL_CHAR)
+
                 except Exception as e:
                     # Naked except to prevent issues around connections
-                    ioc.getLogger().error("Error processing configuration; Error [{0}]".format(e.message), notify=False)
+                    ioc.getLogger().error("Error connecting to database; Error [{0}]".format(e), notify=False)
                     del ioc
                     return False
+
+                try:
+                    # Open a cursor and execute a query, then grab the rows as our data
+                    with conn.cursor() as cursor:
+                        cursor.execute(configuration.get('query'))
+                        # Convert the results from tuples with just values to dicts with column names
+                        # e.g (1, 'Sally', 'Sue') -> {'id': 1, 'name_first': 'Sally', 'name_last': 'Sue'}
+                        # Adapted from https://stackoverflow.com/questions/16519385/output-pyodbc-cursor-results-as-python-dictionary
+                        self._data = [dict(zip([column[0] for column in cursor.description], row)) for row in cursor.fetchall()]
+
+                except pyodbc.ProgrammingError as e:
+                    # It's likely a non-SELECT query was attempted, then fetchall() was called on the results
+                    # which will throw this exception
+                    ioc.getLogger().error(
+                        "Error executing query [{0}]; Error [{1}] - NOTE: Only SELECT queries are allowed"
+                        .format(configuration.get('query'), e),
+                        notify=False
+                    )
+                    return False
+
+                finally:
+                    del ioc
+                    conn.rollback()
+                    conn.close()
+
+                return True
+
             else:
                 # could not get the DSN
-                ioc.getLogger().error("Failed to locate the DSN variable", notify=False)
+                ioc.getLogger().error("Failed to locate the DSN environment variable", notify=False)
                 del ioc
                 return False
 
@@ -119,7 +150,7 @@ class SQLSource(BaseSourceClass):
                 matches.append(os.path.join(root, filename))
         for doc in matches:
             with open(doc) as current_file:
-                content = current_file.read().replace('\r\n', '')
+                content = current_file.read().replace('\r', '')
             try:
                 intermediate.append(json.loads(content))
             except ValueError:

@@ -182,8 +182,8 @@ class Deduplication(object):
             threads = threads_final
             self.ioc.getLogger().trace("Total current deduplication threads [{0}]".format(len(threads)), verbose=True)
         # ensure collections expiry timers are in place
-        self.ioc.getCollection(collection).create_index([('expiry', 1), ('expireAfterSeconds', 1)])
-        self.ioc.getCollection(collection).create_index([('max_expiry', 1), ('expireAfterSeconds', 1)])
+        self.ioc.getCollection(collection).create_index([('expiry', 1)], expireAfterSeconds=1)
+        self.ioc.getCollection(collection).create_index([('max_expiry', 1)], expireAfterSeconds=1)
         return final
 
     @staticmethod

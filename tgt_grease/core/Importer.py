@@ -37,12 +37,9 @@ class ImportTool(object):
             except ImportError:
                 self._log.error("Failed to import module [{0}]".format(path), verbose=True)
                 continue
-            if className in dir(SearchModule):
-                if className.startswith("__"):
-                    # No need to try magic methods
-                    continue
-                req = getattr(SearchModule, str(className))
+            if not className.startswith("__") and className in dir(SearchModule):
                 try:
+                    req = getattr(SearchModule, str(className))
                     instance = req()
                     return instance
                 except AttributeError:
@@ -50,10 +47,14 @@ class ImportTool(object):
                         "ATTRERROR: Failed to create instance of class [{0}] from module [{1}]".format(className, path),
                         verbose=True
                     )
-                    continue
                 except TypeError:
                     self._log.error(
                         "TYPEERROR: Failed to create instance of class [{0}] from module [{1}]".format(className, path),
+                        verbose=True
+                    )
+                except Exception as e:
+                    self._log.error(
+                        "{0}: Failed to create instance of class [{1}] from module [{2}]".format(str(type(e)).upper(), className, path),
                         verbose=True
                     )
         return None

@@ -26,7 +26,12 @@ class TestImporter(TestCase):
         def raise_exception():
             raise Exception("Test Exception")
 
-        mock_dir_contains.return_value = True
+        times_called = 0
+        def return_true_once():
+            times_called += 1
+            return times_called == 1
+
+        mock_dir_contains.side_effect = return_true_once
         mock_req = MagicMock()
         mock_req.side_effect = raise_exception
         mock_getattr.return_value = mock_req

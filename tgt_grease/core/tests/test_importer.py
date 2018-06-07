@@ -28,7 +28,6 @@ class TestImporter(TestCase):
 
         times_called = 0
         def return_true_once(*args, **kwargs):
-            nonlocal times_called
             times_called += 1
             return times_called == 1
 

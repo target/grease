@@ -17,7 +17,7 @@ class TestImporter(TestCase):
         self.assertFalse(obj)
 
     @patch("importlib.import_module")
-    @patch("load.getattr")
+    @patch("ImportTool.load.getattr")
     def test_init_exception(self, mock_getattr, mock_import):
         log = Logging()
         imp = ImportTool(log)

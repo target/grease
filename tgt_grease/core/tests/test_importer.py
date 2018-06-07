@@ -27,7 +27,8 @@ class TestImporter(TestCase):
             raise Exception("Test Exception")
 
         times_called = 0
-        def return_true_once():
+        def return_true_once(*args, **kwargs):
+            nonlocal times_called
             times_called += 1
             return times_called == 1
 

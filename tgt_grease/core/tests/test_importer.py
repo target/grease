@@ -1,5 +1,6 @@
 from unittest import TestCase
 from tgt_grease.core import ImportTool, Configuration, Logging
+from mock import MagicMock, patch
 
 
 class TestImporter(TestCase):
@@ -14,3 +15,22 @@ class TestImporter(TestCase):
         imp = ImportTool(log)
         obj = imp.load("defaultdict")
         self.assertFalse(obj)
+
+    @patch("importlib.import_module")
+    @patch("getattr")
+    def test_init_exception(self, mock_getattr, mock_import):
+        log = Logging()
+        imp = ImportTool(log)
+
+        def raise_exception():
+            raise Exception("Test Exception")
+
+        mock_req = MagicMock()
+        mock_req.side_effect = raise_exception
+        mock_getattr.return_value = mock_req
+
+        self.assertEqual(imp.load("mock_class"), None)
+        mock_getattr.assert_called_once()
+        mock_req.assert_called_once()
+
+

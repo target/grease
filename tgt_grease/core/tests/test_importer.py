@@ -17,7 +17,7 @@ class TestImporter(TestCase):
         self.assertFalse(obj)
 
     @patch("importlib.import_module")
-    @patch("getattr")
+    @patch("load.getattr")
     def test_init_exception(self, mock_getattr, mock_import):
         log = Logging()
         imp = ImportTool(log)
@@ -32,5 +32,3 @@ class TestImporter(TestCase):
         self.assertEqual(imp.load("mock_class"), None)
         mock_getattr.assert_called_once()
         mock_req.assert_called_once()
-
-

@@ -44,6 +44,7 @@ class TestSQLSource(TestCase):
             if not os.environ.get('GREASE_TEST_DSN_ORIGINAL'):
                 os.environ['GREASE_TEST_DSN_ORIGINAL'] = os.environ.get('GREASE_TEST_DSN')
             os.environ['GREASE_TEST_DSN'] = os.environ['GREASE_TEST_DSN'] + " dbname=test_data"
+            
         except psycopg2.Error as e:
             print("psycopg2 Exception occurred, {}".format(e.pgerror))
 

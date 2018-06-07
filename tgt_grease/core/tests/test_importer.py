@@ -16,15 +16,17 @@ class TestImporter(TestCase):
         obj = imp.load("defaultdict")
         self.assertFalse(obj)
 
+    @patch("tgt_grease.core.ImportTool._dir_contains")
     @patch("importlib.import_module")
-    @patch("tgt_grease.core.ImportTool.get_attr")
-    def test_init_exception(self, mock_getattr, mock_import):
+    @patch("tgt_grease.core.ImportTool._get_attr")
+    def test_init_exception(self, mock_getattr, mock_import, mock_dir_contains):
         log = Logging()
         imp = ImportTool(log)
 
         def raise_exception():
             raise Exception("Test Exception")
 
+        mock_dir_contains.return_value = True
         mock_req = MagicMock()
         mock_req.side_effect = raise_exception
         mock_getattr.return_value = mock_req

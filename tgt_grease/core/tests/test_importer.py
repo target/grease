@@ -26,7 +26,7 @@ class TestImporter(TestCase):
         def raise_exception():
             raise Exception("Test Exception")
 
-        d = {'times_called': 0}
+        d = {'times_called': 0} #Need mutable object for nonlocal updates
         def return_true_once(*args, **kwargs):
             d['times_called'] += 1
             return d['times_called'] == 1

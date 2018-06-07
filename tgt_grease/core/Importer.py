@@ -39,7 +39,7 @@ class ImportTool(object):
                 continue
             if not className.startswith("__") and className in dir(SearchModule):
                 try:
-                    req = getattr(SearchModule, str(className))
+                    req = self.get_attr(SearchModule, str(className))
                     instance = req()
                     return instance
                 except AttributeError:
@@ -58,3 +58,17 @@ class ImportTool(object):
                         verbose=True
                     )
         return None
+
+    def get_attr(self, object, name, default=None):
+        """Wrapper function for the built-in getattr function. Wrapper is required to mock the built-in function.
+
+        Args:
+            object (Any object): Object you are searching for a named attribute for
+            name (str): Name of the attribute you want to get from object
+            default (Any object): Return value if attribute name is not found in object. Raises exception if no default is provided.
+
+        Returns:
+            object: If an attribute is found it is returned. If it is not found, default is returned. 
+
+        """
+        return getattr(object, name, default)

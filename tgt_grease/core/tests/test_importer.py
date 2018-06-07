@@ -26,10 +26,10 @@ class TestImporter(TestCase):
         def raise_exception():
             raise Exception("Test Exception")
 
-        times_called = 0
+        d = {'times_called': 0}
         def return_true_once(*args, **kwargs):
-            times_called += 1
-            return times_called == 1
+            d['times_called'] += 1
+            return d['times_called'] == 1
 
         mock_dir_contains.side_effect = return_true_once
         mock_req = MagicMock()

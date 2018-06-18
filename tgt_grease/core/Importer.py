@@ -31,7 +31,7 @@ class ImportTool(object):
         """
         if not isinstance(className, str):
             self._log.error(
-                        "TYPEERROR: [{0}] is not a valid classname (it is not a string). Load failed.".format(className),
+                        "TYPEERROR: [{0}] is not a valid classname (it is a {1}, not a string). Load failed.".format(className, type(className)),
                         verbose=True
                     )
             return None

@@ -29,7 +29,7 @@ class ImportTool(object):
             None: If an object is not found and error occurs None is returned
 
         """
-        if not isinstance(className, string):
+        if not isinstance(className, str):
             self._log.error(
                         "TYPEERROR: [{0}] is not a valid classname (it is not a string). Load failed.".format(className),
                         verbose=True

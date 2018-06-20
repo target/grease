@@ -4,7 +4,7 @@ import os
 
 setup(
     name='tgt_grease',
-    version='2.3.4',
+    version='2.3.5',
     license="MIT",
     description='Modern distributed automation engine built with love by Target',
     long_description="""
@@ -34,7 +34,7 @@ setup(
     test_suite='nose.collector',
     tests_require=['nose', 'nose-cover3', 'mock'],
     install_requires=[
-        'psycopg2',
+        'psycopg2-binary',
         'requests',
         'pymongo',
         'psutil',

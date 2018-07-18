@@ -32,7 +32,7 @@ class Scan(object):
         self.dedup = Deduplication(self.ioc)
         self.scheduler = Scheduling(self.ioc)
 
-    def Parse(self, source=None, config=None):
+    def Parse(self, src=None, config=None):
         """This will read all configurations and attempt to scan the environment
 
         This is the primary business logic for scanning in GREASE. This method will use configurations to parse
@@ -55,59 +55,61 @@ class Scan(object):
 
         """
         self.ioc.getLogger().trace("Starting Parse of Environment", trace=True)
-        Configuration = self.generate_config_set(source=source, config=config)
+        sources = self.conf.get_sources() if not src else [src]
         ScanPool = []
-        lenConfigs = len(Configuration)
-        i = 0
-        while i < lenConfigs:
-            # ensure we don't swamp the system resources
-            cpu = cpu_percent(interval=.1)
-            mem = virtual_memory().percent
-            if \
-                    cpu >= int(self.ioc.getConfig().get('NodeInformation', 'ResourceMax')) or \
-                    mem >= int(self.ioc.getConfig().get('NodeInformation', 'ResourceMax')):
-                self.ioc.getLogger().trace("Scan sleeping; System resource maximum reached", verbose=True)
-                # remove variables
-                del cpu
-                del mem
-                continue
-            conf = Configuration[i]
-            i += 1
+        for source in sources:
             # ensure no kafka prototypes come into sourcing
-            if conf.get('source') == 'kafka':
+            if source == 'kafka':
                 continue
-            # ensure there is an execution environment
-            server, _ = self.scheduler.determineExecutionServer(conf.get('exe_env', 'general'))
-            if not server:
-                self.ioc.getLogger().warning(
-                    'configuration skipped -- execution environment offline',
-                    additional={
-                        'execution_environment': conf.get('exe_env', 'general'),
-                        'configuration': conf.get('name')
-                    },
-                    notify=True
-                )
-                continue
-            inst = self.impTool.load(conf.get('source', str(uuid4())))
+
+            inst = self.impTool.load(source)
             if not isinstance(inst, BaseSourceClass):
-                self.ioc.getLogger().error("Invalid Source [{0}]".format(conf.get('source')), notify=False)
+                self.ioc.getLogger().error("Invalid Source [{0}]".format(source), notify=False)
                 del inst
                 continue
             else:
-                t = threading.Thread(
-                    target=self.ParseSource,
-                    args=(
-                        self.ioc,
-                        inst,
-                        conf,
-                        self.dedup,
-                        self.scheduler,
-                    ),
-                    name="GREASE SOURCING THREAD [{0}]".format(conf.get('name'))
-                )
-                t.daemon = True
-                t.start()
-                ScanPool.append(t)
+                # If the source wants us to bundle, do it
+                bundled = self.bundle_configs(source, self.generate_config_set(source=source, config=config))
+                for sentinel_conf in bundled:
+                    # ensure we don't swamp the system resources
+                    cpu = cpu_percent(interval=.1)
+                    mem = virtual_memory().percent
+                    if \
+                            cpu >= int(self.ioc.getConfig().get('NodeInformation', 'ResourceMax')) or \
+                            mem >= int(self.ioc.getConfig().get('NodeInformation', 'ResourceMax')):
+                        self.ioc.getLogger().trace("Scan sleeping; System resource maximum reached", verbose=True)
+                        # remove variables
+                        del cpu
+                        del mem
+                        continue
+                    # # ensure there is an execution environment
+                    # server, _ = self.scheduler.determineExecutionServer(sentinel_conf.get('exe_env', 'general'))
+                    # if not server:
+                    #     self.ioc.getLogger().warning(
+                    #         'configuration skipped -- execution environment offline',
+                    #         additional={
+                    #             'execution_environment': sentinel_conf.get('exe_env', 'general'),
+                    #             'configuration': sentinel_conf.get('name')
+                    #         },
+                    #         notify=True
+                    #     )
+                    #     continue
+
+                    t = threading.Thread(
+                        target=self.ParseSource,
+                        args=(
+                            self.ioc,
+                            inst,
+                            sentinel_conf,
+                            bundled.get(sentinel_conf, []),
+                            self.dedup,
+                            self.scheduler,
+                        ),
+                        name="GREASE SOURCING THREAD [{0}]".format(sentinel_conf.get('name'))
+                    )
+                    t.daemon = True
+                    t.start()
+                    ScanPool.append(t)
         # wait for threads to finish out
         while len(ScanPool) > 0:
             self.ioc.getLogger().trace("Total current scan threads [{0}]".format(len(ScanPool)), trace=True)
@@ -121,7 +123,7 @@ class Scan(object):
         return True
 
     @staticmethod
-    def ParseSource(ioc, source, configuration, deduplication, scheduler):
+    def ParseSource(ioc, source, sentinel_config, other_configs, deduplication, scheduler):
         """Parses an individual source and attempts to schedule it
 
         Args:
@@ -138,15 +140,16 @@ class Scan(object):
         try:
             # If mock mode enabled
             if ioc.getConfig().get('Sourcing', 'mock'):
-                data = source.mock_data(configuration)
+                data = source.mock_data(sentinel_config)
             # else actually do sourcing
             else:
-                if source.parse_source(configuration):
+                if source.parse_source(sentinel_config):
                     # deduplicate data
+                    # TODO: Dedup the rest
                     data = deduplication.Deduplicate(
                         data=source.get_data(),
-                        source=configuration.get('source'),
-                        configuration=configuration.get('name', str(uuid4())),
+                        source=sentinel_config.get('source'),
+                        configuration=sentinel_config.get('name', str(uuid4())),
                         threshold=source.deduplication_strength,
                         expiry_hours=source.deduplication_expiry,
                         expiry_max=source.deduplication_expiry_max,
@@ -155,28 +158,29 @@ class Scan(object):
                     )
                 else:
                     ioc.getLogger().warning(
-                        "Source [{0}] parsing failed".format(configuration.get('source')),
+                        "Source [{0}] parsing failed".format(sentinel_config.get('source')),
                         notify=False
                     )
                     data = []
             if len(data) > 0:
-                if scheduler.scheduleDetection(configuration.get('source'), configuration.get('name'), data):
-                    ioc.getLogger().info(
-                        "Data scheduled for detection from source [{0}]".format(configuration.get('source')),
-                        trace=True
-                    )
-                    del source
-                else:
-                    ioc.getLogger().error("Scheduling failed for source document!", notify=False)
-                    del source
+                confs = other_configs.append(sentinel_config)
+                for conf in confs:
+                    if scheduler.scheduleDetection(conf.get('source'), conf.get('name'), data):
+                        ioc.getLogger().info(
+                            "Data scheduled for detection from source [{0}] with sentinel config [{1}]".format(
+                                conf.get('source'),
+                                sentinel_config
+                            ),
+                            trace=True
+                        )
+                    else:
+                        ioc.getLogger().error("Scheduling failed for source document!", notify=False)
             else:
                 ioc.getLogger().trace("Length of data was empty; was not scheduled", trace=True)
-                del source
         except BaseException as e:
             ioc.getLogger().error(
-                "Failed parsing message got exception! Configuration [{0}] Got [{1}]".format(configuration, e)
+                "Failed parsing message got exception! Configuration [{0}] Got [{1}]".format(sentinel_config, e)
             )
-            del source
 
     def generate_config_set(self, source=None, config=None):
         """Examines configuration and returns list of configs to parse
@@ -229,3 +233,44 @@ class Scan(object):
         else:
             ConfigList = self.conf.getConfiguration().get('raw')
         return ConfigList
+
+    def bundle_configs(self, source, conf_list):
+        """
+        Return a data structure that pairs a list with a sentinel config that represents the associated list.
+        The data that is returned by the source will be valid for each config in the list. This prevents us
+        from having to source many times for the same data.
+        {
+          "sentinel_config": ["config2", "config3", "config4"],
+          ...
+        }
+        """
+        parsed_values = {}
+        bundle = {}
+
+        # Group configs by the value of the group_by keys
+        for key in source.group_by:
+            confs = [x for x in conf_list if x.get(key)]
+            # TODO: Handle configs that don't have any associated keys?
+            for conf in confs:
+                # If the value is a list, treat it as a tuple for hashing purposes in the dict
+                value = conf.get(key) if type(conf.get(key)) is not list else tuple(conf.get(key))
+                if value not in parsed_values:
+                    parsed_values[value] = [conf.get("name")]
+                else:
+                    parsed_values[value].append(conf.get("name"))
+
+        # Build the final data structure
+        for value in parsed_values:
+            sentinel_config = parsed_values[value][0]
+            bundle[sentinel_config] = parsed_values[value][1:]
+
+        # If we don't have a bundle, return all configs as sentinel configs
+        if not bundle:
+            bundle = {conf: [] for conf in conf_list}
+
+        return bundle
+
+
+
+
+

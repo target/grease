@@ -14,7 +14,6 @@ setup(
     """,
     classifiers=[
         'Development Status :: 5 - Production/Stable',
-        'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3',
         'Intended Audience :: System Administrators',
         'Intended Audience :: Information Technology',
@@ -32,14 +31,14 @@ setup(
     author_email="james.e.bell@target.com",
     packages=find_packages(),
     test_suite='nose.collector',
-    tests_require=['nose', 'nose-cover3', 'mock'],
+    tests_require=['nose', 'nose-cover3', 'mock', 'mongomock'],
     install_requires=[
         'psycopg2-binary',
         'requests',
         'pymongo',
         'psutil',
         'elasticsearch',
-        'kafka'
+        'kafka-python'
     ] + (
          ["pywin32"] if "nt" == os.name else []
         ),

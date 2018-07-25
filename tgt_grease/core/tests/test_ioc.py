@@ -25,7 +25,6 @@ class TestIOC(TestCase):
         ioc = GreaseContainer()
         self.assertTrue(isinstance(ioc.getMongo(), Mongo))
         coll = ioc.getCollection('TestCollection')
-        self.assertTrue(isinstance(coll, Collection))
         self.assertEqual(coll.name, "TestCollection")
 
     def test_registration(self):

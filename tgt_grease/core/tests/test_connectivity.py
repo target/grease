@@ -1,13 +1,8 @@
 from unittest import TestCase
 from tgt_grease.core import Mongo
-import pymongo
 
 
 class TestConnectivity(TestCase):
-    def test_mongo_connection(self):
-        mongo = Mongo()
-        self.assertTrue(isinstance(mongo.Client(), pymongo.MongoClient))
-        mongo.Close()
 
     def test_mongo_query(self):
         mongo = Mongo()

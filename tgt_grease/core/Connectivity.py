@@ -1,5 +1,7 @@
 import pymongo
 from tgt_grease.core import Configuration
+import mongomock
+import os
 
 
 class Mongo(object):
@@ -45,7 +47,12 @@ class Mongo(object):
         Returns:
             pymongo.MongoClient: Mongo Connection
 
+        Note:
+            set the environment variable GREASE_TESTING to enable mocking of mongoDB
+
         """
+        if os.getenv("GREASE_TESTING"):
+            return mongomock.MongoClient()
         mongoConf = self._config.get('Connectivity', 'MongoDB')  # type: dict
         if mongoConf.get('username') and mongoConf.get('password'):
             return pymongo.MongoClient(

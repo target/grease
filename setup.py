@@ -14,7 +14,6 @@ setup(
     """,
     classifiers=[
         'Development Status :: 5 - Production/Stable',
-        'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3',
         'Intended Audience :: System Administrators',
         'Intended Audience :: Information Technology',
@@ -39,7 +38,7 @@ setup(
         'pymongo',
         'psutil',
         'elasticsearch',
-        'kafka'
+        'kafka-python'
     ] + (
          ["pywin32"] if "nt" == os.name else []
         ),

@@ -7,12 +7,7 @@ environment:
     # http://www.appveyor.com/docs/installed-software#python
     # The list here is complete (excluding Python 2.6, which
     # isn't covered by this document) at the time of writing.
-
-    - PYTHON: "C:\\Python27"
-    - PYTHON: "C:\\Python35"
     - PYTHON: "C:\\Python36"
-    - PYTHON: "C:\\Python27-x64"
-    - PYTHON: "C:\\Python35-x64"
     - PYTHON: "C:\\Python36-x64"
 
 services:
@@ -21,7 +16,7 @@ services:
 
 install:
   # We need wheel installed to build wheels
-  - "%PYTHON%\\python.exe -m pip install wheel pymongo requests psycopg2 psutil pypiwin32 elasticsearch nose nose-cover3"
+  - "%PYTHON%\\python.exe -m pip install wheel pymongo requests psycopg2 psutil pypiwin32 elasticsearch nose nose-cover3 kafka-python"
 
 build: off
 

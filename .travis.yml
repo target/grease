@@ -12,12 +12,15 @@ matrix:
     # Turns out OSX is "unsupported for Python github: travis-ci/travis-ci#2312"
     - os: osx
 
+env:
+  - GREASE_TESTING="1"
+
 services:
-  - mongodb
+#  - mongodb
   - postgresql
 
 before_script:
-  - pip install pymongo requests psycopg2 psutil elasticsearch
+  - pip install pymongo requests psycopg2 psutil elasticsearch kafka-python mongomock
   - sudo mkdir /opt/grease/
   - sudo chmod 777 /opt/grease/
   - if [ $TRAVIS_OS_NAME = linux ]; then true; else brew install mongo; fi

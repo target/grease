@@ -1,5 +1,6 @@
 environment:
   GREASE_TEST_DSN: "host=localhost user=postgres password=Password12!"
+  GREASE_TESTING: "1"
 
   matrix:
 
@@ -11,12 +12,12 @@ environment:
     - PYTHON: "C:\\Python36-x64"
 
 services:
-  - mongodb
+#  - mongodb
   - postgresql
 
 install:
   # We need wheel installed to build wheels
-  - "%PYTHON%\\python.exe -m pip install wheel pymongo requests psycopg2 psutil pypiwin32 elasticsearch nose nose-cover3 kafka-python"
+  - "%PYTHON%\\python.exe -m pip install wheel pymongo requests psycopg2 psutil pypiwin32 elasticsearch nose nose-cover3 kafka-python mongomock"
 
 build: off
 

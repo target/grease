@@ -14,10 +14,9 @@ class GreaseContainer(object):
 
     def __init__(self, Logger=None):
         if Logger and isinstance(Logger, Logging):
-            self._logger = Logger
+            GreaseContainer._logger = Logger
         else:
-            self._logger = Logging()
-        self._mongo = Mongo(self._logger.getConfig())
+            GreaseContainer._logger = Logging()
 
     def getLogger(self):
         """Get the logging instance
@@ -26,7 +25,7 @@ class GreaseContainer(object):
             Logging: The logging instance
 
         """
-        return self._logger
+        return GreaseContainer._logger
 
     def getNotification(self):
         """Get the notifications instance
@@ -35,7 +34,7 @@ class GreaseContainer(object):
             tgt_grease.core.Notifications: The notifications instance
 
         """
-        return self._logger.getNotification()
+        return self.getLogger().getNotification()
 
     def getMongo(self):
         """Get the Mongo instance
@@ -44,7 +43,10 @@ class GreaseContainer(object):
             Mongo: Mongo Instance Connection
 
         """
-        return self._mongo
+        if not GreaseContainer._mongo:
+            GreaseContainer._mongo = Mongo(self.getLogger().getConfig())
+        else:
+            return GreaseContainer._mongo
 
     def getCollection(self, collectionName):
         """Get a collection object from MongoDB
@@ -68,7 +70,7 @@ class GreaseContainer(object):
             tgt_grease.core.Configuration.Configuration: the configuration instance
 
         """
-        return self._logger.getConfig()
+        return self.getLogger().getConfig()
 
     def ensureRegistration(self):
         """

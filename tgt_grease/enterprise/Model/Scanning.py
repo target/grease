@@ -145,41 +145,39 @@ class Scan(object):
             else:
                 if source.parse_source(sentinel_config):
                     # deduplicate data
-                    # TODO: Dedup the rest
-                    data = deduplication.Deduplicate(
-                        data=source.get_data(),
-                        source=sentinel_config.get('source'),
-                        configuration=sentinel_config.get('name', str(uuid4())),
-                        threshold=source.deduplication_strength,
-                        expiry_hours=source.deduplication_expiry,
-                        expiry_max=source.deduplication_expiry_max,
-                        collection='Dedup_Sourcing',
-                        field_set=source.field_set
-                    )
+                    other_configs.append(sentinel_config)
+
+                    for conf in other_configs:
+                        data = deduplication.Deduplicate(
+                            data=source.get_data(),
+                            source=conf.get('source'),
+                            configuration=conf.get('name', str(uuid4())),
+                            threshold=source.deduplication_strength,
+                            expiry_hours=source.deduplication_expiry,
+                            expiry_max=source.deduplication_expiry_max,
+                            collection='Dedup_Sourcing',
+                            field_set=source.field_set
+                        )
+
+                        if data and scheduler.scheduleDetection(conf.get('source'), conf.get('name'), data):
+                            ioc.getLogger().info(
+                                "Data scheduled for detection from source [{0}] with sentinel config [{1}]".format(
+                                    conf.get('source'),
+                                    sentinel_config
+                                ),
+                                trace=True
+                            )
+                        else:
+                            ioc.getLogger().error("Scheduling failed for source document!", notify=False)
+
                 else:
                     ioc.getLogger().warning(
-                        "Source [{0}] parsing failed".format(sentinel_config.get('source')),
+                        f"Source [{sentinel_config.get('source')}] parsing failed.",
                         notify=False
                     )
-                    data = []
-            if len(data) > 0:
-                confs = other_configs.append(sentinel_config)
-                for conf in confs:
-                    if scheduler.scheduleDetection(conf.get('source'), conf.get('name'), data):
-                        ioc.getLogger().info(
-                            "Data scheduled for detection from source [{0}] with sentinel config [{1}]".format(
-                                conf.get('source'),
-                                sentinel_config
-                            ),
-                            trace=True
-                        )
-                    else:
-                        ioc.getLogger().error("Scheduling failed for source document!", notify=False)
-            else:
-                ioc.getLogger().trace("Length of data was empty; was not scheduled", trace=True)
         except BaseException as e:
             ioc.getLogger().error(
-                "Failed parsing message got exception! Configuration [{0}] Got [{1}]".format(sentinel_config, e)
+                f"Sourcing failed with an exception! Configuration [{sentinel_config}] got [{e}]"
             )
 
     def generate_config_set(self, source=None, config=None):

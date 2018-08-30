@@ -29,6 +29,13 @@ class ImportTool(object):
             None: If an object is not found and error occurs None is returned
 
         """
+        if not className: # Catches None, empty string, etc.
+            self._log.error(
+                        "TYPEERROR: [{0}] is not a valid classname (it is a {1}, not a string). Load failed.".format(className, type(className)),
+                        verbose=True
+                    )
+            return None
+
         self._log.trace("Attempting to load class [{0}]".format(className), trace=True)
         for path in self._log.getConfig().get('Import', 'searchPath'):
             self._log.trace("Searching path [{0}]".format(path), trace=True)

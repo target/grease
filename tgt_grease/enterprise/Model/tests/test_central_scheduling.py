@@ -243,7 +243,7 @@ class TestScheduling(TestCase):
                     'grease_data.scheduling.start': None,
                     'grease_data.scheduling.end': None
                 },
-                sort=[('grease_data.createTime', pymongo.DESCENDING)]
+                sort=[('createTime', pymongo.DESCENDING)]
             )
         ))
         d.ioc.getCollection('JobServer').delete_one({'_id': ObjectId(scheduleServer)})

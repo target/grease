@@ -32,7 +32,7 @@ class Scan(object):
         self.dedup = Deduplication(self.ioc)
         self.scheduler = Scheduling(self.ioc)
 
-    def Parse(self, src=None, config=None):
+    def Parse(self, source=None, config=None):
         """This will read all configurations and attempt to scan the environment
 
         This is the primary business logic for scanning in GREASE. This method will use configurations to parse
@@ -55,21 +55,21 @@ class Scan(object):
 
         """
         self.ioc.getLogger().trace("Starting Parse of Environment", trace=True)
-        sources = self.conf.get_sources() if not src else [src]
+        sources = self.conf.get_sources() if not source else [source]
         ScanPool = []
-        for source in sources:
+        for src in sources:
             # ensure no kafka prototypes come into sourcing
-            if source == 'kafka':
+            if src == 'kafka':
                 continue
 
-            inst = self.impTool.load(source)
+            inst = self.impTool.load(src)
             if not isinstance(inst, BaseSourceClass):
                 self.ioc.getLogger().error("Invalid Source [{0}]".format(source), notify=False)
                 del inst
                 continue
             else:
                 # If the source wants us to bundle, do it
-                bundled = self.bundle_configs(source, self.generate_config_set(source=source, config=config))
+                bundled = self.bundle_configs(src, self.generate_config_set(source=source, config=config))
                 for sentinel_conf in bundled:
                     # ensure we don't swamp the system resources
                     cpu = cpu_percent(interval=.1)

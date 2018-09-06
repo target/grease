@@ -9,8 +9,9 @@ import os
 class GreaseContainer(object):
     """Inversion of Control Container for objects in GREASE"""
 
-    _logger = None
-    _mongo = None
+    __logger = Logging()
+    __mongo = Mongo(__logger.getConfig())
+
 
     def __init__(self, *args, **kwargs):
         if args or kwargs:
@@ -25,10 +26,8 @@ class GreaseContainer(object):
             Logging: The logging instance
 
         """
-        if not GreaseContainer._logger:
-            GreaseContainer._logger = Logging()
 
-        return GreaseContainer._logger
+        return GreaseContainer.__logger
 
     def getNotification(self):
         """Get the notifications instance
@@ -46,10 +45,8 @@ class GreaseContainer(object):
             Mongo: Mongo Instance Connection
 
         """
-        if not GreaseContainer._mongo:
-            GreaseContainer._mongo = Mongo(self.getLogger().getConfig())
 
-        return GreaseContainer._mongo
+        return GreaseContainer.__mongo
 
     def getCollection(self, collectionName):
         """Get a collection object from MongoDB

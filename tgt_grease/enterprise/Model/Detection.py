@@ -105,7 +105,7 @@ class Detect(object):
                 'grease_data.detection.start': None,
                 'grease_data.detection.end': None,
             },
-            sort=[('grease_data.createTime', pymongo.DESCENDING)]
+            sort=[('createTime', pymongo.DESCENDING)]
         )
 
     def detection(self, source, configuration):

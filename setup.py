@@ -39,7 +39,7 @@ setup(
         'pymongo',
         'psutil',
         'elasticsearch',
-        'kafka'
+        'kafka-python'
     ] + (
          ["pywin32"] if "nt" == os.name else []
         ),

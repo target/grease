@@ -12,11 +12,11 @@ class GreaseContainer(object):
     _logger = None
     _mongo = None
 
-    def __init__(self, Logger=None):
-        if Logger and isinstance(Logger, Logging):
-            GreaseContainer._logger = Logger
-        else:
-            GreaseContainer._logger = Logging()
+    def __init__(self, *args, **kwargs):
+        if args or kwargs:
+            self.getLogger().warning(
+                "Passing instances of Logger to the IOC is deprecated. Please just use getLogger().", verbose=True
+            )
 
     def getLogger(self):
         """Get the logging instance
@@ -25,6 +25,9 @@ class GreaseContainer(object):
             Logging: The logging instance
 
         """
+        if not GreaseContainer._logger:
+            GreaseContainer._logger = Logging()
+
         return GreaseContainer._logger
 
     def getNotification(self):

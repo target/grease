@@ -146,51 +146,6 @@ class TestSQLSource(TestCase):
         self.assertTrue(isinstance(data, list))
         self.assertEqual(len(data), 0)
 
-    def test_sql_parser_hour_good(self):
-        self.__ensure_schema()
-        with psycopg2.connect(os.environ['GREASE_TEST_DSN']) as conn:
-            with conn.cursor() as cursor:
-                source = sql_source()
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS 
-                      test_data
-                    (
-                        id SERIAL PRIMARY KEY NOT NULL,
-                        name_fs VARCHAR,
-                        name_ls VARCHAR
-                    );
-                """)
-                conn.commit()
-                cursor.execute("""
-                    INSERT INTO
-                      test_data
-                    (name_fs, name_ls)
-                    VALUES 
-                    ('sally', 'sue');
-                """)
-                conn.commit()
-                self.assertTrue(source.parse_source({
-                    'name': 'example_source',
-                    'job': 'example_job',
-                    'exe_env': 'general',
-                    'source': 'sql_source',
-                    'type': 'postgresql',
-                    'dsn': 'GREASE_TEST_DSN',
-                    'query': 'select * from test_data;',
-                    'hour': datetime.datetime.utcnow().hour,
-                    'logic': {}
-                }))
-                data = source.get_data()
-                self.assertTrue(isinstance(data, list))
-                self.assertEqual(len(data), 1)
-                self.assertIsInstance(data[0], dict)
-                self.assertEqual(data[0].get('id'), 1)
-                self.assertEqual(data[0].get('name_fs'), 'sally')
-                self.assertEqual(data[0].get('name_ls'), 'sue')
-                cursor.execute("""
-                    DROP TABLE public.test_data
-                """)
-        self.__cleanup_schema()
 
     def test_sql_parser_minute_good(self):
         self.__ensure_schema()
@@ -280,48 +235,6 @@ class TestSQLSource(TestCase):
                 self.assertEqual(data[0].get('id'), 1)
                 self.assertEqual(data[0].get('name_fs'), 'sally')
                 self.assertEqual(data[0].get('name_ls'), 'sue')
-                cursor.execute("""
-                    DROP TABLE public.test_data
-                """)
-        self.__cleanup_schema()
-
-    def test_sql_parser_hour_bad(self):
-        self.__ensure_schema()
-        with psycopg2.connect(os.environ['GREASE_TEST_DSN']) as conn:
-            with conn.cursor() as cursor:
-                source = sql_source()
-                cursor.execute("""
-                    CREATE TABLE IF NOT EXISTS 
-                      test_data
-                    (
-                        id SERIAL PRIMARY KEY NOT NULL,
-                        name_fs VARCHAR,
-                        name_ls VARCHAR
-                    );
-                """)
-                conn.commit()
-                cursor.execute("""
-                    INSERT INTO
-                      test_data
-                    (name_fs, name_ls)
-                    VALUES 
-                    ('sally', 'sue');
-                """)
-                conn.commit()
-                self.assertTrue(source.parse_source({
-                    'name': 'example_source',
-                    'job': 'example_job',
-                    'exe_env': 'general',
-                    'source': 'sql_source',
-                    'type': 'postgresql',
-                    'dsn': 'GREASE_TEST_DSN',
-                    'query': 'select * from test_data;',
-                    'hour': (datetime.datetime.utcnow() + datetime.timedelta(hours=6)).hour,
-                    'logic': {}
-                }))
-                data = source.get_data()
-                self.assertTrue(isinstance(data, list))
-                self.assertEqual(len(data), 0)
                 cursor.execute("""
                     DROP TABLE public.test_data
                 """)

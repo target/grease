@@ -110,20 +110,6 @@ class TestUrlParser(TestCase):
         self.assertEqual(b'http://www.google.com/', Data[0].get('url'))
         self.assertEqual(200, Data[0].get('status_code'))
 
-    def test_url_parser_test_hour_bad(self):
-        source = url_source()
-        self.assertTrue(source.parse_source({
-            'name': 'example_source',
-            'job': 'example_job',
-            'exe_env': 'general',
-            'source': 'url_source',
-            'hour': (datetime.datetime.utcnow() + datetime.timedelta(hours=6)).hour,
-            'url': ['google.com'],
-            'logic': {}
-        }))
-        Data = source.get_data()
-        self.assertEqual(len(Data), 0)
-
     def test_url_parser_test_minute_bad(self):
         source = url_source()
         self.assertTrue(source.parse_source({

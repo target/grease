@@ -4,7 +4,7 @@ import os
 
 setup(
     name='tgt_grease',
-    version='2.3.6',
+    version='2.3.7',
     license="MIT",
     description='Modern distributed automation engine built with love by Target',
     long_description="""
@@ -39,7 +39,7 @@ setup(
         'pymongo',
         'psutil',
         'elasticsearch',
-        'python-kafka'
+        'kafka-python'
     ] + (
          ["pywin32"] if "nt" == os.name else []
         ),

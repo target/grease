@@ -9,15 +9,15 @@ import os
 class GreaseContainer(object):
     """Inversion of Control Container for objects in GREASE"""
 
-    _logger = None
-    _mongo = None
+    __logger = Logging()
+    __mongo = Mongo(__logger.getConfig())
 
-    def __init__(self, Logger=None):
-        if Logger and isinstance(Logger, Logging):
-            self._logger = Logger
-        else:
-            self._logger = Logging()
-        self._mongo = Mongo(self._logger.getConfig())
+
+    def __init__(self, *args, **kwargs):
+        if args or kwargs:
+            self.getLogger().warning(
+                "Passing instances of Logger to the IOC is deprecated. Please just use getLogger().", verbose=True
+            )
 
     def getLogger(self):
         """Get the logging instance
@@ -26,7 +26,8 @@ class GreaseContainer(object):
             Logging: The logging instance
 
         """
-        return self._logger
+
+        return GreaseContainer.__logger
 
     def getNotification(self):
         """Get the notifications instance
@@ -35,7 +36,7 @@ class GreaseContainer(object):
             tgt_grease.core.Notifications: The notifications instance
 
         """
-        return self._logger.getNotification()
+        return self.getLogger().getNotification()
 
     def getMongo(self):
         """Get the Mongo instance
@@ -44,7 +45,8 @@ class GreaseContainer(object):
             Mongo: Mongo Instance Connection
 
         """
-        return self._mongo
+
+        return GreaseContainer.__mongo
 
     def getCollection(self, collectionName):
         """Get a collection object from MongoDB
@@ -68,7 +70,7 @@ class GreaseContainer(object):
             tgt_grease.core.Configuration.Configuration: the configuration instance
 
         """
-        return self._logger.getConfig()
+        return self.getLogger().getConfig()
 
     def ensureRegistration(self):
         """

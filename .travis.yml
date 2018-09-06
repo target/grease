@@ -19,7 +19,7 @@ services:
   - postgresql
 
 before_script:
-  - pip install pymongo requests psycopg2 psutil elasticsearch
+  - pip install pymongo requests psycopg2-binary psutil elasticsearch
   - sudo mkdir /opt/grease/
   - sudo chmod 777 /opt/grease/
   - if [ $TRAVIS_OS_NAME = linux ]; then true; else brew install mongo; fi

@@ -45,8 +45,8 @@ class GreaseContainer(object):
         """
         if not GreaseContainer._mongo:
             GreaseContainer._mongo = Mongo(self.getLogger().getConfig())
-        else:
-            return GreaseContainer._mongo
+
+        return GreaseContainer._mongo
 
     def getCollection(self, collectionName):
         """Get a collection object from MongoDB

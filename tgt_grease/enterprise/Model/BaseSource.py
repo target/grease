@@ -21,6 +21,7 @@ class BaseSourceClass(object):
         self.deduplication_expiry = 12
         self.deduplication_expiry_max = 7
         self.field_set = None
+        self.group_by = []
 
     @abstractmethod
     def mock_data(self, configuration):

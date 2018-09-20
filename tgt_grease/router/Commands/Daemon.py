@@ -120,7 +120,10 @@ class DaemonProcess(object):
             # Honor a config's retry maximum if present
             if conf.get('retry_maximum') and \
                 job.get('grease_data', {}).get('execution', {}).get('failures', 0) - 1 >= conf.get("retry_maximum", 5):
-                self.ioc.getLogger().info(f"Job has hit its retry maximum of {conf.get('retry_maximum', 5)}", additional=job)
+                self.ioc.getLogger().info(
+                    "Job has hit its retry maximum of {0}".format(conf.get('retry_maximum', 5)),
+                    additional=job
+                )
                 JobCollection.update_one(
                     {'_id': ObjectId(job['_id'])},
                     {

@@ -141,3 +141,11 @@ class Command(object):
 
         """
         pass
+
+    def prevent_retries(self):
+        """
+        Sets a flag in the command's return data that will signal to stop retrying, even before the default
+        retry limit is met.
+
+        """
+        self.setData("no_retry", True)

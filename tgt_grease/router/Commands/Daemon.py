@@ -71,7 +71,8 @@ class DaemonProcess(object):
             'grease_data.execution.server': ObjectId(self.ioc.getConfig().NodeIdentity),
             'grease_data.execution.commandSuccess': False,
             'grease_data.execution.executionSuccess': False,
-            'grease_data.execution.failures': {'$lt': 6}
+            'grease_data.execution.failures': {'$lt': 6},
+            '$or': [{'grease_data.execution.returnData.no_retry': {'$exists': False}}, {'grease_data.execution.returnData.no_retry': False}]
         })
         # Get Node Information
         Node = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(self.ioc.getConfig().NodeIdentity)})
@@ -113,9 +114,23 @@ class DaemonProcess(object):
         if not self.contextManager['jobs'].get(job.get('_id')):
             # New Job to run
             if isinstance(job.get('configuration'), bytes):
-                conf = job.get('configuration').decode()
+                conf = self.conf.get_config(job.get('configuration').decode())
             else:
-                conf = job.get('configuration')
+                conf = self.conf.get_config(job.get('configuration'))
+            # Honor a config's retry maximum if present
+            if conf.get('retry_maximum') and \
+                job.get('grease_data', {}).get('execution', {}).get('failures', 0) - 1 >= conf.get("retry_maximum", 5):
+                self.ioc.getLogger().info(f"Job has hit its retry maximum of {conf.get('retry_maximum', 5)}", additional=job)
+                JobCollection.update_one(
+                    {'_id': ObjectId(job['_id'])},
+                    {
+                        '$set': {
+                            'grease_data.execution.returnData.no_retry': True
+                        }
+                    }
+                )
+                return
+
             inst = self.impTool.load(self.conf.get_config(conf).get('job', ''))
             if inst and isinstance(inst, Command):
                 inst.ioc.getLogger().foreground = self.ioc.getLogger().foreground

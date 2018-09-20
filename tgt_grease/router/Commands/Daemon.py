@@ -131,7 +131,7 @@ class DaemonProcess(object):
                 )
                 return
 
-            inst = self.impTool.load(self.conf.get_config(conf).get('job', ''))
+            inst = self.impTool.load(conf.get('job', ''))
             if inst and isinstance(inst, Command):
                 inst.ioc.getLogger().foreground = self.ioc.getLogger().foreground
                 thread = threading.Thread(

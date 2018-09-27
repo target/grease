@@ -10,7 +10,7 @@ class GreaseContainer(object):
     """Inversion of Control Container for objects in GREASE"""
 
     __logger = Logging()
-    __mongo = Mongo(__logger.getConfig())
+    __mongo = None
 
 
     def __init__(self, *args, **kwargs):
@@ -45,7 +45,8 @@ class GreaseContainer(object):
             Mongo: Mongo Instance Connection
 
         """
-
+        if not GreaseContainer.__mongo:
+            GreaseContainer.__mongo = Mongo(self.getLogger().getConfig())
         return GreaseContainer.__mongo
 
     def getCollection(self, collectionName):

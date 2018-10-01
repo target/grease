@@ -4,7 +4,7 @@ import os
 
 setup(
     name='tgt_grease',
-    version='2.3.7',
+    version='2.3.8',
     license="MIT",
     description='Modern distributed automation engine built with love by Target',
     long_description="""

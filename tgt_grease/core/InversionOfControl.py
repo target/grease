@@ -9,7 +9,6 @@ import os
 class GreaseContainer(object):
     """Inversion of Control Container for objects in GREASE"""
 
-
     def __init__(self, *args, **kwargs):
         if args or kwargs:
             self.getLogger().warning(

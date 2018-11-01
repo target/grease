@@ -245,7 +245,7 @@ class DaemonProcess(object):
                     return
                 inst.ioc.getLogger().foreground = self.ioc.getLogger().foreground
                 thread = threading.Thread(
-                    target=inst.execute,
+                    target=inst.safe_execute,
                     name="GREASE DAEMON PROTOTYPE [{0}]".format(prototype)
                 )
                 thread.daemon = True

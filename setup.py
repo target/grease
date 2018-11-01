@@ -9,8 +9,8 @@ setup(
     description='Modern distributed automation engine built with love by Target',
     long_description="""
     GREASE is a general purpose distributed automation engine designed to scale to enterprise workloads. We utilize
-    MongoDB and a plugin architecture to enable broad automation possibilities via one common core of primitives and 
-    services. 
+    MongoDB and a plugin architecture to enable broad automation possibilities via one common core of primitives and
+    services.
     """,
     classifiers=[
         'Development Status :: 5 - Production/Stable',

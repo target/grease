@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from tgt_grease.core import Logging, GreaseContainer
+from tgt_grease.core.Decorators import grease_log
 from datetime import datetime
 import sys
 import os
@@ -127,6 +128,7 @@ class Command(object):
             )
 
     @abstractmethod
+    @grease_log
     def execute(self, context):
         """Base Execute Method
 
@@ -141,3 +143,4 @@ class Command(object):
 
         """
         pass
+

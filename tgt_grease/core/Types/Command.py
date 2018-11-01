@@ -90,6 +90,7 @@ class Command(object):
         # close mongo connection
         self.ioc.getMongo().Close()
 
+    @grease_log
     def safe_execute(self, context=None):
         """Attempt execution and prevent MOST exceptions
 
@@ -128,7 +129,6 @@ class Command(object):
             )
 
     @abstractmethod
-    @grease_log
     def execute(self, context):
         """Base Execute Method
 

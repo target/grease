@@ -16,9 +16,9 @@ def grease_log(wrapped):
                 calling_class = "Unknown"
                 break
 
-        GreaseContainer().getLogger().info(f"Starting execution of {wrapped.__name__} from {calling_class}.")
+        GreaseContainer().getLogger().info(f"Starting execution of {wrapped.__name__} from class {calling_class}.")
         wrapped(*args, **kwargs)
-        GreaseContainer().getLogger().info(f"Finished execution of {wrapped.__name__} from {calling_class}.")
+        GreaseContainer().getLogger().info(f"Finished execution of {wrapped.__name__} from class {calling_class}.")
 
     return log
 

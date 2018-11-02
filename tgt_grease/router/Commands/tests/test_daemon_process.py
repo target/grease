@@ -183,6 +183,7 @@ class TestRegistration(TestCase):
         self.assertTrue(result)
         self.assertFalse(result.get('grease_data').get('execution').get('executionSuccess'))
         self.assertFalse(result.get('grease_data').get('execution').get('commandSuccess'))
+        self.assertEqual(result.get('grease_data').get('execution').get('failures'), 0)
         ioc.getCollection('SourceData').drop()
         ioc.getCollection('Configuration').drop()
 

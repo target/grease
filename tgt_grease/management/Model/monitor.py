@@ -16,11 +16,8 @@ class NodeMonitoring(object):
 
     """
 
-    def __init__(self, ioc=None):
-        if isinstance(ioc, GreaseContainer):
-            self.ioc = ioc
-        else:
-            self.ioc = GreaseContainer()
+    def __init__(self, ioc=GreaseContainer()):
+        self.ioc = ioc
         self.centralScheduler = Scheduling(self.ioc)
         self.scheduler = Scheduler(self.ioc)
 
@@ -33,47 +30,59 @@ class NodeMonitoring(object):
         """
         servers = self.getServers()
         retVal = False
-        self.ioc.getLogger().debug("Total servers to monitor [{0}]".format(len(servers)), trace=True)
+        self.ioc.getLogger().debug(
+            "Total servers to monitor [{0}]".format(len(servers)), trace=True)
         for server in servers:
             if self.serverAlive(server.get('_id')):
                 retVal = True
                 continue
             else:
-                self.ioc.getLogger().warning("Server [{0}] preparing to be culled from pool".format(server.get('_id')))
-                self.ioc.getLogger().warning("Server [{0}] preparing to be deactivated".format(server.get('_id')))
+                self.ioc.getLogger().warning(
+                    "Server [{0}] preparing to be culled from pool".format(server.get('_id')))
+                self.ioc.getLogger().warning(
+                    "Server [{0}] preparing to be deactivated".format(server.get('_id')))
                 if not self.deactivateServer(server.get('_id')):
                     self.ioc.getLogger().error(
-                        "Failed deactivating server [{0}]".format(server.get('_id'))
+                        "Failed deactivating server [{0}]".format(
+                            server.get('_id'))
                     )
                     retVal = False
                     break
                 self.ioc.getLogger().warning(
-                    "Server [{0}] preparing to reallocate detect jobs".format(server.get('_id'))
+                    "Server [{0}] preparing to reallocate detect jobs".format(
+                        server.get('_id'))
                 )
                 if not self.rescheduleDetectJobs(server.get('_id')):
                     self.ioc.getLogger().error(
-                        "Failed rescheduling detect jobs [{0}]".format(server.get('_id'))
+                        "Failed rescheduling detect jobs [{0}]".format(
+                            server.get('_id'))
                     )
                     retVal = False
                     break
                 self.ioc.getLogger().warning(
-                    "Server [{0}] preparing to reallocate schedule jobs".format(server.get('_id'))
+                    "Server [{0}] preparing to reallocate schedule jobs".format(
+                        server.get('_id'))
                 )
                 if not self.rescheduleScheduleJobs(server.get('_id')):
                     self.ioc.getLogger().error(
-                        "Failed rescheduling detect jobs [{0}]".format(server.get('_id'))
+                        "Failed rescheduling detect jobs [{0}]".format(
+                            server.get('_id'))
                     )
                     retVal = False
                     break
                 self.ioc.getLogger().warning(
-                    "Server [{0}] preparing to reallocate jobs".format(server.get('_id'))
+                    "Server [{0}] preparing to reallocate jobs".format(
+                        server.get('_id'))
                 )
                 if not self.rescheduleJobs(server.get('_id')):
                     self.ioc.getLogger().error(
-                        "Failed rescheduling detect jobs [{0}]".format(server.get('_id'))
+                        "Failed rescheduling detect jobs [{0}]".format(
+                            server.get('_id'))
                     )
                     retVal = False
                     break
+
+        self.schedule_orphans()
         return retVal
 
     def scanComplete(self):
@@ -118,10 +127,12 @@ class NodeMonitoring(object):
             'createTime': datetime.datetime.utcnow(),
             'expiry': Deduplication.generate_max_expiry_time(1)
         })
-        server = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(self.ioc.getConfig().NodeIdentity)})
+        server = self.ioc.getCollection('JobServer').find_one(
+            {'_id': ObjectId(self.ioc.getConfig().NodeIdentity)})
         if not server:
             self.ioc.getLogger().critical(
-                "Failed to find server [{0}] after monitoring occurred!".format(self.ioc.getConfig().NodeIdentity)
+                "Failed to find server [{0}] after monitoring occurred!".format(
+                    self.ioc.getConfig().NodeIdentity)
             )
         self.ioc.getCollection('JobServer').update_one({
             '_id': ObjectId(self.ioc.getConfig().NodeIdentity)},
@@ -159,7 +170,8 @@ class NodeMonitoring(object):
         Server = coll.find_one({'server': ObjectId(serverId)})
         if Server:
             # We have a server already in the system
-            serverStats = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(serverId)})
+            serverStats = self.ioc.getCollection(
+                'JobServer').find_one({'_id': ObjectId(serverId)})
             if serverStats:
                 # compare previous results to see if there has been change
                 if dict(Server).get('jobs', 0) < dict(serverStats).get('jobs', 0):
@@ -173,28 +185,33 @@ class NodeMonitoring(object):
                             }
                         }
                     )
-                    self.ioc.getLogger().trace("JobServer [{0}] is alive".format(serverId), trace=True)
+                    self.ioc.getLogger().trace(
+                        "JobServer [{0}] is alive".format(serverId), trace=True)
                     return True
                 else:
                     if dict(Server).get('checkTime', datetime.datetime.utcnow()) < \
                             datetime.datetime.utcnow() - datetime.timedelta(minutes=10):
                         # server has aged out
                         self.ioc.getLogger().trace(
-                            "JobServer [{0}] is not alive; Timestamp has not changed in ten minutes".format(serverId),
+                            "JobServer [{0}] is not alive; Timestamp has not changed in ten minutes".format(
+                                serverId),
                             trace=True
                         )
                         return False
                     else:
                         # server is in a degraded state
-                        self.ioc.getLogger().warning("JobServer [{0}] is degraded!".format(serverId), trace=True)
+                        self.ioc.getLogger().warning(
+                            "JobServer [{0}] is degraded!".format(serverId), trace=True)
                         return True
             else:
                 # Failed to find server in JobServer collection
-                self.ioc.getLogger().error("JobServer not found during node monitoring! [{0}]".format(serverId))
+                self.ioc.getLogger().error(
+                    "JobServer not found during node monitoring! [{0}]".format(serverId))
                 return False
         else:
             # we have a new server
-            serverStats = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(serverId)})
+            serverStats = self.ioc.getCollection(
+                'JobServer').find_one({'_id': ObjectId(serverId)})
             if serverStats:
                 coll.insert_one(
                     {
@@ -203,11 +220,13 @@ class NodeMonitoring(object):
                         'checkTime': datetime.datetime.utcnow()
                     }
                 )
-                self.ioc.getLogger().info("New JobServer persisted in monitoring [{0}]".format(serverId))
+                self.ioc.getLogger().info(
+                    "New JobServer persisted in monitoring [{0}]".format(serverId))
                 return True
             else:
                 # Failed to find server in JobServer collection
-                self.ioc.getLogger().error("New JobServer not found during node monitoring! [{0}]".format(serverId))
+                self.ioc.getLogger().error(
+                    "New JobServer not found during node monitoring! [{0}]".format(serverId))
                 return False
 
     def deactivateServer(self, serverId):
@@ -228,10 +247,12 @@ class NodeMonitoring(object):
                     }
                 }
         ).modified_count < 1:
-            self.ioc.getLogger().warning("Server [{0}] failed to be deactivated".format(serverId))
+            self.ioc.getLogger().warning(
+                "Server [{0}] failed to be deactivated".format(serverId))
             return False
         else:
-            self.ioc.getLogger().warning("Server [{0}] deactivated".format(serverId))
+            self.ioc.getLogger().warning(
+                "Server [{0}] deactivated".format(serverId))
             return True
 
     def rescheduleDetectJobs(self, serverId):
@@ -245,10 +266,12 @@ class NodeMonitoring(object):
 
         """
         retval = True
-        server = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(serverId)})
+        server = self.ioc.getCollection(
+            'JobServer').find_one({'_id': ObjectId(serverId)})
         if not server:
             self.ioc.getLogger().error(
-                "Failed to load server details while trying to reschedule detection [{0}]".format(serverId)
+                "Failed to load server details while trying to reschedule detection [{0}]".format(
+                    serverId)
             )
             return False
         for job in self.ioc.getCollection('SourceData').find(
@@ -284,10 +307,12 @@ class NodeMonitoring(object):
 
         """
         retval = True
-        server = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(serverId)})
+        server = self.ioc.getCollection(
+            'JobServer').find_one({'_id': ObjectId(serverId)})
         if not server:
             self.ioc.getLogger().error(
-                "Failed to load server details while trying to reschedule schedules [{0}]".format(serverId)
+                "Failed to load server details while trying to reschedule schedules [{0}]".format(
+                    serverId)
             )
             return False
         for job in self.ioc.getCollection('SourceData').find(
@@ -323,10 +348,12 @@ class NodeMonitoring(object):
 
         """
         retval = True
-        server = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(serverId)})
+        server = self.ioc.getCollection(
+            'JobServer').find_one({'_id': ObjectId(serverId)})
         if not server:
             self.ioc.getLogger().error(
-                "Failed to load server details while trying to reschedule schedules [{0}]".format(serverId)
+                "Failed to load server details while trying to reschedule schedules [{0}]".format(
+                    serverId)
             )
             return False
         for job in self.ioc.getCollection('SourceData').find(
@@ -351,3 +378,58 @@ class NodeMonitoring(object):
                     }
                 )
         return retval
+
+    def schedule_orphans(self):
+        self.ioc.getLogger().info("Checking for orphaned jobs...", verbose=True)
+        self.schedule_detection_orphans()
+        self.schedule_scheduling_orphans()
+        self.schedule_execution_orphans()
+
+    def schedule_detection_orphans(self):
+        dead_servers = list(self.ioc.getCollection(
+            "JobServer").find({'active': False}))
+
+        # Look for any active jobs with an inactive parent server, and reschedule them.
+        for orphan in self.ioc.getCollection('SourceData').find(
+            {
+                'grease_data.detection.server': {"$in": [ObjectId(parent.get('_id')) for parent in dead_servers]},
+                'grease_data.detection.end': None
+            }
+        ):
+            if self.centralScheduler.scheduleDetection(orphan.get('source'), orphan.get('configuration'), [orphan]):
+                self.ioc.getLogger().info(f"Rescheduled orphan detection record: [{orphan}]", verbose=True)
+            else:
+                self.ioc.getLogger().error(f"Unable to reschedule orphan detection record: [{orphan}]")
+
+    def schedule_scheduling_orphans(self):
+        dead_servers = list(self.ioc.getCollection(
+            "JobServer").find({'active': False}))
+
+        # Look for any active jobs with an inactive parent server, and reschedule them.
+        for orphan in self.ioc.getCollection('SourceData').find(
+            {
+                'grease_data.scheduling.server': {"$in": [ObjectId(parent.get('_id')) for parent in dead_servers]},
+                'grease_data.scheduling.end': None
+            }
+        ):
+            if self.centralScheduler.scheduleScheduling(orphan.get('_id')):
+                self.ioc.getLogger().info(f"Rescheduled orphan scheduling record: [{orphan}]", verbose=True)
+            else:
+                self.ioc.getLogger().error(f"Unable to reschedule orphan detection record: [{orphan}]")
+
+    def schedule_execution_orphans(self):
+        dead_servers = list(self.ioc.getCollection(
+            "JobServer").find({'active': False}))
+
+        # Look for any active jobs with an inactive parent server, and reschedule them.
+        for orphan in self.ioc.getCollection('SourceData').find(
+            {
+                'grease_data.execution.server': {"$in": [ObjectId(parent.get('_id')) for parent in dead_servers]},
+                'grease_data.execution.failures': {"$lt": 6},
+                'grease_data.execution.commandSuccess': False
+            }
+        ):
+            if self.scheduler.schedule(orphan):
+                self.ioc.getLogger().info(f"Rescheduled orphan scheduling record: [{orphan}]", verbose=True)
+            else:
+                self.ioc.getLogger().error(f"Unable to reschedule orphan detection record: [{orphan}]")

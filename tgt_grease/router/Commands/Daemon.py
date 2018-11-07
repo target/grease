@@ -136,6 +136,7 @@ class DaemonProcess(object):
 
             inst = self.impTool.load(conf.get('job', ''))
             if inst and isinstance(inst, Command):
+                inst.failures = job.get("grease_data", {}).get("execution", {}).get("failures")
                 inst.ioc.getLogger().foreground = self.ioc.getLogger().foreground
                 thread = threading.Thread(
                     target=inst.safe_execute,

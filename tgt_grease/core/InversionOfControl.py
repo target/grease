@@ -9,15 +9,13 @@ import os
 class GreaseContainer(object):
     """Inversion of Control Container for objects in GREASE"""
 
-    __logger = Logging()
-    __mongo = None
-
-
     def __init__(self, *args, **kwargs):
         if args or kwargs:
             self.getLogger().warning(
                 "Passing instances of Logger to the IOC is deprecated. Please just use getLogger().", verbose=True
             )
+        self.__logger = None
+        self.__mongo = None
 
     def getLogger(self):
         """Get the logging instance
@@ -27,7 +25,10 @@ class GreaseContainer(object):
 
         """
 
-        return GreaseContainer.__logger
+        if not isinstance(self.__logger, Logging):
+            self.__logger = Logging()
+
+        return self.__logger
 
     def getNotification(self):
         """Get the notifications instance
@@ -45,9 +46,11 @@ class GreaseContainer(object):
             Mongo: Mongo Instance Connection
 
         """
-        if not GreaseContainer.__mongo:
-            GreaseContainer.__mongo = Mongo(self.getLogger().getConfig())
-        return GreaseContainer.__mongo
+
+        if not isinstance(self.__mongo, Mongo):
+            self.__mongo = Mongo(self.getLogger().getConfig())
+
+        return self.__mongo
 
     def getCollection(self, collectionName):
         """Get a collection object from MongoDB

@@ -4,13 +4,13 @@ import os
 
 setup(
     name='tgt_grease',
-    version='2.3.8',
+    version='2.3.10',
     license="MIT",
     description='Modern distributed automation engine built with love by Target',
     long_description="""
     GREASE is a general purpose distributed automation engine designed to scale to enterprise workloads. We utilize
-    MongoDB and a plugin architecture to enable broad automation possibilities via one common core of primitives and 
-    services. 
+    MongoDB and a plugin architecture to enable broad automation possibilities via one common core of primitives and
+    services.
     """,
     classifiers=[
         'Development Status :: 5 - Production/Stable',

@@ -397,9 +397,11 @@ class NodeMonitoring(object):
             }
         ):
             if self.centralScheduler.scheduleDetection(orphan.get('source'), orphan.get('configuration'), [orphan]):
-                self.ioc.getLogger().info(f"Rescheduled orphan detection record: [{orphan}]", verbose=True)
+                self.ioc.getLogger().info(
+                    "Rescheduled orphan detection record: [{}]".format(orphan), verbose=True)
             else:
-                self.ioc.getLogger().error(f"Unable to reschedule orphan detection record: [{orphan}]")
+                self.ioc.getLogger().error(
+                    "Unable to reschedule orphan detection record: [{}]".format(orphan))
 
     def schedule_scheduling_orphans(self):
         dead_servers = list(self.ioc.getCollection(
@@ -413,9 +415,11 @@ class NodeMonitoring(object):
             }
         ):
             if self.centralScheduler.scheduleScheduling(orphan.get('_id')):
-                self.ioc.getLogger().info(f"Rescheduled orphan scheduling record: [{orphan}]", verbose=True)
+                self.ioc.getLogger().info(
+                    "Rescheduled orphan scheduling record: [{}]".format(orphan), verbose=True)
             else:
-                self.ioc.getLogger().error(f"Unable to reschedule orphan detection record: [{orphan}]")
+                self.ioc.getLogger().error(
+                    "Unable to reschedule orphan detection record: [{}]".format(orphan))
 
     def schedule_execution_orphans(self):
         dead_servers = list(self.ioc.getCollection(
@@ -430,6 +434,8 @@ class NodeMonitoring(object):
             }
         ):
             if self.scheduler.schedule(orphan):
-                self.ioc.getLogger().info(f"Rescheduled orphan scheduling record: [{orphan}]", verbose=True)
+                self.ioc.getLogger().info(
+                    "Rescheduled orphan scheduling record: [{}]".format(orphan), verbose=True)
             else:
-                self.ioc.getLogger().error(f"Unable to reschedule orphan detection record: [{orphan}]")
+                self.ioc.getLogger().error(
+                    "Unable to reschedule orphan detection record: [{}]".format(orphan))

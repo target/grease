@@ -45,6 +45,15 @@ class Command(object):
             .get_collection(self.__class__.__name__)
         self.start_time = datetime.utcnow()
         self.exec_data = {'execVal': False, 'retVal': False, 'data': {}}
+        self.__failures = 0
+
+    @property
+    def failures(self):
+        return self.__failures
+
+    @failures.setter
+    def failures(self, val):
+        self.__failures = val
 
     def getExecVal(self):
         """Get the execution attempt success

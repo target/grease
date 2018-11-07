@@ -1,26 +1,28 @@
 import inspect
 from functools import wraps
-# Ran into circular imports, so using long classpaths
-import tgt_grease
-
 
 def grease_log(decorator=None, *, level="info", notify=False, verbose=False):
     def _decorate(wrapped):
 
         @wraps(wrapped)
         def log(*args, **kwargs):
+            # Importing here to prevent circular imports
+            from tgt_grease.core.Types import Command
+            from tgt_grease.enterprise.Model import BaseSourceClass
+            from tgt_grease.core import GreaseContainer
+
             # Get the first instance of a command or source from the stack
             stack = inspect.stack()
 
             calling_class = "Unknown"
             for stack_item in stack:
                 self_context = stack_item[0].f_locals.get("self")
-                if isinstance(self_context, tgt_grease.core.Types.Command) or \
-                        isinstance(self_context, tgt_grease.enterprise.Model.BaseSourceClass):
+                if isinstance(self_context, Command) or \
+                        isinstance(self_context, BaseSourceClass):
                     calling_class = self_context.__class__.__name__
                     break
 
-            ioc = tgt_grease.core.GreaseContainer()
+            ioc = GreaseContainer()
 
             # Get the correct logging function
             if level.lower() == "critical":

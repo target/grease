@@ -1,6 +1,6 @@
 import inspect
 from functools import wraps
-# Ran into weird circular imports, so doing things the hard way
+# Ran into circular imports, so using long classpaths
 import tgt_grease
 
 
@@ -22,7 +22,7 @@ def grease_log(decorator=None, *, level="info", notify=False, verbose=False):
 
             ioc = tgt_grease.core.GreaseContainer()
 
-            # Wrappin' with the best
+            # Get the correct logging function
             if level.lower() == "critical":
                 logger = ioc.getLogger().critical
             elif level.lower() == "error":
@@ -36,12 +36,14 @@ def grease_log(decorator=None, *, level="info", notify=False, verbose=False):
             else:
                 logger = ioc.getLogger().info
 
-            logger(f"Starting execution of {wrapped.__name__} from Command or Source {calling_class}.", verbose=verbose, notify=notify)
+            logger("Starting execution of {0} from Command or Source {1}.".format(wrapped.__name__, calling_class),
+                   verbose=verbose, notify=notify)
             wrapped(*args, **kwargs)
-            logger(f"Finished execution of {wrapped.__name__} from Command or Source {calling_class}.", verbose=verbose, notify=notify)
+            logger("Finished execution of {0} from Command or Source {1}.".format(wrapped.__name__, calling_class),
+                   verbose=verbose, notify=notify)
         return log
 
-    # This allows it to be called as a bare decorator, or with arguments.
+    # This allows it to be called as a bare decorator (i.e. @grease_log), or with arguments.
     if decorator:
         return _decorate(decorator)
 

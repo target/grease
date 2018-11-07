@@ -4,13 +4,13 @@ import os
 
 setup(
     name='tgt_grease',
-    version='2.3.3',
+    version='2.3.10',
     license="MIT",
     description='Modern distributed automation engine built with love by Target',
     long_description="""
     GREASE is a general purpose distributed automation engine designed to scale to enterprise workloads. We utilize
-    MongoDB and a plugin architecture to enable broad automation possibilities via one common core of primitives and 
-    services. 
+    MongoDB and a plugin architecture to enable broad automation possibilities via one common core of primitives and
+    services.
     """,
     classifiers=[
         'Development Status :: 5 - Production/Stable',
@@ -34,12 +34,12 @@ setup(
     test_suite='nose.collector',
     tests_require=['nose', 'nose-cover3', 'mock'],
     install_requires=[
-        'psycopg2',
+        'psycopg2-binary',
         'requests',
         'pymongo',
         'psutil',
         'elasticsearch',
-        'kafka'
+        'kafka-python'
     ] + (
          ["pywin32"] if "nt" == os.name else []
         ),

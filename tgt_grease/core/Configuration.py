@@ -4,7 +4,7 @@ import json
 ##
 # Global Configuration Object
 ##
-GREASE_CONFIG = None
+GREASE_CONFIG = {}
 
 
 class Configuration(object):

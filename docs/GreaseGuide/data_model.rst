@@ -16,6 +16,7 @@ will look like this::
         "job": String, # <-- name of command to be run if logic is true
         "exe_env": String, # <-- If not provided will be default as 'general'
         "source": String, # <-- source of data to be provided
+        "retry_maximum": int, # <-- Maximum number of times your command will run before stopping. Default is 5 retries.
         "logic": { # <-- Logical blocks to be evaluated by Detection
             "Regex": [ # <-- example for regex detector
                 {

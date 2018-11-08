@@ -1,7 +1,8 @@
 import inspect
 from functools import wraps
 
-def grease_log(decorator=None, *, level="info", notify=False, verbose=False):
+
+def grease_log(decorator=None, level="info", notify=False, verbose=False):
     def _decorate(wrapped):
 
         @wraps(wrapped)

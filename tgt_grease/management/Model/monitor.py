@@ -281,6 +281,7 @@ class NodeMonitoring(object):
                 'grease_data.detection.end': None
             }
         ):
+            self.ioc.getCollection('SourceData').delete_one({'_id': ObjectId(job.get('_id'))})
             job = dict(job)
             if not self.centralScheduler.scheduleDetection(job.get('source'), job.get('configuration'), [job]):
                 retval = False
@@ -396,6 +397,7 @@ class NodeMonitoring(object):
                 'grease_data.detection.end': None
             }
         ):
+            self.ioc.getCollection('SourceData').delete_one({'_id': ObjectId(orphan.get('_id'))})
             if self.centralScheduler.scheduleDetection(orphan.get('source'), orphan.get('configuration'), [orphan]):
                 self.ioc.getLogger().info(
                     "Rescheduled orphan detection record: [{}]".format(orphan), verbose=True)

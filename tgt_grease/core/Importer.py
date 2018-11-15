@@ -11,6 +11,7 @@ class ImportTool(object):
     """
 
     _log = None
+    __cache = dict()  # type: Dict[str, object]
 
     def __init__(self, logger):
         if not isinstance(logger, Logging):
@@ -18,18 +19,19 @@ class ImportTool(object):
         else:
             self._log = logger
 
-    def load(self, className):
+    def load(self, className, cache=False):
         """Dynamic loading of classes for the system
 
         Args:
             className (str): Class name to search for
+            cache (bool): pull object from cache
 
         Returns:
             object: If an object is found it is returned
             None: If an object is not found and error occurs None is returned
 
         """
-        if not className: # Catches None, empty string, etc.
+        if not className:  # Catches None, empty string, etc.
             self._log.error(
                         "TYPEERROR: [{0}] is not a valid classname (it is a {1}, not a string). Load failed.".format(className, type(className)),
                         verbose=True
@@ -45,10 +47,16 @@ class ImportTool(object):
                 self._log.error("Failed to import module [{0}]".format(path), verbose=True)
                 continue
             if not className.startswith("__") and self._dir_contains(SearchModule, className):
+                if self.__cache.get(className) and cache:
+                    return self.__cache[className]
                 try:
                     req = self._get_attr(SearchModule, str(className))
                     instance = req()
-                    return instance
+                    if cache:
+                        self.__cache[className] = instance
+                        return self.__cache[className]
+                    else:
+                        return instance
                 except AttributeError:
                     self._log.error(
                         "ATTRERROR: Failed to create instance of class [{0}] from module [{1}]".format(className, path),

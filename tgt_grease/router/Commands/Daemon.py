@@ -134,7 +134,7 @@ class DaemonProcess(object):
                 )
                 return
 
-            inst = self.impTool.load(conf.get('job', ''))
+            inst = self.impTool.load(conf.get('job', ''), True)
             if inst and isinstance(inst, Command):
                 inst.failures = job.get("grease_data", {}).get("execution", {}).get("failures")
                 inst.ioc.getLogger().foreground = self.ioc.getLogger().foreground
@@ -217,7 +217,7 @@ class DaemonProcess(object):
         """
         if not self.contextManager['prototypes'].get(prototype):
             # ProtoType has not started
-            inst = self.impTool.load(prototype)
+            inst = self.impTool.load(prototype, True)
             if not isinstance(inst, Command):
                 # invalid ProtoType
                 self.log_once_per_second("Invalid ProtoType [{0}]".format(prototype), level=ERROR)
@@ -240,7 +240,7 @@ class DaemonProcess(object):
             else:
                 # Thread died for some reason
                 self.log_once_per_second("ProtoType [{0}] Stopped".format(prototype), level=INFO)
-                inst = self.impTool.load(prototype)
+                inst = self.impTool.load(prototype, True)
                 if not isinstance(inst, Command):
                     self.log_once_per_second("Invalid ProtoType [{0}]".format(prototype), level=ERROR)
                     return

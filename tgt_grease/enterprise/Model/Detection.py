@@ -134,7 +134,7 @@ class Detect(object):
         for detector, logicBlock in configuration.get('logic', {}).items():
             if not isinstance(logicBlock, list):
                 self.ioc.getLogger().warning("Logical Block was not list", trace=True, notify=False)
-            detect = self.impTool.load(detector)
+            detect = self.impTool.load(detector, True)
             if isinstance(detect, Detector):
                 result, resultData = detect.processObject(source, logicBlock)
                 if not result:

@@ -88,7 +88,7 @@ class Scan(object):
                     notify=True
                 )
                 continue
-            inst = self.impTool.load(conf.get('source', str(uuid4())), use_cache=True)
+            inst = self.impTool.load(conf.get('source', str(uuid4())))
             if not isinstance(inst, BaseSourceClass):
                 self.ioc.getLogger().error("Invalid Source [{0}]".format(conf.get('source')), notify=False)
                 del inst

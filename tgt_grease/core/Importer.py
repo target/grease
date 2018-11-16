@@ -20,12 +20,12 @@ class ImportTool(object):
         else:
             self._log = logger
 
-    def load(self, class_name: str, cache: bool = False):
+    def load(self, class_name: str, use_cache: bool = False):
         """Dynamic loading of classes for the system
 
         Args:
             class_name (str): Class name to search for
-            cache (bool): pull object from cache
+            use_cache (bool): pull object from cache
 
         Returns:
             object: If an object is found it is returned
@@ -51,12 +51,12 @@ class ImportTool(object):
                 self._log.error("Failed to import module [{0}]".format(path), verbose=True)
                 continue
             if not class_name.startswith("__") and self._dir_contains(search_mod, class_name):
-                if self.__cache.get(class_name) and cache:
+                if self.__cache.get(class_name) and use_cache:
                     return self.__cache[class_name]
                 try:
                     req = self._get_attr(search_mod, str(class_name))
                     instance = req()
-                    if cache:
+                    if use_cache:
                         self.__cache[class_name] = instance
                         return self.__cache[class_name]
                     else:

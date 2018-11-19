@@ -10,6 +10,15 @@ class TestImporter(TestCase):
         Conf = imp.load("Configuration")
         self.assertTrue(isinstance(Conf, Configuration))
 
+    def test_load_cache(self):
+        log = Logging()
+        imp = ImportTool(log)
+        Conf1 = imp.load("Configuration", use_cache=True)
+        self.assertTrue(isinstance(Conf1, Configuration))
+        Conf2 = imp.load("Configuration", use_cache=True)
+        self.assertTrue(isinstance(Conf2, Configuration))
+        self.assertTrue(Conf1 is Conf2)
+
     def test_failed_path(self):
         log = Logging()
         imp = ImportTool(log)

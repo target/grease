@@ -1,5 +1,6 @@
 import importlib
 from tgt_grease.core import Logging
+from typing import Dict
 
 
 class ImportTool(object):
@@ -11,6 +12,7 @@ class ImportTool(object):
     """
 
     _log = None
+    __cache = dict()  # type: Dict[str, object]
 
     def __init__(self, logger):
         if not isinstance(logger, Logging):
@@ -18,59 +20,79 @@ class ImportTool(object):
         else:
             self._log = logger
 
-    def load(self, className):
+    def load(self, class_name: str, use_cache: bool = False):
         """Dynamic loading of classes for the system
 
         Args:
-            className (str): Class name to search for
+            class_name (str): Class name to search for
+            use_cache (bool): pull object from cache
 
         Returns:
             object: If an object is found it is returned
             None: If an object is not found and error occurs None is returned
 
         """
-        if not className: # Catches None, empty string, etc.
+        if not class_name:  # Catches None, empty string, etc.
             self._log.error(
-                        "TYPEERROR: [{0}] is not a valid classname (it is a {1}, not a string). Load failed.".format(className, type(className)),
-                        verbose=True
-                    )
+                "TYPEERROR: [{0}] is not a valid classname (it is a {1}, not a string). Load failed.".format(
+                    class_name,
+                    type(class_name)
+                ),
+                verbose=True
+            )
             return None
 
-        self._log.trace("Attempting to load class [{0}]".format(className), trace=True)
+        self._log.trace("Attempting to load class [{0}]".format(class_name), trace=True)
         for path in self._log.getConfig().get('Import', 'searchPath'):
             self._log.trace("Searching path [{0}]".format(path), trace=True)
             try:
-                SearchModule = importlib.import_module(str(path))
+                search_mod = importlib.import_module(str(path))
             except ImportError:
                 self._log.error("Failed to import module [{0}]".format(path), verbose=True)
                 continue
-            if not className.startswith("__") and self._dir_contains(SearchModule, className):
+            if not class_name.startswith("__") and self._dir_contains(search_mod, class_name):
+                if self.__cache.get(class_name) and use_cache:
+                    return self.__cache[class_name]
                 try:
-                    req = self._get_attr(SearchModule, str(className))
+                    req = self._get_attr(search_mod, str(class_name))
                     instance = req()
-                    return instance
+                    if use_cache:
+                        self.__cache[class_name] = instance
+                        return self.__cache[class_name]
+                    else:
+                        return instance
                 except AttributeError:
                     self._log.error(
-                        "ATTRERROR: Failed to create instance of class [{0}] from module [{1}]".format(className, path),
+                        "ATTRERROR: Failed to create instance of class [{0}] from module [{1}]".format(
+                            class_name,
+                            path
+                        ),
                         verbose=True
                     )
                 except TypeError:
                     self._log.error(
-                        "TYPEERROR: Failed to create instance of class [{0}] from module [{1}]".format(className, path),
+                        "TYPEERROR: Failed to create instance of class [{0}] from module [{1}]".format(
+                            class_name,
+                            path
+                        ),
                         verbose=True
                     )
                 except Exception as e:
                     self._log.error(
-                        "{0}: Failed to create instance of class [{1}] from module [{2}]".format(str(type(e)).upper(), className, path),
+                        "{0}: Failed to create instance of class [{1}] from module [{2}]".format(
+                            str(type(e)).upper(),
+                            class_name,
+                            path
+                        ),
                         verbose=True
                     )
         return None
 
-    def _get_attr(self, object, name, default=None):
+    def _get_attr(self, obj, name, default=None):
         """Wrapper function for the built-in getattr function. Wrapper is required to mock the built-in function.
 
         Args:
-            object (Any object): Object you are searching for a named attribute for
+            obj (Any object): Object you are searching for a named attribute for
             name (str): Name of the attribute you want to get from object
             default (Any object): Return value if attribute name is not found in object. Raises exception if no default is provided.
 
@@ -78,7 +100,7 @@ class ImportTool(object):
             object: If an attribute is found it is returned. If it is not found, default is returned. 
 
         """
-        return getattr(object, name, default)
+        return getattr(obj, name, default)
 
     def _dir_contains(self, module, name):
         """Wrapper function for built in dir function. Needed for mocking. 

@@ -217,7 +217,7 @@ class DaemonProcess(object):
         """
         if not self.contextManager['prototypes'].get(prototype):
             # ProtoType has not started
-            inst = self.impTool.load(prototype)
+            inst = self.impTool.load(prototype, use_cache=True)
             if not isinstance(inst, Command):
                 # invalid ProtoType
                 self.log_once_per_second("Invalid ProtoType [{0}]".format(prototype), level=ERROR)

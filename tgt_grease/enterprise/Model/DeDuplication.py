@@ -376,12 +376,13 @@ class Deduplication(object):
                 "c": "test"
             }
             becomes...
-            ("('a', ('test1', 'test2'))",
-             "('b', ((('test1', 1),), (('test2', 21),), (('test7', 3),)))",
-             "('c', 'test')")
+            (('a', ('test1', 'test2')),
+             ('b', ((('test1', 1),), (('test2', 21),), (('test7', 3),))),
+             ('c', 'test'))
         """
         final = []
         sorted_tuples = Deduplication.make_hashable_helper(obj)
+        print(sorted_tuples)
         for pair in sorted_tuples:
             final.append(pair)
         return tuple(final)

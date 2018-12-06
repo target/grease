@@ -188,10 +188,12 @@ class Deduplication(object):
         return final
 
     @staticmethod
-    def deduplicate_object(ioc, obj, expiry, expiry_max, threshold, source_name, configuration_name, final, collection, data_pointer=None, data_max=None, field_set=None, limit=20):
+    def deduplicate_object(ioc, obj, expiry, expiry_max, threshold, source_name, configuration_name, final, collection, data_pointer=None, data_max=None, field_set=None):
         """DeDuplicate Object
+
         This is the method to actually deduplicate an object. The `final` argument is appended to with the obj if it
         was successfully deduplicated.
+
         Args:
             ioc (GreaseContainer): IoC for the instance
             obj (dict): Object to be deduplicated
@@ -207,15 +209,16 @@ class Deduplication(object):
             data_max (int): If provided will provide log information relating to thread
                 (Typically used via `Deduplicate`)
             field_set (list): If provided will only deduplicate on list of fields provided
+
         Returns:
             None: Nothing returned. Updates `final` object
+
         """
         # first determine if this object has been seen before
         DeDupCollection = ioc.getCollection(collection)
         t1test = obj
         t1test['grease_internal_configuration'] = configuration_name
-        dedup_strings = Deduplication.make_hashable(obj)
-        T1Hash = DeDupCollection.find_one({'hash': Deduplication.generate_hash_from_obj(dedup_strings)})
+        T1Hash = DeDupCollection.find_one({'hash': Deduplication.generate_hash_from_obj(t1test)})
         if T1Hash:
             # T1 Found Protocol: We have found a fully duplicate object
             # we have a duplicate source document
@@ -232,13 +235,8 @@ class Deduplication(object):
                 }
             )
             return
-
         # T1 Not Found Protocol: We have a possibly unique object
-        # ioc.getLogger().debug("Type1 Match not found; Beginning type 2 processing")
-        dedup_hashes = [Deduplication.generate_hash_from_obj(s) for s in dedup_strings]
-
-        field_set = {k:obj.get(k, '') for k in field_set}
-
+        ioc.getLogger().debug("Type1 Match not found; Beginning type 2 processing")
         # Create a T1
         T1ObjectId = DeDupCollection.insert_one({
             'expiry': Deduplication.generate_expiry_time(int(expiry)),
@@ -247,213 +245,122 @@ class Deduplication(object):
             'type': 1,
             'score': 1,
             'source': str(source_name),
-            'hash': Deduplication.generate_hash_from_obj(t1test),
-            'dedup_strings': dedup_strings,
-            'dedup_hashes': dedup_hashes,
-            'field_set': field_set
+            'hash': Deduplication.generate_hash_from_obj(t1test)
         }).inserted_id
-
-        # Check for matches in field set
-        if DeDupCollection.find_one({'field_set': field_set, 'grease_internal_configuration': configuration_name, '_id': {'$ne': T1ObjectId}}):
-            print(f'Match on field set for {obj.get("incident_number")}')
-            return
-
         # Begin T2 Deduplication
-        results = DeDupCollection.aggregate([{'$match': {'_id': {'$ne': T1ObjectId}, 'grease_internal_configuration': configuration_name}}, {'$project': {'key': 1, 'intersect':  {'$size': {'$setIntersection': [dedup_hashes, '$dedup_hashes']}}}}, {'$match': {'intersect': {'$gt': 0}}}, {'$sort': {'intersect': -1}}, {'$limit': limit}])
-        if not results:
+        compositeScore = Deduplication.object_field_score(
+            collection, ioc, source_name, configuration_name, obj, str(T1ObjectId), expiry, expiry_max, field_set
+        )
+        if compositeScore < threshold:
+            # unique obj
+            ioc.getLogger().trace(
+                "Unique object! Composite score was: [{0}] threashold: [{1}]".format(compositeScore, threshold),
+                verbose=True
+            )
             final.append(obj)
             return
-
-        index = 0
-        docs = DeDupCollection.find({'_id': {'$in': [result.get('_id') for result in results]}})
-        for doc in docs:
-            match = Deduplication.string_match_percentage(repr(dedup_strings), repr(doc.get('dedup_strings')))*100
-
-            if match >= threshold:
-                print(f'Match found at index {index} for {obj.get("incident_number")}')
-                return
-            index += 1
-
-        final.append(obj)
+        # likely duplicate value
+        ioc.getLogger().trace(
+            "Object surpassed threshold, suspected to be duplicate! "
+            "Composite score was: [{0}] threashold: [{1}]".format(compositeScore, threshold),
+            verbose=True
+        )
         return
 
-    # @staticmethod
-    # def deduplicate_object(ioc, obj, expiry, expiry_max, threshold, source_name, configuration_name, final, collection, data_pointer=None, data_max=None, field_set=None):
-    #     """DeDuplicate Object
-    #
-    #     This is the method to actually deduplicate an object. The `final` argument is appended to with the obj if it
-    #     was successfully deduplicated.
-    #
-    #     Args:
-    #         ioc (GreaseContainer): IoC for the instance
-    #         obj (dict): Object to be deduplicated
-    #         expiry (int): Hours to deduplicate for
-    #         expiry_max (int): Maximum days to deduplicate for
-    #         threshold (float): level of duplication allowed in an object (the lower the threshold the more uniqueness is required)
-    #         source_name (str): Source of data being deduplicated
-    #         configuration_name (str): Configuration being deduplicated for
-    #         final (list): List to append `obj` to if unique
-    #         collection (str): Name of deduplication collection
-    #         data_pointer (int): If provided will provide log information relating to thread
-    #             (Typically used via `Deduplicate`)
-    #         data_max (int): If provided will provide log information relating to thread
-    #             (Typically used via `Deduplicate`)
-    #         field_set (list): If provided will only deduplicate on list of fields provided
-    #
-    #     Returns:
-    #         None: Nothing returned. Updates `final` object
-    #
-    #     """
-    #     # first determine if this object has been seen before
-    #     DeDupCollection = ioc.getCollection(collection)
-    #     t1test = obj
-    #     t1test['grease_internal_configuration'] = configuration_name
-    #     T1Hash = DeDupCollection.find_one({'hash': Deduplication.generate_hash_from_obj(t1test)})
-    #     if T1Hash:
-    #         # T1 Found Protocol: We have found a fully duplicate object
-    #         # we have a duplicate source document
-    #         # increase the counter and expiry and move on (DROP)
-    #         ioc.getLogger().debug("Type1 Match found for object", verbose=True)
-    #         # bump the expiry time and move on
-    #         DeDupCollection.update_one(
-    #             {'_id': T1Hash['_id']},
-    #             {
-    #                 "$set": {
-    #                     'score': int(T1Hash['score']) + 1,
-    #                     'expiry': Deduplication.generate_expiry_time(expiry)
-    #                 }
-    #             }
-    #         )
-    #         return
-    #     else:
-    #         # T1 Not Found Protocol: We have a possibly unique object
-    #         ioc.getLogger().debug("Type1 Match not found; Beginning type 2 processing")
-    #         # Create a T1
-    #         T1ObjectId = DeDupCollection.insert_one({
-    #             'expiry': Deduplication.generate_expiry_time(int(expiry)),
-    #             'grease_internal_configuration': configuration_name,
-    #             'max_expiry': Deduplication.generate_max_expiry_time(int(expiry_max)),
-    #             'type': 1,
-    #             'score': 1,
-    #             'source': str(source_name),
-    #             'hash': Deduplication.generate_hash_from_obj(t1test)
-    #         }).inserted_id
-    #         # Begin T2 Deduplication
-    #         compositeScore = Deduplication.object_field_score(
-    #             collection, ioc, source_name, configuration_name, obj, str(T1ObjectId), expiry, expiry_max, field_set
-    #         )
-    #         if compositeScore < threshold:
-    #             # unique obj
-    #             ioc.getLogger().trace(
-    #                 "Unique object! Composite score was: [{0}] threashold: [{1}]".format(compositeScore, threshold),
-    #                 verbose=True
-    #             )
-    #             final.append(obj)
-    #             return
-    #         else:
-    #             # likely duplicate value
-    #             ioc.getLogger().trace(
-    #                 "Object surpassed threshold, suspected to be duplicate! "
-    #                 "Composite score was: [{0}] threashold: [{1}]".format(compositeScore, threshold),
-    #                 verbose=True
-    #             )
-    #             return
-    #
-    # @staticmethod
-    # def object_field_score(collection, ioc, source_name, configuration_name, obj, objectId, expiry, max_expiry, field_set=None):
-    #     """Returns T2 average uniqueness
-    #
-    #     Takes a dictionary and returns the likelihood of that object being unique based on data in the collection
-    #
-    #     Args:
-    #         collection (str): Deduplication collection name
-    #         ioc (GreaseContainer): IoC Access
-    #         source_name (str): source of data to be deduplicated
-    #         configuration_name (str): configuration name to be deduplicated
-    #         obj (dict): Single dimensional list to be compared against collection
-    #         objectId (str): T1 Hash Mongo ObjectId to be used to associate fields to a T1
-    #         expiry (int): Hours for deduplication to wait before removing a field if not seen again
-    #         max_expiry (int): Days for deduplication to wait before ensuring object is deleted
-    #         field_set (list, optional): List of fields to deduplicate with if provided. Else will use all keys
-    #
-    #     Returns:
-    #         float: Duplication Probability
-    #
-    #     """
-    #     # generate field list if not provided
-    #     FieldColl = ioc.getCollection(collection)
-    #     if not isinstance(field_set, list) or len(field_set) <= 0:
-    #         field_set = obj.keys()
-    #     # List to hold field level scores
-    #     field_scores = []
-    #     # iterate over the field set
-    #     for field in field_set:
-    #         # ensure key is in the object
-    #         ioc.getLogger().trace("Starting field [{0}]".format(field), verbose=True)
-    #         if field in obj:
-    #             if isinstance(obj.get(field), bytes):
-    #                 value = obj.get(field).decode('utf-8', 'ignore')
-    #             else:
-    #                 value = obj.get(field)
-    #             T2Object = {'source': source_name, 'field': field, 'value': value, 'configuration': configuration_name}
-    #             checkDoc = FieldColl.find_one({'hash': Deduplication.generate_hash_from_obj(T2Object)})
-    #             if checkDoc:
-    #                 # we found a 100% matching T2 object
-    #                 ioc.getLogger().trace("T2 object Located", trace=True)
-    #                 update_statement = {
-    #                     "$set": {
-    #                         'score': int(checkDoc['score']) + 1,
-    #                         'expiry': Deduplication.generate_expiry_time(expiry)
-    #                     }
-    #                 }
-    #                 FieldColl.update_one(
-    #                     {'_id': checkDoc['_id']},
-    #                     update_statement
-    #                 )
-    #                 field_scores.append(100)
-    #                 continue
-    #             else:
-    #                 # We have a possible unique value
-    #                 ioc.getLogger().trace("T2 object not found", trace=True)
-    #                 # generate a list to collect similarities to other field objects
-    #                 fieldProbabilityList = []
-    #                 for record in FieldColl.find({'source': source_name, 'configuration': configuration_name, 'field': field, 'type': 2})\
-    #                         .sort('score', pymongo.ASCENDING).limit(100):
-    #                     if Deduplication.string_match_percentage(record['value'], str(T2Object['value'])) > .95:
-    #                         # We've found a REALLY strong match
-    #                         # Set this field's score to that of the match
-    #                         field_scores.append(
-    #                             100 * Deduplication.string_match_percentage(record['value'], str(T2Object['value']))
-    #                         )
-    #                         # leave the for loop for this field since we found a highly probable match
-    #                         break
-    #                     else:
-    #                         fieldProbabilityList.append(
-    #                             100 * Deduplication.string_match_percentage(record['value'], str(T2Object['value']))
-    #                         )
-    #                 if fieldProbabilityList:
-    #                     # We have at least one result
-    #                     score = float(sum(fieldProbabilityList) / len(fieldProbabilityList))
-    #                     ioc.getLogger().trace("Field Score [{0}]".format(score), verbose=True)
-    #                     field_scores.append(score)
-    #                 else:
-    #                     # It is a globally unique field
-    #                     field_scores.append(0)
-    #                 # finally persist the new object
-    #                 T2Object['hash'] = Deduplication.generate_hash_from_obj(T2Object)
-    #                 T2Object['score'] = 1
-    #                 T2Object['expiry'] = Deduplication.generate_expiry_time(expiry)
-    #                 T2Object['max_expiry'] = Deduplication.generate_max_expiry_time(max_expiry)
-    #                 T2Object['type'] = 2
-    #                 T2Object['parentId'] = ObjectId(objectId)
-    #                 FieldColl.insert_one(T2Object)
-    #         else:
-    #             ioc.getLogger().warning("field [{0}] not found in object".format(field), trace=True, notify=False)
-    #             continue
-    #     if len(field_scores) is 0:
-    #         return 0.0
-    #     else:
-    #         return float(sum(field_scores) / float(len(field_scores)))
+    @staticmethod
+    def object_field_score(collection, ioc, source_name, configuration_name, obj, objectId, expiry, max_expiry, field_set=None):
+        """Returns T2 average uniqueness
+
+        Takes a dictionary and returns the likelihood of that object being unique based on data in the collection
+
+        Args:
+            collection (str): Deduplication collection name
+            ioc (GreaseContainer): IoC Access
+            source_name (str): source of data to be deduplicated
+            configuration_name (str): configuration name to be deduplicated
+            obj (dict): Single dimensional list to be compared against collection
+            objectId (str): T1 Hash Mongo ObjectId to be used to associate fields to a T1
+            expiry (int): Hours for deduplication to wait before removing a field if not seen again
+            max_expiry (int): Days for deduplication to wait before ensuring object is deleted
+            field_set (list, optional): List of fields to deduplicate with if provided. Else will use all keys
+
+        Returns:
+            float: Duplication Probability
+
+        """
+        # generate field list if not provided
+        FieldColl = ioc.getCollection(collection)
+        if not isinstance(field_set, list) or len(field_set) <= 0:
+            field_set = obj.keys()
+        # List to hold field level scores
+        field_scores = []
+        # iterate over the field set
+        for field in field_set:
+            # ensure key is in the object
+            ioc.getLogger().trace("Starting field [{0}]".format(field), verbose=True)
+            if field in obj:
+                if isinstance(obj.get(field), bytes):
+                    value = obj.get(field).decode('utf-8', 'ignore')
+                else:
+                    value = obj.get(field)
+                T2Object = {'source': source_name, 'field': field, 'value': value, 'configuration': configuration_name}
+                checkDoc = FieldColl.find_one({'hash': Deduplication.generate_hash_from_obj(T2Object)})
+                if checkDoc:
+                    # we found a 100% matching T2 object
+                    ioc.getLogger().trace("T2 object Located", trace=True)
+                    update_statement = {
+                        "$set": {
+                            'score': int(checkDoc['score']) + 1,
+                            'expiry': Deduplication.generate_expiry_time(expiry)
+                        }
+                    }
+                    FieldColl.update_one(
+                        {'_id': checkDoc['_id']},
+                        update_statement
+                    )
+                    field_scores.append(100)
+                    continue
+                else:
+                    # We have a possible unique value
+                    ioc.getLogger().trace("T2 object not found", trace=True)
+                    # generate a list to collect similarities to other field objects
+                    fieldProbabilityList = []
+                    for record in FieldColl.find({'source': source_name, 'configuration': configuration_name, 'field': field, 'type': 2})\
+                            .sort('score', pymongo.ASCENDING).limit(100):
+                        if Deduplication.string_match_percentage(record['value'], str(T2Object['value'])) > .95:
+                            # We've found a REALLY strong match
+                            # Set this field's score to that of the match
+                            field_scores.append(
+                                100 * Deduplication.string_match_percentage(record['value'], str(T2Object['value']))
+                            )
+                            # leave the for loop for this field since we found a highly probable match
+                            break
+                        else:
+                            fieldProbabilityList.append(
+                                100 * Deduplication.string_match_percentage(record['value'], str(T2Object['value']))
+                            )
+                    if fieldProbabilityList:
+                        # We have at least one result
+                        score = float(sum(fieldProbabilityList) / len(fieldProbabilityList))
+                        ioc.getLogger().trace("Field Score [{0}]".format(score), verbose=True)
+                        field_scores.append(score)
+                    else:
+                        # It is a globally unique field
+                        field_scores.append(0)
+                    # finally persist the new object
+                    T2Object['hash'] = Deduplication.generate_hash_from_obj(T2Object)
+                    T2Object['score'] = 1
+                    T2Object['expiry'] = Deduplication.generate_expiry_time(expiry)
+                    T2Object['max_expiry'] = Deduplication.generate_max_expiry_time(max_expiry)
+                    T2Object['type'] = 2
+                    T2Object['parentId'] = ObjectId(objectId)
+                    FieldColl.insert_one(T2Object)
+            else:
+                ioc.getLogger().warning("field [{0}] not found in object".format(field), trace=True, notify=False)
+                continue
+        if len(field_scores) is 0:
+            return 0.0
+        return float(sum(field_scores) / float(len(field_scores)))
 
     @staticmethod
     def make_hashable(obj):
@@ -477,7 +384,7 @@ class Deduplication(object):
         final = []
         sorted_tuples = Deduplication.make_hashable_helper(obj)
         for pair in sorted_tuples:
-            final.append(str(pair))
+            final.append(pair)
         return tuple(final)
 
     @staticmethod
@@ -502,9 +409,7 @@ class Deduplication(object):
         Returns:
             str: Object Hash
         """
-        hasher = hashlib.sha256()
-        hasher.update(repr(obj).encode())
-        return base64.b64encode(hasher.digest()).decode()
+        return hashlib.sha256(repr(Deduplication.make_hashable(obj)).encode('utf-8')).hexdigest()
 
     @staticmethod
     def generate_expiry_time(hours):

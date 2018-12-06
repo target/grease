@@ -6,7 +6,6 @@ import hashlib
 import datetime
 import difflib
 import pymongo
-import base64
 
 
 class Deduplication(object):
@@ -404,10 +403,13 @@ class Deduplication(object):
     @staticmethod
     def generate_hash_from_obj(obj):
         """Takes an object and generates a SHA256 Hash of it
+
         Args:
             obj (object): Hashable object ot generate a SHA256
+
         Returns:
             str: Object Hash
+
         """
         return hashlib.sha256(repr(Deduplication.make_hashable(obj)).encode('utf-8')).hexdigest()
 

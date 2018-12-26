@@ -70,60 +70,85 @@ class BridgeCommand(object):
         server = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(str(serverId))})
         if server:
             server = dict(server)
-            print(f"""
-<<<<<<<<<<<<<< SERVER: {server.get('_id')} >>>>>>>>>>>>>>
-Activation State: {server.get('active')} Date: {server.get('activationTime')}
-Jobs: {server.get('jobs')}
-Operating System: {server.get('os')}
-Prototypes: {server.get('prototypes')}
-Execution Roles: {server.get('roles')}
-            """)
+            print("""
+<<<<<<<<<<<<<< SERVER: {0} >>>>>>>>>>>>>>
+Activation State: {1} Date: {2}
+Jobs: {3}
+Operating System: {4}
+Prototypes: {5}
+Execution Roles: {6}
+            """.format(
+                server.get('_id'),
+                server.get('active'),
+                server.get('activationTime'),
+                server.get('jobs'),
+                server.get('os'),
+                server.get('prototypes'),
+                server.get('roles'))
+            )
             if jobs and prototypeJobs:
                 print("======================= SOURCING =======================")
                 for job in self.ioc.getCollection('SourceData').find({'grease_data.sourcing.server': ObjectId(serverId)}):
-                    print(f"""
+                    print("""
 -------------------------------
-Job: {job['_id']}
+Job: {0}
 -------------------------------
-                    """)
+                    """, job['_id'])
             if jobs and prototypeJobs:
                 print("======================= DETECTION =======================")
                 for job in self.ioc.getCollection('SourceData').find({'grease_data.detection.server': ObjectId(serverId)}):
-                    print(f"""
+                    print("""
 -------------------------------
-Job: {job['_id']}
-Start Time: {job['grease_data']['detection']['start']}
-End Time: {job['grease_data']['detection']['end']}
-Context: {job['grease_data']['detection']['detection']}
+Job: {0}
+Start Time: {1}
+End Time: {2}
+Context: {3}
 -------------------------------
-                    """)
+                    """.format(
+                        job['_id'],
+                        job['grease_data']['detection']['start'],
+                        job['grease_data']['detection']['end'],
+                        job['grease_data']['detection']['detection'])
+                    )
             if jobs and prototypeJobs:
                 print("======================= SCHEDULING =======================")
                 for job in self.ioc.getCollection('SourceData').find({'grease_data.scheduling.server': ObjectId(serverId)}):
-                    print(f"""
+                    print("""
 -------------------------------
-Job: {job['_id']}
-Start Time: {job['grease_data']['scheduling']['start']}
-End Time: {job['grease_data']['scheduling']['end']}
+Job: {0}
+Start Time: {1}
+End Time: {2}
 -------------------------------
-                    """)
+                    """.format(
+                        job['_id'],
+                        job['grease_data']['scheduling']['start'],
+                        job['grease_data']['scheduling']['end'])
+                    )
             if jobs:
                 print("======================= EXECUTION =======================")
                 for job in self.ioc.getCollection('SourceData').find({'grease_data.execution.server': ObjectId(serverId)}):
-                    print(f"""
+                    print("""
 -------------------------------
-Job: {job['_id']}
-Assignment Time: {job['grease_data']['execution']['assignmentTime']}
-Completed Time: {job['grease_data']['execution']['completeTime']}
-Execution Success: {job['grease_data']['execution']['executionSuccess']}
-Command Success: {job['grease_data']['execution']['commandSuccess']}
-Failures: {job['grease_data']['execution']['failures']}
-Return Data: {job['grease_data']['execution']['returnData']}
+Job: {0}
+Assignment Time: {1}
+Completed Time: {2}
+Execution Success: {3}
+Command Success: {4}
+Failures: {5}
+Return Data: {6}
 -------------------------------
-                    """)
+                    """.format(
+                        job['_id'],
+                        job['grease_data']['execution']['assignmentTime'],
+                        job['grease_data']['execution']['completeTime'],
+                        job['grease_data']['execution']['executionSuccess'],
+                        job['grease_data']['execution']['commandSuccess'],
+                        job['grease_data']['execution']['failures'],
+                        job['grease_data']['execution']['returnData'])
+                    )
             return True
         print("Unable to locate server")
-        self.ioc.getLogger().error(f"Unable to load [{serverId}] server for information")
+        self.ioc.getLogger().error("Unable to load [{0}] server for information".format(serverId))
         return False
 
     def action_assign(self, prototype=None, role=None, node=None):
@@ -142,8 +167,8 @@ Return Data: {job['grease_data']['execution']['returnData']}
         if prototype:
             job = self.imp.load(str(prototype))
             if not job or not isinstance(job, Command):
-                print(f"Cannot find prototype [{prototype}] to assign check search path!")
-                self.ioc.getLogger().error(f"Cannot find prototype [{prototype}] to assign check search path!")
+                print("Cannot find prototype [{0}] to assign check search path!".format(prototype))
+                self.ioc.getLogger().error("Cannot find prototype [{0}] to assign check search path!".format(prototype))
                 return False
             # Cleanup job
             job.__del__()
@@ -162,11 +187,11 @@ Return Data: {job['grease_data']['execution']['returnData']}
             ).acknowledged
             if updated:
                 print("Prototype Assigned")
-                self.ioc.getLogger().info(f"Prototype [{prototype}] assigned to server [{serverId}]")
+                self.ioc.getLogger().info("Prototype [{0}] assigned to server [{1}]".format(prototype, serverId))
                 assigned = True
             else:
                 print("Prototype Assignment Failed!")
-                self.ioc.getLogger().info(f"Prototype [{prototype}] assignment failed to server [{serverId}]")
+                self.ioc.getLogger().info("Prototype [{0}] assignment failed to server [{1}]".format(prototype, serverId))
                 return False
         if role:
             valid, serverId = self.valid_server(node)
@@ -183,12 +208,12 @@ Return Data: {job['grease_data']['execution']['returnData']}
             ).acknowledged
             if updated:
                 print("Role Assigned")
-                self.ioc.getLogger().info(f"Role [{prototype}] assigned to server [{serverId}]")
+                self.ioc.getLogger().info("Role [{0}] assigned to server [{1}]".format(prototype, serverId))
                 assigned = True
             else:
                 print("Role Assignment Failed!")
                 self.ioc.getLogger().info(
-                    f"Role [{prototype}] assignment failed to server [{serverId}]")
+                    "Role [{0}] assignment failed to server [{1}]".format(prototype, serverId))
                 return False
         if not assigned:
             print("Assignment failed, please check logs for details")
@@ -210,8 +235,8 @@ Return Data: {job['grease_data']['execution']['returnData']}
         if prototype:
             job = self.imp.load(str(prototype))
             if not job or not isinstance(job, Command):
-                print(f"Cannot find prototype [{prototype}] to unassign check search path!")
-                self.ioc.getLogger().error(f"Cannot find prototype [{prototype}] to unassign check search path!")
+                print("Cannot find prototype [{0}] to unassign check search path!".format(prototype))
+                self.ioc.getLogger().error("Cannot find prototype [{0}] to unassign check search path!".format(prototype))
                 return False
             # Cleanup job
             job.__del__()
@@ -230,11 +255,11 @@ Return Data: {job['grease_data']['execution']['returnData']}
             ).acknowledged
             if updated:
                 print("Prototype Assignment Removed")
-                self.ioc.getLogger().info(f"Prototype [{prototype}] unassigned from server [{serverId}]")
+                self.ioc.getLogger().info("Prototype [{0}] unassigned from server [{1}]".format(prototype, serverId))
                 unassigned = True
             else:
                 print("Prototype Unassignment Failed!")
-                self.ioc.getLogger().info(f"Prototype [{prototype}] unassignment failed from server [{serverId}]")
+                self.ioc.getLogger().info("Prototype [{0}] unassignment failed from server [{1}]".format(prototype, serverId))
                 return False
         if role:
             valid, serverId = self.valid_server(node)
@@ -251,12 +276,12 @@ Return Data: {job['grease_data']['execution']['returnData']}
             ).acknowledged
             if updated:
                 print("Role Removed")
-                self.ioc.getLogger().info(f"Role [{prototype}] removed to server [{serverId}]")
+                self.ioc.getLogger().info("Role [{0}] removed to server [{1}]".format(prototype, serverId))
                 unassigned = True
             else:
                 print("Role Removal Failed!")
                 self.ioc.getLogger().info(
-                    f"Role [{prototype}] removal failed to server [{serverId}]")
+                    "Role [{0}] removal failed to server [{1}]".format(prototype, serverId))
                 return False
         if not unassigned:
             print("Unassignment failed, please check logs for details")
@@ -279,36 +304,36 @@ Return Data: {job['grease_data']['execution']['returnData']}
             return False
         if not self.monitor.deactivateServer(serverId):
             self.ioc.getLogger().error(
-                f"Failed deactivating server [{serverId}]"
+                "Failed deactivating server [{0}]".format(serverId)
             )
-            print(f"Failed deactivating server [{serverId}]")
+            print("Failed deactivating server [{0}]".format(serverId))
             return False
         self.ioc.getLogger().warning(
-            f"Server [{serverId}] preparing to reallocate detect jobs"
+            "Server [{0}] preparing to reallocate detect jobs".format(serverId)
         )
         if not self.monitor.rescheduleDetectJobs(serverId):
             self.ioc.getLogger().error(
-                f"Failed rescheduling detect jobs [{serverId}]"
+                "Failed rescheduling detect jobs [{0}]".format(serverId)
             )
-            print(f"Failed rescheduling detect jobs [{serverId}]")
+            print("Failed rescheduling detect jobs [{0}]".format(serverId))
             return False
         self.ioc.getLogger().warning(
-            f"Server [{serverId}] preparing to reallocate schedule jobs"
+            "Server [{0}] preparing to reallocate schedule jobs".format(serverId)
         )
         if not self.monitor.rescheduleScheduleJobs(serverId):
             self.ioc.getLogger().error(
-                f"Failed rescheduling detect jobs [{serverId}]"
+                "Failed rescheduling detect jobs [{0}]".format(serverId)
             )
-            print(f"Failed rescheduling detect jobs [{serverId}]")
+            print("Failed rescheduling detect jobs [{0}]".format(serverId))
             return False
         self.ioc.getLogger().warning(
-            f"Server [{serverId}] preparing to reallocate jobs"
+            "Server [{0}] preparing to reallocate jobs".format(serverId)
         )
         if not self.monitor.rescheduleJobs(serverId):
             self.ioc.getLogger().error(
-                "Failed rescheduling detect jobs [{serverId}]"
+                "Failed rescheduling detect jobs [{0}]".format(serverId)
             )
-            print(f"Failed rescheduling detect jobs [{serverId}]")
+            print("Failed rescheduling detect jobs [{0}]".format(serverId))
             return False
         print("Server Deactivated")
         return True
@@ -340,9 +365,9 @@ Return Data: {job['grease_data']['execution']['returnData']}
                     }
                 }
         ).modified_count < 1:
-            self.ioc.getLogger().warning(f"Server [{serverId}] failed to be activated")
+            self.ioc.getLogger().warning("Server [{0}] failed to be activated".format(serverId))
             return False
-        self.ioc.getLogger().warning(f"Server [{serverId}] activated")
+        self.ioc.getLogger().warning("Server [{0}] activated".format(serverId))
         return True
 
     def valid_server(self, node=None):
@@ -359,10 +384,10 @@ Return Data: {job['grease_data']['execution']['returnData']}
             try:
                 server = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(str(node))})
             except InvalidId:
-                self.ioc.getLogger().error(f"Invalid ObjectID passed to bridge info [{node}]")
+                self.ioc.getLogger().error("Invalid ObjectID passed to bridge info [{0}]".format(node))
                 return False, ""
             if server:
                 return True, dict(server).get('_id')
-            self.ioc.getLogger().error(f"Failed to find server [{node}] in the database")
+            self.ioc.getLogger().error("Failed to find server [{0}] in the database".format(node))
             return False, ""
         return True, self.ioc.getConfig().NodeIdentity

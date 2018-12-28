@@ -18,51 +18,70 @@ class TestDeduplication(TestCase):
         )
 
     def test_generate_max_expiry_time(self):
-            print(str(Deduplication.generate_max_expiry_time(7)))
-            print(str(datetime.datetime.utcnow() + datetime.timedelta(days=7)))
-            self.assertTrue(
-                Deduplication.generate_max_expiry_time(7).day == (datetime.datetime.utcnow() + datetime.timedelta(days=7)).day
-            )
+        print(str(Deduplication.generate_max_expiry_time(7)))
+        print(str(datetime.datetime.utcnow() + datetime.timedelta(days=7)))
+        self.assertTrue(
+            Deduplication.generate_max_expiry_time(7).day == (datetime.datetime.utcnow() + datetime.timedelta(days=7)).day
+        )
+
+    def test_make_hashable_helper(self):
+        obj1 = {'test1': 1, 'test2': 2, 'test3': 3}
+        obj2 = {'test3': 3, 'test1': 1, 'test2': 2}
+        self.assertEqual(
+            Deduplication.make_hashable_helper(obj1),
+            (('test1', 1), ('test2', 2), ('test3', 3))
+        )
+        self.assertEqual(
+            Deduplication.make_hashable_helper(obj1),
+            Deduplication.make_hashable_helper(obj2)
+        )
+
+    def test_make_hashable(self):
+        obj = {'test1': 'var', 'test2': 5, 'test3': ['1', '3', '2']}
+        self.assertEqual(
+            Deduplication.make_hashable_helper(obj),
+            (('test1', 'var'), ('test2', 5), ('test3', ('1', '2', '3')))
+        )
 
     def test_generate_hash(self):
         obj = {'test': 'var', 'test1': 5, 'test2': 7.89}
         self.assertEqual(
             Deduplication.generate_hash_from_obj(obj),
-            hashlib.sha256(str(obj).encode('utf-8')).hexdigest()
+            hashlib.sha256(repr(Deduplication.make_hashable(obj)).encode('utf-8')).hexdigest()
         )
 
     def test_generate_hash_multi_str_type(self):
         obj = {'test': u'var', 'test1': 5, 'test2': 7.89, 'test3': 'ver'}
         self.assertEqual(
             Deduplication.generate_hash_from_obj(obj),
-            hashlib.sha256(str(obj).encode('utf-8')).hexdigest()
+            hashlib.sha256(repr(Deduplication.make_hashable(obj)).encode('utf-8')).hexdigest()
         )
 
     def test_generate_hash_other_type(self):
-        obj = 7
+        obj = {'test': 7}
         self.assertEqual(
             Deduplication.generate_hash_from_obj(obj),
-            hashlib.sha256(str(obj).encode('utf-8')).hexdigest()
+            hashlib.sha256(repr(Deduplication.make_hashable(obj)).encode('utf-8')).hexdigest()
         )
-        obj = 'test'
+        obj = {'test': 'test'}
         self.assertEqual(
             Deduplication.generate_hash_from_obj(obj),
-            hashlib.sha256(str(obj).encode('utf-8')).hexdigest()
+            hashlib.sha256(repr(Deduplication.make_hashable(obj)).encode('utf-8')).hexdigest()
         )
-        obj = u'test'
+        obj = {'test': u'test'}
         self.assertEqual(
             Deduplication.generate_hash_from_obj(obj),
-            hashlib.sha256(str(obj).encode('utf-8')).hexdigest()
+            hashlib.sha256(repr(Deduplication.make_hashable(obj)).encode('utf-8')).hexdigest()
         )
-        obj = 7.8
+        obj = {'test': 7.8}
         self.assertEqual(
             Deduplication.generate_hash_from_obj(obj),
-            hashlib.sha256(str(obj).encode('utf-8')).hexdigest()
+            hashlib.sha256(repr(Deduplication.make_hashable(obj)).encode('utf-8')).hexdigest()
         )
-        obj = ['test', 'var', 8, 8.43]
+        obj = {'test': ['test', 'var', '8', '8.43']}
         self.assertEqual(
             Deduplication.generate_hash_from_obj(obj),
-            hashlib.sha256(str(obj).encode('utf-8')).hexdigest()
+            hashlib.sha256(repr(Deduplication.make_hashable(obj)).encode('utf-8')).hexdigest()
         )
 
     def test_object_score_low_duplication(self):

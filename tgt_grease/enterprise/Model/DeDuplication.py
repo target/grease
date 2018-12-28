@@ -234,39 +234,37 @@ class Deduplication(object):
                 }
             )
             return
-        else:
-            # T1 Not Found Protocol: We have a possibly unique object
-            ioc.getLogger().debug("Type1 Match not found; Beginning type 2 processing")
-            # Create a T1
-            T1ObjectId = DeDupCollection.insert_one({
-                'expiry': Deduplication.generate_expiry_time(int(expiry)),
-                'grease_internal_configuration': configuration_name,
-                'max_expiry': Deduplication.generate_max_expiry_time(int(expiry_max)),
-                'type': 1,
-                'score': 1,
-                'source': str(source_name),
-                'hash': Deduplication.generate_hash_from_obj(t1test)
-            }).inserted_id
-            # Begin T2 Deduplication
-            compositeScore = Deduplication.object_field_score(
-                collection, ioc, source_name, configuration_name, obj, str(T1ObjectId), expiry, expiry_max, field_set
+        # T1 Not Found Protocol: We have a possibly unique object
+        ioc.getLogger().debug("Type1 Match not found; Beginning type 2 processing")
+        # Create a T1
+        T1ObjectId = DeDupCollection.insert_one({
+            'expiry': Deduplication.generate_expiry_time(int(expiry)),
+            'grease_internal_configuration': configuration_name,
+            'max_expiry': Deduplication.generate_max_expiry_time(int(expiry_max)),
+            'type': 1,
+            'score': 1,
+            'source': str(source_name),
+            'hash': Deduplication.generate_hash_from_obj(t1test)
+        }).inserted_id
+        # Begin T2 Deduplication
+        compositeScore = Deduplication.object_field_score(
+            collection, ioc, source_name, configuration_name, obj, str(T1ObjectId), expiry, expiry_max, field_set
+        )
+        if compositeScore < threshold:
+            # unique obj
+            ioc.getLogger().trace(
+                "Unique object! Composite score was: [{0}] threashold: [{1}]".format(compositeScore, threshold),
+                verbose=True
             )
-            if compositeScore < threshold:
-                # unique obj
-                ioc.getLogger().trace(
-                    "Unique object! Composite score was: [{0}] threashold: [{1}]".format(compositeScore, threshold),
-                    verbose=True
-                )
-                final.append(obj)
-                return
-            else:
-                # likely duplicate value
-                ioc.getLogger().trace(
-                    "Object surpassed threshold, suspected to be duplicate! "
-                    "Composite score was: [{0}] threashold: [{1}]".format(compositeScore, threshold),
-                    verbose=True
-                )
-                return
+            final.append(obj)
+            return
+        # likely duplicate value
+        ioc.getLogger().trace(
+            "Object surpassed threshold, suspected to be duplicate! "
+            "Composite score was: [{0}] threashold: [{1}]".format(compositeScore, threshold),
+            verbose=True
+        )
+        return
 
     @staticmethod
     def object_field_score(collection, ioc, source_name, configuration_name, obj, objectId, expiry, max_expiry, field_set=None):
@@ -361,8 +359,46 @@ class Deduplication(object):
                 continue
         if len(field_scores) is 0:
             return 0.0
-        else:
-            return float(sum(field_scores) / float(len(field_scores)))
+        return float(sum(field_scores) / float(len(field_scores)))
+
+    @staticmethod
+    def make_hashable(obj):
+        """Takes a dictionary and makes a sorted tuple of strings representing flattened key value pairs
+        Args:
+            obj (dict): A dictionary
+        Returns:
+            tuple<str>: a sorted flattened tuple of the dictionary's key value pairs
+
+        Example:
+            {
+                "a": ["test1", "test2"],
+                "b": [{"test2": 21}, {"test1": 1}, {"test7": 3}],
+                "c": "test"
+            }
+            becomes...
+            (('a', ('test1', 'test2')),
+             ('b', ((('test1', 1),), (('test2', 21),), (('test7', 3),))),
+             ('c', 'test'))
+        """
+        final = []
+        sorted_tuples = Deduplication.make_hashable_helper(obj)
+        for pair in sorted_tuples:
+            final.append(pair)
+        return tuple(final)
+
+    @staticmethod
+    def make_hashable_helper(obj):
+        """Recursively turns iterables into sorted tuples"""
+        if isinstance(obj, (tuple, list)):
+            return tuple(sorted(Deduplication.make_hashable_helper(e) for e in obj))
+
+        if isinstance(obj, dict):
+            return tuple(sorted((k, Deduplication.make_hashable_helper(v)) for k, v in obj.items()))
+
+        if isinstance(obj, (set, frozenset)):
+            return tuple(sorted(Deduplication.make_hashable_helper(e) for e in obj))
+
+        return obj
 
     @staticmethod
     def generate_hash_from_obj(obj):
@@ -375,7 +411,7 @@ class Deduplication(object):
             str: Object Hash
 
         """
-        return hashlib.sha256(str(obj).encode('utf-8')).hexdigest()
+        return hashlib.sha256(repr(Deduplication.make_hashable(obj)).encode('utf-8')).hexdigest()
 
     @staticmethod
     def generate_expiry_time(hours):

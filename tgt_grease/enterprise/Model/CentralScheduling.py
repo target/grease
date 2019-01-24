@@ -3,6 +3,7 @@ from bson.objectid import ObjectId
 from .DeDuplication import Deduplication
 import pymongo
 import datetime
+import sys
 
 
 class Scheduling(object):
@@ -38,18 +39,21 @@ class Scheduling(object):
         """
         if len(data) is 0 or not isinstance(data, list):
             self.ioc.getLogger().trace(
-                "Data provided empty or is not type list type: [{0}] len: [{1}]".format(str(type(data)), len(data)),
+                "Data provided empty or is not type list type: [{0}] len: [{1}]".format(
+                    str(type(data)), len(data)),
                 trace=True
             )
             return False
-        self.ioc.getLogger().trace("Preparing to schedule [{0}] source objects".format(len(data)), trace=True)
+        self.ioc.getLogger().trace(
+            "Preparing to schedule [{0}] source objects".format(len(data)), trace=True)
         sourceCollect = self.ioc.getCollection('SourceData')
         jServerCollect = self.ioc.getCollection('JobServer')
         # begin scheduling loop of each block
         for elem in data:
             if not isinstance(elem, dict):
                 self.ioc.getLogger().warning(
-                    "Element from data not of type dict! Got [{0}] DROPPED".format(str(type(elem))),
+                    "Element from data not of type dict! Got [{0}] DROPPED".format(
+                        str(type(elem))),
                     notify=False
                 )
                 continue
@@ -93,7 +97,8 @@ class Scheduling(object):
                 )
             else:
                 self.ioc.getLogger().warning(
-                    "Failed to find detection server for data object from source [{0}]; DROPPED".format(source),
+                    "Failed to find detection server for data object from source [{0}]; DROPPED".format(
+                        source),
                     notify=False
                 )
                 self.ioc.getLogger().warning(
@@ -180,11 +185,31 @@ class Scheduling(object):
             str: MongoDB Object ID of server; if one cannot be found then string will be empty
 
         """
-        result = self.ioc.getCollection('JobServer').find({
-            'active': True,
-            'roles': str(role)
-        }).sort('jobs', pymongo.DESCENDING).limit(1)
-        if result.count():
-            return str(result[0]['_id']), int(result[0]['jobs'])
-        else:
+        servers = [
+            (server.get('_id'), server.get('jobs')) for server in self.ioc.getCollection('JobServer').find(
+                {
+                    'active': True,
+                    'roles': str(role),
+                }
+            )
+        ]
+
+        best_server = {}
+        for (server, total_jobs) in servers:
+            active_jobs = self.ioc.getCollection('SourceData').find(
+                {
+                    'grease_data.execution.server': server,
+                    'grease_data.execution.completeTime': None,
+                    'grease_data.execution.failures': {'$lt': 6},
+                }
+            ).count()
+            if active_jobs < best_server.get('active_jobs', sys.maxsize):
+                best_server['_id'] = server
+                best_server['total_jobs'] = total_jobs
+                best_server['active_jobs'] = active_jobs
+
+        if not best_server.get('_id'):
+            self.ioc.getLogger().error("No active job server found with role {}!".format(role))
             return "", 0
+
+        return best_server.get('_id'), best_server.get('total_jobs')

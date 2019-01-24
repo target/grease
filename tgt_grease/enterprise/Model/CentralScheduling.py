@@ -149,14 +149,33 @@ class Scheduling(object):
             tuple: MongoDB Object ID of server & current job count
 
         """
-        result = self.ioc.getCollection('JobServer').find({
-            'active': True,
-            'prototypes': 'detect'
-        }).sort('jobs', pymongo.ASCENDING).limit(1)
-        if result.count():
-            return str(result[0]['_id']), int(result[0]['jobs'])
-        else:
+        servers = [
+            (server.get('_id'), server.get('jobs')) for server in self.ioc.getCollection('JobServer').find(
+                {
+                    'active': True,
+                    'prototypes': 'detect',
+                }
+            )
+        ]
+
+        best_server = {}
+        for (server, total_jobs) in servers:
+            active_jobs = self.ioc.getCollection('SourceData').find(
+                {
+                    'grease_data.detection.server': server,
+                    'grease_data.detection.end': None,
+                }
+            ).count()
+            if active_jobs < best_server.get('active_jobs', sys.maxsize):
+                best_server['_id'] = server
+                best_server['total_jobs'] = total_jobs
+                best_server['active_jobs'] = active_jobs
+
+        if not best_server.get('_id'):
+            self.ioc.getLogger().error("No active detection server found!")
             return "", 0
+
+        return best_server.get('_id'), best_server.get('total_jobs')
 
     def determineSchedulingServer(self):
         """Determines scheduling server to use
@@ -167,14 +186,33 @@ class Scheduling(object):
             tuple: MongoDB Object ID of server & current job count
 
         """
-        result = self.ioc.getCollection('JobServer').find({
-            'active': True,
-            'prototypes': 'schedule'
-        }).sort('jobs', pymongo.DESCENDING).limit(1)
-        if result.count():
-            return str(result[0]['_id']), int(result[0]['jobs'])
-        else:
+        servers = [
+            (server.get('_id'), server.get('jobs')) for server in self.ioc.getCollection('JobServer').find(
+                {
+                    'active': True,
+                    'prototypes': 'schedule',
+                }
+            )
+        ]
+
+        best_server = {}
+        for (server, total_jobs) in servers:
+            active_jobs = self.ioc.getCollection('SourceData').find(
+                {
+                    'grease_data.scheduling.server': server,
+                    'grease_data.scheduling.end': None,
+                }
+            ).count()
+            if active_jobs < best_server.get('active_jobs', sys.maxsize):
+                best_server['_id'] = server
+                best_server['total_jobs'] = total_jobs
+                best_server['active_jobs'] = active_jobs
+
+        if not best_server.get('_id'):
+            self.ioc.getLogger().error("No active scheduling server found!")
             return "", 0
+
+        return best_server.get('_id'), best_server.get('total_jobs')
 
     def determineExecutionServer(self, role):
         """Determines execution server to use

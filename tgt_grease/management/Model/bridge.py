@@ -36,10 +36,9 @@ class BridgeCommand(object):
             print("Registration Complete!")
             self.ioc.getLogger().info("Registration Completed Successfully")
             return True
-        else:
-            print("Registration Failed!")
-            self.ioc.getLogger().info("Registration Failed")
-            return False
+        print("Registration Failed!")
+        self.ioc.getLogger().info("Registration Failed")
+        return False
 
     def action_info(self, node=None, jobs=None, prototypeJobs=None):
         """Gets Node Information
@@ -66,8 +65,8 @@ class BridgeCommand(object):
             return False
         valid, serverId = self.valid_server(node)
         if not valid:
-                print("Invalid ObjectID")
-                return False
+            print("Invalid ObjectID")
+            return False
         server = self.ioc.getCollection('JobServer').find_one({'_id': ObjectId(str(serverId))})
         if server:
             server = dict(server)
@@ -148,10 +147,9 @@ Return Data: {6}
                         job['grease_data']['execution']['returnData'])
                     )
             return True
-        else:
-            print("Unable to locate server")
-            self.ioc.getLogger().error("Unable to load [{0}] server for information".format(serverId))
-            return False
+        print("Unable to locate server")
+        self.ioc.getLogger().error("Unable to load [{0}] server for information".format(serverId))
+        return False
 
     def action_assign(self, prototype=None, role=None, node=None):
         """Assign prototypes/roles to a node either local or remote
@@ -177,12 +175,12 @@ Return Data: {6}
             del job
             valid, serverId = self.valid_server(node)
             if not valid:
-                    print("Invalid ObjectID")
-                    return False
+                print("Invalid ObjectID")
+                return False
             updated = self.ioc.getCollection('JobServer').update_one(
                 {'_id': ObjectId(serverId)},
                 {
-                    '$push': {
+                    '$addToSet': {
                         'prototypes': prototype
                     }
                 }
@@ -198,8 +196,8 @@ Return Data: {6}
         if role:
             valid, serverId = self.valid_server(node)
             if not valid:
-                    print("Invalid ObjectID")
-                    return False
+                print("Invalid ObjectID")
+                return False
             updated = self.ioc.getCollection('JobServer').update_one(
                 {'_id': ObjectId(serverId)},
                 {
@@ -245,8 +243,8 @@ Return Data: {6}
             del job
             valid, serverId = self.valid_server(node)
             if not valid:
-                    print("Invalid ObjectID")
-                    return False
+                print("Invalid ObjectID")
+                return False
             updated = self.ioc.getCollection('JobServer').update_one(
                 {'_id': ObjectId(serverId)},
                 {
@@ -266,8 +264,8 @@ Return Data: {6}
         if role:
             valid, serverId = self.valid_server(node)
             if not valid:
-                    print("Invalid ObjectID")
-                    return False
+                print("Invalid ObjectID")
+                return False
             updated = self.ioc.getCollection('JobServer').update_one(
                 {'_id': ObjectId(serverId)},
                 {
@@ -302,8 +300,8 @@ Return Data: {6}
             return False
         valid, serverId = self.valid_server(node)
         if not valid:
-                print("Invalid ObjectID")
-                return False
+            print("Invalid ObjectID")
+            return False
         if not self.monitor.deactivateServer(serverId):
             self.ioc.getLogger().error(
                 "Failed deactivating server [{0}]".format(serverId)
@@ -356,8 +354,8 @@ Return Data: {6}
             return False
         valid, serverId = self.valid_server(node)
         if not valid:
-                print("Invalid ObjectID")
-                return False
+            print("Invalid ObjectID")
+            return False
         if self.ioc.getCollection('JobServer').update_one(
                 {'_id': ObjectId(serverId)},
                 {
@@ -369,9 +367,8 @@ Return Data: {6}
         ).modified_count < 1:
             self.ioc.getLogger().warning("Server [{0}] failed to be activated".format(serverId))
             return False
-        else:
-            self.ioc.getLogger().warning("Server [{0}] activated".format(serverId))
-            return True
+        self.ioc.getLogger().warning("Server [{0}] activated".format(serverId))
+        return True
 
     def valid_server(self, node=None):
         """Validates node is in the MongoDB instance connected to
@@ -391,8 +388,6 @@ Return Data: {6}
                 return False, ""
             if server:
                 return True, dict(server).get('_id')
-            else:
-                self.ioc.getLogger().error("Failed to find server [{0}] in the database".format(node))
-                return False, ""
-        else:
-            return True, self.ioc.getConfig().NodeIdentity
+            self.ioc.getLogger().error("Failed to find server [{0}] in the database".format(node))
+            return False, ""
+        return True, self.ioc.getConfig().NodeIdentity

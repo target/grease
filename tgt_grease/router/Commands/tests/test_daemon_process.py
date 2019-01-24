@@ -109,6 +109,84 @@ class TestRegistration(TestCase):
         ioc.getCollection('SourceData').drop()
         ioc.getCollection('Configuration').drop()
 
+    def test_no_retry(self):
+        ioc = GreaseContainer()
+        cmd = DaemonProcess(ioc)
+        proto = PrototypeConfig(ioc)
+        ioc.getCollection('Configuration').insert_one(
+            {
+                'active': True,
+                'type': 'prototype_config',
+                "name": "exe_test",
+                "job": "help",
+                "exe_env": "general",
+                "source": "url_source",
+                "logic": {
+                    "Regex": [
+                        {
+                            "field": "url",
+                            "pattern": ".*",
+                            'variable': True,
+                            'variable_name': 'url'
+                        }
+                    ],
+                    'Range': [
+                        {
+                            'field': 'status_code',
+                            'min': 199,
+                            'max': 201
+                        }
+                    ]
+                },
+                'constants': {
+                    'test': 'ver'
+                }
+            }
+        )
+        proto.load(reloadConf=True)
+        jobid = ioc.getCollection('SourceData').insert_one({
+                    'grease_data': {
+                        'sourcing': {
+                            'server': ObjectId(ioc.getConfig().NodeIdentity)
+                        },
+                        'detection': {
+                            'server': ObjectId(ioc.getConfig().NodeIdentity),
+                            'start': datetime.datetime.utcnow(),
+                            'end': datetime.datetime.utcnow(),
+                            'detection': {}
+                        },
+                        'scheduling': {
+                            'server': ObjectId(ioc.getConfig().NodeIdentity),
+                            'start': datetime.datetime.utcnow(),
+                            'end': datetime.datetime.utcnow(),
+                        },
+                        'execution': {
+                            'server': ObjectId(ioc.getConfig().NodeIdentity),
+                            'assignmentTime': datetime.datetime.utcnow(),
+                            'completeTime': None,
+                            'returnData': {'no_retry': True},
+                            'executionSuccess': False,
+                            'commandSuccess': False,
+                            'failures': 0
+                        }
+                    },
+                    'source': 'dev',
+                    'configuration': 'exe_test',
+                    'data': {},
+                    'createTime': datetime.datetime.utcnow(),
+                    'expiry': Deduplication.generate_max_expiry_time(1)
+                }).inserted_id
+        # Run for a bit
+        self.assertTrue(cmd.server())
+        self.assertTrue(cmd.drain_jobs(ioc.getCollection('SourceData')))
+        result = ioc.getCollection('SourceData').find_one({'_id': ObjectId(jobid)})
+        self.assertTrue(result)
+        self.assertFalse(result.get('grease_data').get('execution').get('executionSuccess'))
+        self.assertFalse(result.get('grease_data').get('execution').get('commandSuccess'))
+        self.assertEqual(result.get('grease_data').get('execution').get('failures'), 0)
+        ioc.getCollection('SourceData').drop()
+        ioc.getCollection('Configuration').drop()
+
     def test_prototype_execution(self):
         ioc = GreaseContainer()
         cmd = DaemonProcess(ioc)

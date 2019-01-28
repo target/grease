@@ -4,7 +4,7 @@ import os
 
 setup(
     name='tgt_grease',
-    version='2.5.0',
+    version='2.6.0',
     license="MIT",
     description='Modern distributed automation engine built with love by Target',
     long_description="""
@@ -41,8 +41,8 @@ setup(
         'elasticsearch',
         'kafka-python'
     ] + (
-         ["pywin32"] if "nt" == os.name else []
-        ),
+        ["pywin32"] if "nt" == os.name else []
+    ),
     include_package_data=True,
     zip_safe=False,
     scripts=[

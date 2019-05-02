@@ -34,6 +34,7 @@ setup(
     test_suite='nose.collector',
     tests_require=['nose', 'nose-cover3', 'mock'],
     install_requires=[
+        'urllib3==1.24.3',
         'psycopg2-binary',
         'requests',
         'pymongo',

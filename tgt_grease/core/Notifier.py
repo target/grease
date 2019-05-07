@@ -1,6 +1,5 @@
 from tgt_grease.core import Configuration
 from logging import DEBUG, INFO, WARNING, ERROR, CRITICAL
-from urllib3.exceptions import HTTPError
 import requests
 import json
 
@@ -147,7 +146,7 @@ class Notifications(object):
                 return True
             else:
                 return False
-        except HTTPError:
+        except requests.exceptions.RequestException:
             return False
 
     def send_slack_message(self, message):
@@ -170,6 +169,5 @@ class Notifications(object):
                 headers={'Content-Type': 'application/json'}
             )
             return True
-        except HTTPError:
+        except requests.exceptions.RequestException:
             return False
-

@@ -1,6 +1,7 @@
 from abc import ABCMeta, abstractmethod
 from tgt_grease.core import Logging, GreaseContainer
 from datetime import datetime
+from tgt_grease.core.Decorators import grease_log
 import sys
 import os
 import traceback
@@ -98,6 +99,7 @@ class Command(object):
         # close mongo connection
         self.ioc.getMongo().Close()
 
+    @grease_log
     def safe_execute(self, context=None):
         """Attempt execution and prevent MOST exceptions
 
@@ -158,3 +160,4 @@ class Command(object):
 
         """
         self.setData("no_retry", True)
+
